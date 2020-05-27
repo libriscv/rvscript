@@ -1,0 +1,35 @@
+#pragma once
+#include_next<new>
+
+inline void*
+operator new[](size_t size, const char*, int, unsigned, const char*, int)
+{
+	return ::operator new[] (size);
+}
+inline void*
+operator new[](size_t size, size_t, size_t, const char*, int, unsigned, const char*, int)
+{
+	return ::operator new[] (size);
+}
+
+#include "../heap.hpp"
+
+inline void* operator new(size_t size) {
+	return sys_malloc(size);
+}
+inline void* operator new[](size_t size) {
+	return sys_malloc(size);
+}
+inline void operator delete(void* ptr) {
+	sys_free(ptr);
+}
+inline void operator delete[](void* ptr) {
+	sys_free(ptr);
+}
+// C++14 sized deallocation
+inline void operator delete(void* ptr, std::size_t) {
+	sys_free(ptr);
+}
+inline void operator delete [](void* ptr, std::size_t) {
+	sys_free(ptr);
+}
