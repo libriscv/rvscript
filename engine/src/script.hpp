@@ -62,7 +62,7 @@ public:
 private:
 	void handle_exception(uint32_t);
 	void handle_timeout(uint32_t);
-	bool install_binary(const std::string& file, bool shared = false);
+	bool install_binary(const std::string& file, bool shared = true);
 	bool machine_initialize(bool shared);
 	void machine_setup(riscv::Machine<riscv::RISCV32>&);
 	void setup_syscall_interface(riscv::Machine<riscv::RISCV32>&);

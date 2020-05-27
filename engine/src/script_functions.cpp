@@ -128,7 +128,7 @@ APICALL(api_timer_oneshot)
 	machine.memory.memcpy_out(capture.data(), data, size);
 
 	return timers.oneshot(time,
-		[addr, capture, &script = gscript()] (int id) {
+		[addr = (uint32_t) addr, capture, &script = gscript()] (int id) {
 			std::copy(capture.begin(), capture.end(), Script::hidden_area().data());
 			script.call(addr, (int) id, (uint32_t) Script::HIDDEN_AREA);
         });
@@ -145,7 +145,7 @@ APICALL(api_timer_periodic)
 	machine.memory.memcpy_out(capture.data(), data, size);
 
 	return timers.periodic(time, peri,
-		[addr, capture, &script = gscript()] (int id) {
+		[addr = (uint32_t) addr, capture, &script = gscript()] (int id) {
 			std::copy(capture.begin(), capture.end(), Script::hidden_area().data());
 			script.call(addr, (int) id, (uint32_t) Script::HIDDEN_AREA);
         });

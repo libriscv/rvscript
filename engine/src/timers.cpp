@@ -77,7 +77,7 @@ static inline timespec clocktime_now()
 }
 static inline double now() noexcept {
 	const auto ts = clocktime_now();
-	return ts.tv_sec * 1e9 + ts.tv_nsec;
+	return ts.tv_sec + ts.tv_nsec / 1e9;
 }
 
 /// scheduling ///
