@@ -30,9 +30,9 @@ int main()
 
 	printf("...\n");
 	while (true) {
-		timers.timers_handler();
+		timers.handle_events();
 		if (timers.active() == 0) break;
-		sleep(1);
+		usleep(timers.next());
 	}
 
 	return 0;

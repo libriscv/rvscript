@@ -49,8 +49,9 @@ public:
     // returns number of active timers
     size_t active() const noexcept { return this->scheduled.size() - dead_timers; }
 
-    Timers();
-    void timers_handler();
+	duration_t next() const;
+
+    void handle_events();
 
 private:
     void sched_timer(duration_t when, int id);

@@ -1,8 +1,6 @@
 #include "timers.hpp"
 #include <cassert>
 
-Timers::Timers() {}
-
 int Timers::periodic(duration_t when, duration_t period, handler_t handler)
 {
     int repeats = (period > 0.0) ? -1 : 0;
@@ -82,7 +80,7 @@ static inline double now() noexcept {
 
 /// scheduling ///
 
-void Timers::timers_handler()
+void Timers::handle_events()
 {
     this->is_running = false;
 
@@ -144,6 +142,20 @@ void Timers::timers_handler()
             }
         } // timer not dead
     }     // queue not empty
+}
+
+Timers::duration_t Timers::next() const
+{
+	if (!scheduled.empty())
+	{
+		auto it   = scheduled.begin();
+		auto when = it->first;
+		auto diff = when - now();
+		// avoid returning zero or negative diff
+		if (diff < 1.0e-9) return 1.0e-9;
+		return diff;
+	}
+	return 0.0;
 }
 
 void Timers::sched_timer(duration_t when, int id)
