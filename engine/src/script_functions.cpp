@@ -47,7 +47,7 @@ APICALL(api_measure)
 {
 	auto [test, address] = machine.template sysargs <std::string, uint32_t> ();
 	auto time_ns = gscript().measure(address);
-	printf(">>> Measurement \"%s\" average: %ld nanos\n",
+	printf(">>> Measurement \"%s\" median: %ld nanos\n",
 			test.c_str(), time_ns);
 	return time_ns;
 }

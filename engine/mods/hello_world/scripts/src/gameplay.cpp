@@ -5,7 +5,7 @@ static void gconstr() {
 	api::print("I am called before everything else (once on each machine)\n");
 }
 
-PUBLIC_API void empty_function() {
+FAST_API void empty_function() {
 	asm("ebreak");
 	__builtin_unreachable();
 }

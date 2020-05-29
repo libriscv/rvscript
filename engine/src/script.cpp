@@ -2,7 +2,6 @@
 
 #include "util/crc32.hpp"
 #include <fstream> // Windows doesn't implement C getline()
-static std::vector<uint8_t> load_file(const std::string& filename);
 #include <include/syscall_helpers.hpp>
 #include <include/threads.hpp>
 #include "machine/include_api.hpp"
@@ -23,11 +22,11 @@ void Script::init()
 	g_hidden_stack.attr.shared = true;
 }
 
-Script::Script(const std::string& file,
+Script::Script(std::shared_ptr<std::vector<uint8_t>>& binary,
 	const std::string& name)
-	: m_name(name), m_hash(crc32(name.c_str()))
+	: m_binary(binary), m_name(name), m_hash(crc32(name.c_str()))
 {
-	this->install_binary(file);
+	this->reset(true);
 }
 
 Script::~Script() {}
@@ -40,7 +39,7 @@ bool Script::reset(bool shared)
 		};
 		riscv::verbose_machine = false;
 		m_machine.reset(new riscv::Machine<riscv::RISCV32> (
-			this->m_binary, options));
+			*this->m_binary, options));
 	} catch (std::exception& e) {
 		printf(">>> Exception: %s\n", e.what());
 		// TODO: shutdown engine?
@@ -73,18 +72,6 @@ void Script::add_shared_memory()
 	mem.install_shared_page(HIDDEN_AREA >> riscv::Page::SHIFT, g_hidden_stack);
 }
 
-bool Script::install_binary(const std::string& file, bool shared)
-{
-	try {
-	    // add ELF binary
-		this->m_binary = load_file(file);
-	} catch (std::exception& e) {
-		printf(">>> Failed to load script %s: %s\n",
-				name().c_str(), e.what());
-		return false;
-	}
-	return this->reset(shared);
-}
 bool Script::machine_initialize(bool shared)
 {
 	// setup system calls and traps
@@ -118,9 +105,9 @@ bool Script::machine_initialize(bool shared)
 void Script::machine_setup(riscv::Machine<riscv::RISCV32>& machine)
 {
 	// add system call interface
-	setup_native_heap_syscalls<4>(machine, MAX_HEAP);
+	auto* arena = setup_native_heap_syscalls<4>(machine, MAX_HEAP);
 	setup_native_memory_syscalls<4>(machine, TRUSTED_CALLS);
-	this->m_threads = setup_native_threads<4>(machine);
+	this->m_threads = setup_native_threads<4>(machine, arena);
     setup_syscall_interface(machine);
 
 	// create execute trapping syscall page
@@ -231,24 +218,6 @@ uint32_t Script::api_function_from_hash(uint32_t hash) {
 	return 0;
 }
 
-inline timespec time_now();
-inline long nanodiff(timespec start_time, timespec end_time);
-
-template <int ROUNDS = 2000>
-inline long perform_test(riscv::Machine<4>& machine, uint32_t func)
-{
-	asm("" : : : "memory");
-	auto t0 = time_now();
-	asm("" : : : "memory");
-	for (int i = 0; i < ROUNDS; i++) {
-		machine.vmcall(func);
-	}
-	asm("" : : : "memory");
-	auto t1 = time_now();
-	asm("" : : : "memory");
-	return nanodiff(t0, t1);
-}
-
 void Script::each_tick_event()
 {
 	if (this->m_tick_event == 0)
@@ -266,43 +235,48 @@ void Script::each_tick_event()
 	assert(mt->get_thread()->tid == 0 && "Avoid clobbering regs");
 }
 
-long Script::measure(uint32_t address)
-{
-	riscv::MachineOptions options {
-		.memory_max = MAX_MEMORY,
-	};
-	riscv::Machine<riscv::RISCV32> machine (this->m_binary, options);
-	this->machine_setup(machine);
-	try {
-		// run _start to setup the environment
-		machine.simulate(MAX_INSTRUCTIONS);
-	} catch (std::exception& e) {
-		printf(">>> Exception: %s\n", e.what());
-		return -1;
-	}
+inline timespec time_now();
+inline long nanodiff(timespec start_time, timespec end_time);
 
-	return perform_test<2000>(machine, address) / 2000;
+template <int ROUNDS = 2000>
+inline long perform_test(riscv::Machine<4>& machine, uint32_t func)
+{
+	auto regs = machine.cpu.registers();
+	auto counter = machine.cpu.instruction_counter();
+	asm("" : : : "memory");
+	auto t0 = time_now();
+	asm("" : : : "memory");
+	for (int i = 0; i < ROUNDS; i++) {
+		machine.vmcall(func);
+	}
+	asm("" : : : "memory");
+	auto t1 = time_now();
+	asm("" : : : "memory");
+	machine.cpu.registers() = regs;
+	machine.cpu.reset_instruction_counter();
+	machine.cpu.increment_counter(counter);
+	machine.stop(false);
+	return nanodiff(t0, t1);
 }
 
-#include <unistd.h>
-std::vector<uint8_t> load_file(const std::string& filename)
+long Script::measure(uint32_t address)
 {
-    size_t size = 0;
-    FILE* f = fopen(filename.c_str(), "rb");
-    if (f == NULL) throw std::runtime_error("Could not open file: " + filename);
+	static constexpr size_t TIMES = 2000;
 
-    fseek(f, 0, SEEK_END);
-    size = ftell(f);
-    fseek(f, 0, SEEK_SET);
+	std::vector<long> results;
+	for (int i = 0; i < 200; i++)
+	{
+		perform_test<1>(*m_machine, address); // warmup
+		results.push_back( perform_test<TIMES>(*m_machine, address) );
+	}
+	std::sort(results.begin(), results.end());
+	long median = results[results.size() / 2] / TIMES;
+	long lowest = results[0] / TIMES;
+	long highest = results[results.size()-1] / TIMES;
 
-    std::vector<uint8_t> result(size);
-    if (size != fread(result.data(), 1, size, f))
-    {
-        fclose(f);
-        throw std::runtime_error("Error when reading from file: " + filename);
-    }
-    fclose(f);
-    return result;
+	printf("> median %ldns  \t\tlowest: %ldns     \thighest: %ldns\n",
+			median, lowest, highest);
+	return median;
 }
 
 timespec time_now()

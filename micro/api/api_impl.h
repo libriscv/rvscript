@@ -24,7 +24,7 @@ inline void print(Args&&... args)
 template <typename T>
 inline long measure(const char* testname, T testfunc)
 {
-	return psyscall(ECALL_MEASURE, testname, (void*) static_cast<void(*)()>(testfunc));
+	return apicall<long>(ECALL_MEASURE, testname, static_cast<void(*)()>(testfunc));
 }
 
 template <typename Ret = long, typename... Args>

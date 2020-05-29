@@ -1,13 +1,13 @@
 cmake_minimum_required (VERSION 3.0.2)
 project (engine C CXX)
 
-option(ENABLE_FLTO "Enable LTO builds" OFF)
+option(ENABLE_FLTO "Enable LTO builds" ON)
 option(DEBUGGING   "Enable debugging with GDB" OFF)
 option(SANITIZE    "Enable sanitizers" OFF)
 option(GPROF       "Enable profiling with Gprof" OFF)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -O2 -msse3 -mfpmath=sse")
+set(CMAKE_CXX_FLAGS "-Wall -Wextra -O2 -march=native")
 set(BUILD_SHARED_LIBRARIES OFF)
 
 if (ENABLE_FLTO)
