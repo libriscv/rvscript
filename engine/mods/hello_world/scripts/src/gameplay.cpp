@@ -3,10 +3,17 @@
 
 __attribute__((constructor))
 static void gconstr() {
-	api::print("I am called before everything else (once on each machine)\n");
+	/* This get's called on each machine */
 }
 
 FAST_API void empty_function() {
+	asm("ebreak");
+	__builtin_unreachable();
+}
+FAST_API void thread_function() {
+	microthread::direct([] {
+		
+	});
 	asm("ebreak");
 	__builtin_unreachable();
 }
@@ -14,7 +21,10 @@ FAST_API void empty_function() {
 PUBLIC_API void start()
 {
 	api::print("Hello world!\n");
-	api::measure("Function call overhead", empty_function);
+
+	api::measure("VM function call overhead", empty_function);
+	api::measure("Thread creation overhead", thread_function);
+
 	long r = FARCALL("gameplay2", "some_function", 1234);
 	api::print("Back again in the start() function! Return value: ", r, "\n");
 

@@ -1,6 +1,5 @@
 _exit
 start
-empty_function
 some_function
 
 event_loop
