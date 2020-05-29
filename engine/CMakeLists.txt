@@ -38,3 +38,5 @@ add_subdirectory(src)
 
 add_executable(engine src/main.cpp)
 target_link_libraries(engine libengine -static-libstdc++ -static-libgcc)
+set_target_properties(engine PROPERTIES
+	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})

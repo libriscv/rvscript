@@ -1,4 +1,5 @@
 #include <api.h>
+#include "events.hpp"
 
 __attribute__((constructor))
 static void gconstr() {
@@ -21,6 +22,9 @@ PUBLIC_API void start()
 		api::print("Hello Microthread World!\n");
 		api::sleep(1.0);
 		api::print("Hello Belated Microthread World! 1 second passed.\n");
+		REMOTE_EXEC("events", [] {
+			api::print("I am being run on another machine!\n");
+		});
 	});
 	api::print("Back again in the start() function!\n");
 }
