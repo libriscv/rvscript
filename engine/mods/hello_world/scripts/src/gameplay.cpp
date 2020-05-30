@@ -31,6 +31,14 @@ PUBLIC_API void start()
 	   system call into the engine, which then writes to the terminal. */
 	api::print("Hello world!\n");
 
+#ifdef __EXCEPTIONS
+	try {
+		throw "";
+	} catch (...) {
+		api::print("Exception caught!\n");
+	}
+#endif
+
 	/* This function makes thousands of calls into this machine,
 	   while preserving registers, and then prints some statistics. */
 	api::measure("VM function call overhead", empty_function);

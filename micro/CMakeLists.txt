@@ -4,6 +4,7 @@ project(modbuilder CXX)
 option(LTO         "Link-time optimizations" ON)
 option(GCSECTIONS  "Garbage collect empty sections" OFF)
 option(DEBUGGING   "Add debugging information" OFF)
+option(RTTI_EXCEPT "C++ RTTI and exceptions" OFF)
 set(VERSION_FILE   "symbols.map" CACHE STRING "Retained symbols file")
 
 #
@@ -32,9 +33,12 @@ if (DEBUGGING)
 	set (COMMON "-g ${COMMON}")
 endif()
 set(CMAKE_C_FLAGS "${WARNINGS} ${RISCV_ABI} -std=c11 ${COMMON}")
-set(CMAKE_CXX_FLAGS "${WARNINGS} ${RISCV_ABI} -std=c++17 ${COMMON} -fno-exceptions -fno-rtti")
+set(CMAKE_CXX_FLAGS "${WARNINGS} ${RISCV_ABI} -std=c++17 ${COMMON}")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Ttext 0x120000")
 
+if (NOT RTTI_EXCEPT)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fno-exceptions")
+endif()
 
 if (LTO)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -flto -ffat-lto-objects")
@@ -50,6 +54,7 @@ endif()
 set(BUILD_SHARED_LIBS OFF)
 set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "") # remove -rdynamic
 set(LIBGCC ${LIBRARY_DIR}/libgcc.a)
+set(SUPCPP ${CRTLIB_DIR}/libsupc++.a)
 
 add_subdirectory(ext)
 add_subdirectory(libc)
@@ -73,7 +78,7 @@ endfunction()
 function (add_micro_binary NAME VERFILE)
 	add_executable(${NAME} ${ARGN})
 	target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/libc)
-	target_link_libraries(${NAME} -static -Wl,--whole-archive libc -Wl,--no-whole-archive ${LIBGCC})
+	target_link_libraries(${NAME} -static -Wl,--whole-archive libc -Wl,--no-whole-archive supc++ gcc)
 	target_link_libraries(${NAME} frozen::frozen strf)
 	# place ELF into the sub-projects source folder
 	set_target_properties(${NAME}

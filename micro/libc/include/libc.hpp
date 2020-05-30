@@ -23,6 +23,7 @@ int   print_backtrace();
 
 void* malloc(size_t) __malloc_like __result_use_check __alloc_size(1) _NOTHROW;
 void* calloc(size_t, size_t) __malloc_like __result_use_check _NOTHROW;
+void* realloc(void*, size_t) __malloc_like __result_use_check _NOTHROW;
 void  free(void*) _NOTHROW;
 
 void _exit(int) __attribute__((noreturn));

@@ -6,6 +6,7 @@ message(STATUS ${CMAKE_SOURCE_DIR}/libc/override)
 
 set(COMPILER_DIR $ENV{HOME}/riscv/riscv32-unknown-elf)
 set(LIBRARY_DIR $ENV{HOME}/riscv/lib/gcc/riscv32-unknown-elf/9.2.0 CACHE STRING "GCC libraries")
+set(CRTLIB_DIR $ENV{HOME}/riscv/riscv32-unknown-elf/lib CACHE STRING "C/C++ runtime libraries")
 
 include_directories(SYSTEM
 	${CMAKE_SOURCE_DIR}/libc/override

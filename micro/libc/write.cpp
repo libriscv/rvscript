@@ -10,7 +10,33 @@ int puts(const char* string)
 }
 
 extern "C"
+ssize_t write(void*, const void* buffer, size_t len)
+{
+	return sys_write(buffer, len);
+}
+
+extern "C"
 size_t fwrite(const void*__restrict buffer, size_t, size_t count, FILE*)
 {
 	return sys_write(buffer, count);
+}
+
+extern "C"
+int fputs (const char* str, FILE*)
+{
+	return puts(str);
+}
+
+extern "C"
+int fputc (int c, FILE*)
+{
+	return sys_write(&c, 1);
+}
+
+__attribute__((format (printf, 2, 3)))
+int sprintf(char *buffer, const char *format, ...)
+{
+	const long len = strlen(format);
+	memcpy(buffer, format, len);
+	return len;
 }

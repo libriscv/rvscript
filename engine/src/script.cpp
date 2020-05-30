@@ -129,6 +129,10 @@ void Script::machine_setup(riscv::Machine<riscv::RISCV32>& machine)
 			return 0x8067;
 #endif
 		});
+
+	// we need to pass the .eh_frame location to a supc++ function,
+	// if C++ RTTI and Exceptions is enabled
+	machine.cpu.reg(11) = machine.memory.resolve_section(".eh_frame");
 }
 void Script::handle_exception(uint32_t address)
 {

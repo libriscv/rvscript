@@ -5,7 +5,7 @@
 
 class Script {
 public:
-	static constexpr uint64_t MAX_INSTRUCTIONS = 100'000;
+	static constexpr uint64_t MAX_INSTRUCTIONS = 800'000;
 	static constexpr uint32_t READONLY_AREA   = 0x20000;
 	static constexpr uint32_t HIDDEN_AREA     = 0x10000;
 
