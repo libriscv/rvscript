@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.0.2)
-project (engine C CXX)
+project (engine CXX)
 
 option(ENABLE_FLTO "Enable LTO builds" ON)
 option(DEBUGGING   "Enable debugging with GDB" OFF)
@@ -13,11 +13,9 @@ set(BUILD_SHARED_LIBRARIES OFF)
 if (ENABLE_FLTO)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto=thin")
-	 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -flto=thin")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
 	else()
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto=8")
-	 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -flto=8")
     endif()
 endif()
 
