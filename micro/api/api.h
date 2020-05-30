@@ -17,6 +17,7 @@ template <typename... Args> void print(Args&&... args);
 struct Game {
 	static void exit();
 };
+uint32_t current_machine();
 
 /** Timers **/
 

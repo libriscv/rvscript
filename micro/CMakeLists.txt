@@ -49,7 +49,7 @@ endif()
 
 set(BUILD_SHARED_LIBS OFF)
 set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "") # remove -rdynamic
-set(LIBGCC ${LIBRARY_DIR}/rv32imfd/ilp32d/libgcc.a)
+set(LIBGCC ${LIBRARY_DIR}/libgcc.a)
 
 add_subdirectory(ext)
 add_subdirectory(libc)

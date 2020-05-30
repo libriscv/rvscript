@@ -35,15 +35,18 @@ The output from the engine should look like this after completion:
 
 ## Getting a RISC-V compiler
 
-There are several ways to do this. However for now one requirement is to install the GCC 8.3.0 system files for RISC-V. Install it like this:
+There are several ways to do this. However for now one requirement is to install the riscv-gnu-toolchains GCC 9.2.0 for RISC-V. Install it like this:
 
 ```
-xpm install --global @xpack-dev-tools/riscv-none-embed-gcc@latest
+git clone https://github.com/riscv/riscv-gnu-toolchain.git
+cd riscv-gnu-toolchain
+./configure --prefix=$HOME/riscv --with-arch=rv32gc --with-abi=ilp32d
+make -j8
 ```
 
-If you want to use this compiler, edit the the build.sh script in the micro folder so that CC and CXX points to this compiler. It will be installed in `~/opt/xPacks`.
+This compiler will be automatically used by the CMake script in the micro folder. Check out toolchain.cmake for the details.
 
-It's technically possible to build without anything at all. But you will need to provide some minimal C++ headers for convenience: All freestanding headers, functional, type_traits and whatever else you need yourself. I recommend just installing the whole thing and just not link against it.
+It's technically possible to build without any system files at all, but you will need to provide some minimal C++ headers for convenience: All freestanding headers, functional, type_traits and whatever else you need yourself. I recommend just installing the whole thing and just not link against it.
 
 
 ## Building script files
