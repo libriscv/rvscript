@@ -1,10 +1,26 @@
 # RVScript
 
-This repository implements a game engine scripting system using [libriscv](https://github.com/fwsGonzo/libriscv) as a backend. It has some basic timers and threads, as well as multiple machines to call into and between. The repository is a starting point for anyone who wants to try to use this in their game engine.
+This repository implements a game engine oriented scripting system using [libriscv](https://github.com/fwsGonzo/libriscv) as a backend. By using a fast virtual machine with low call overhead and modern programming techniques like compile-time programming we can have a fast budgeted script that lives in a separate address space.
 
-The environment is freestanding C++17 (or later) with RTTI and exceptions. Several CRT functions have been implemented as system calls, and will have native speeds.
+The environment is freestanding C++17 (or later) with an option for enabling RTTI and exceptions. Several CRT functions have been implemented as system calls, and will have native speeds.
 
-# Getting started
+This example environment has some basic example timers and threads, as well as multiple machines to call into and between. The repository is a starting point for anyone who wants to try to use this in their game engine.
+
+
+## Benchmarks
+
+https://gist.github.com/fwsGonzo/f874ba58f2bab1bf502cad47a9b2fbed
+
+Note that some benchmarks have and will continue improve in the future, and I don't update the gist often. The key benchmark is showing the low overhead to calling into the script.
+
+The overhead of a system call is around 23ns last time I measured it, so keep that in mind. If you can share memory between the engine and the machine you can benefit greatly by not having to use system calls for simple things.
+
+The cost of doing a function-like system call (trapping jumps) can be higher than a regular system call because the caller has to save registers, and there is no way to indicate that a function call clobbers nothing that I know of. If there is, it would be quite interesting. Take a look at `syscall.hpp:21` to see how it's done.
+
+
+## Getting started
+
+Install cmake, git, clang-10 or 11 (trunk) for your system. Don't use GCC - it's slower on all benchmarks.
 
 Run `setup.sh` to make sure that libriscv is initialized properly. Then go into the engine folder and run:
 
@@ -34,6 +50,8 @@ The output from the engine should look like this after completion:
 >>> [events] says: I am being run on another machine!
 ```
 
+There are additional lines if you enable RTTI and exceptions.
+
 
 ## Getting a RISC-V compiler
 
@@ -42,35 +60,47 @@ There are several ways to do this. However for now one requirement is to install
 ```
 git clone https://github.com/riscv/riscv-gnu-toolchain.git
 cd riscv-gnu-toolchain
-./configure --prefix=$HOME/riscv --with-arch=rv32gc --with-abi=ilp32d
+./configure --prefix=$HOME/riscv --with-arch=rv32g --with-abi=ilp32d
 make -j8
 ```
 
-This compiler will be automatically used by the CMake script in the micro folder. Check out toolchain.cmake for the details.
+This compiler will be automatically used by the CMake script in the micro folder. Check out `micro/toolchain.cmake` for the details.
 
 It's technically possible to build without any system files at all, but you will need to provide some minimal C++ headers for convenience: All freestanding headers, functional, type_traits and whatever else you need yourself. I recommend just installing the whole thing and just not link against it.
+
+If you want to enable the compressed extension you can use `rv32gc`, but you must also enable the same feature in `engine/build.sh`: `-DRISCV_EXT_C=ON`.
 
 
 ## Building script files
 
-If you have installed the RISC-V compiler above, the rest should be simple enough. Just run `build.sh` in the micro folder. You can add and edit script files in the `engine/mods/hello_world/scripts` folder.
+If you have installed the RISC-V compiler above, the rest should be simple enough. Just run `build.sh` in the micro folder.
+
+If you want to build more binaries you can edit the CMakeLists.txt in the `engine/mods/hello_world/scripts` folder. There is one binary there being built by a single function called `add_micro_binary`. Simply call that function again with new arguments:
+
+```
+add_micro_binary(my.elf "src/my.symbols"
+	"src/mycode.cpp"
+)
+```
+
+You can share symbol file with any other binaries, and if you don't have a particular symbol that is listed that is fine. It should be possible to reuse the same symbol file for all binaries. The symbol file is a list of symbols that are public, and can be called from the outside. If `start` is public, then you can do `machine.vmcall("start")`.
 
 
 ## Building with C++ RTTI and exceptions
 
-Enable the RTTI_EXCEPT CMake option using ccmake or just editing the build.sh script. Simply appending `-DRTTI_EXCEPT=ON` will be enough.
+Go into the micro folder. Enable the RTTI_EXCEPT CMake option using ccmake or edit the build.sh shell script. Simply appending `-DRTTI_EXCEPT=ON` will be enough. Run `build.sh` to build any changes.
 
-Exceptions and RTTI will bloat the binary by at least 170k according to my measurements. Additionally, you will have to increase the maximum allotted number of instructions to a call by at least 600k instructions, as the first exception thrown will have to run through a massive amount of code. However, any code that does not throw exceptions as part of normal operation will be fine.
+Exceptions and RTTI will bloat the binary by at least 170k according to my measurements. Additionally, you will have to increase the maximum allotted number of instructions to a call by at least 600k instructions, as the first exception thrown will have to run through a massive amount of code. However, any code that does not throw exceptions as part of normal operation will be fine. It could also be fine to just give up when an exception is throw, although I recommend re-initializing the machine (around 14ns on my hardware).
 
 The binary that comes with the repository for testing does not have C++ exceptions enabled.
 
-## Using other scripting languages
 
-This is not so easy, as you will have to create a tiny freestanding environment for your language, and also implement the system call layer that your API relies on. Both these things require writing inline assembly.
-That said, I have a Rust implementation here:
+## Using other programming languages
+
+This is not so easy, as you will have to create a tiny freestanding environment for your language (hard), and also implement the system call layer that your API relies on (easy). Both these things require writing inline assembly, although you only have to create the syscall wrappers once. That said, I have a Rust implementation here:
 https://github.com/fwsGonzo/script_bench/tree/master/rvprogram/rustbin
 
-You can use any programming language that can output RISC-V binaries.
+You can use any programming language that can output RISC-V binaries. A tiny bit of info about Rust is that I was unable to build anything but rv32gc binaries, so you would need to enable the C extension in the build.sh script (where it is explicitly set to OFF).
 
 Good luck.
 
@@ -78,9 +108,32 @@ Good luck.
 ## Details
 
 I have written in detail about this subject here:
-https://medium.com/@fwsgonzo/adventures-in-game-engine-programming-a3ab1e96dbde
-https://medium.com/@fwsgonzo/using-c-as-a-scripting-language-part-2-7726f8e13e3
-https://medium.com/@fwsgonzo/adventures-in-game-engine-programming-part-3-3895a9f5af1d
+
+1: https://medium.com/@fwsgonzo/adventures-in-game-engine-programming-a3ab1e96dbde
+
+2: https://medium.com/@fwsgonzo/using-c-as-a-scripting-language-part-2-7726f8e13e3
+
+3: https://medium.com/@fwsgonzo/adventures-in-game-engine-programming-part-3-3895a9f5af1d
 
 Part 3 is a good introduction that will among other things answer the 'why'.
 
+## Common Issues
+
+- The emulator is jumping to a misaligned instruction, or faulting on some other thing but I know for a fact that the assembly is fine.
+	- You might have to enable an extension such as atomics (RISCV_EXT_A) or compressed (RISCV_EXT_C). These are enabled by default and have to be disabled by something, such as in `engine/build.sh`.
+- After I enabled C++ exceptions and ran a try..catch the emulator seems to just stop.
+	- When you call into the virtual machine you can give it a budget. A limit on the number of instructions it gets to run for that particular call (or any other limit you impose yourself). If you forget to check if the limit has been reached, then it will just look like it stopped. You can check this by comparing calculating instruction counter + max instructions beforehand, and comparing that to the instruction counter after the call. You can safely resume execution again by calling `machine.simulate()` again, as running out of instructions is not an exception. The first C++ exception thrown uses a gigaton of instructions and will easily blow the limit.
+- I can't seem to call a public API function in another machine.
+	- The function has to be added to the symbol file for it to not be removed as an optimization, assuming no other function references it. It's also possible that the remote machine you are calling into simply doesn't have that function - if it's running another binary.
+- How do I share memory with the engine?
+	- Create pages (riscv::Page) and set `page.attr.shared` to true. Shared pages are not deleted by the machine when it's deleted, and you can install these shared pages on as many machines as you want. The challenge then is to be able to use the pages as memory for your objects, and make them portable (the VMs are 32-bit).
+- My thread blocked and when it returned some shared data is stale now.
+	- The microthread block function is an inline system call, which is not a full function call. If it was a function call then the compiler will assume memory is clobbered. You can solve this by adding a memory clobber somewhere where you think it makes the most sense. You can see what it looks like in the implementation of `block()` with a condition. You can also make the system call into a function by using a jump trap. See the implementation of `apicall` to see how it's done.
+- Passing strings are slow.
+	- Yes, use compile-time hashes of strings where you can, but I'm constantly trying new things to make things go fast. CRC32 is excellent for this, and it might be possible to make it use the SSE 4.2 CRC32 instruction both for run-time and compile-time.
+- Why is a particular API function implemented as a macro?
+	- Most likely that API function uses compile-time string hashes, and they can't be passed to a function. Instead the hash has to be compiled before it's passed to the function and the way to do that is using macros. Hashes can be turned back into strings using reverse lookups, so you will be able to give context when logging errors.
+- How do I allow non-technical people to compile script?
+	- Hard question. If they are only going to write scripts for the actual levels it might be good enough to use a web API endpoint to compile these simpler binaries. You don't have to do the compilation in a Docker container, so it should be fairly straight-forward for a dedicated server. You could also have an editor in the browser, and when you press Save or Compile the resulting binary is sent to you. They can then move it to the folder it's supposed to be in, and restart the level. Something like that. I'm sure something that is even higher iteration can be done with some thought put into it.
+- Will you add support for SIMD-like instructions for RISC-V?
+	- Definitely. The extension isn't finalized yet, but if I think it's close to the real thing I'll do it. It should make it possible to implement most vector functions in the script, but benchmarking is needed.
