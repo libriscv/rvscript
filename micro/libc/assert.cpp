@@ -1,7 +1,7 @@
 #include <include/libc.hpp>
 #include <cstdarg>
 #include <strf.hpp>
-uint64_t __stack_chk_guard = 0x123456780C0A00FF;
+uintptr_t __stack_chk_guard __attribute__((section(".data"))) = 0x0C0A00FF;
 
 extern "C"
 __attribute__((noreturn))
@@ -41,7 +41,7 @@ void __assert_func(
 	panic("Assertion failed");
 }
 
-extern "C"
+extern "C" __attribute__((noreturn))
 void __stack_chk_fail()
 {
 	print_backtrace();

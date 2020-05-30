@@ -28,7 +28,7 @@ else()
 endif()
 
 set(WARNINGS  "-Wall -Wextra")
-set(COMMON    "-O2 -fstack-protector -nostdlib -fno-builtin -fno-math-errno")
+set(COMMON    "-O2 -fno-stack-protector -nostdlib -fno-builtin -fno-math-errno")
 if (DEBUGGING)
 	set (COMMON "-g ${COMMON}")
 endif()
