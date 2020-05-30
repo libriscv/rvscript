@@ -2,6 +2,8 @@
 
 This repository implements a game engine scripting system using [libriscv](https://github.com/fwsGonzo/libriscv) as a backend. It has some basic timers and threads, as well as multiple machines to call into and between. The repository is a starting point for anyone who wants to try to use this in their game engine.
 
+The environment is freestanding C++17 (or later) with RTTI and exceptions. Several CRT functions have been implemented as system calls, and will have native speeds.
+
 # Getting started
 
 Run `setup.sh` to make sure that libriscv is initialized properly. Then go into the engine folder and run:
@@ -53,6 +55,14 @@ It's technically possible to build without any system files at all, but you will
 
 If you have installed the RISC-V compiler above, the rest should be simple enough. Just run `build.sh` in the micro folder. You can add and edit script files in the `engine/mods/hello_world/scripts` folder.
 
+
+## Building with C++ RTTI and exceptions
+
+Enable the RTTI_EXCEPT CMake option using ccmake or just editing the build.sh script. Simply appending `-DRTTI_EXCEPT=ON` will be enough.
+
+Exceptions and RTTI will bloat the binary by at least 170k according to my measurements. Additionally, you will have to increase the maximum allotted number of instructions to a call by at least 600k instructions, as the first exception thrown will have to run through a massive amount of code. However, any code that does not throw exceptions as part of normal operation will be fine.
+
+The binary that comes with the repository for testing does not have C++ exceptions enabled.
 
 ## Using other scripting languages
 
