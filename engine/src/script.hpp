@@ -56,7 +56,7 @@ public:
 	static uint32_t shared_memory_location() noexcept { return 0x2000; };
 	static auto&    hidden_area() noexcept { return g_hidden_stack; }
 
-	Script(std::shared_ptr<std::vector<uint8_t>>& binary, const std::string& name);
+	Script(const riscv::Machine<riscv::RISCV32>&, const std::string& name);
 	~Script();
 	static void init();
 
@@ -72,7 +72,7 @@ private:
 	static riscv::Page g_hidden_stack; // page used by the internal APIs
 
 	std::unique_ptr<riscv::Machine<riscv::RISCV32>> m_machine = nullptr;
-	std::shared_ptr<std::vector<uint8_t>> m_binary;
+	const riscv::Machine<riscv::RISCV32>& m_source_machine;
 	void*       m_threads;
 	uint32_t    m_tick_event = 0;
 	int         m_tick_block_reason = 0;

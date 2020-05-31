@@ -22,9 +22,9 @@ void Script::init()
 	g_hidden_stack.attr.shared = true;
 }
 
-Script::Script(std::shared_ptr<std::vector<uint8_t>>& binary,
+Script::Script(const riscv::Machine<riscv::RISCV32>& smach,
 	const std::string& name)
-	: m_binary(binary), m_name(name), m_hash(crc32(name.c_str()))
+	: m_source_machine(smach), m_name(name), m_hash(crc32(name.c_str()))
 {
 	this->reset(true);
 }
@@ -34,12 +34,13 @@ Script::~Script() {}
 bool Script::reset(bool shared)
 {
 	try {
-		riscv::MachineOptions options {
-			.memory_max = MAX_MEMORY
+		riscv::MachineOptions<riscv::RISCV32> options {
+			.memory_max = MAX_MEMORY,
+			.owning_machine = &this->m_source_machine
 		};
-		riscv::verbose_machine = false;
 		m_machine.reset(new riscv::Machine<riscv::RISCV32> (
-			*this->m_binary, options));
+			m_source_machine.memory.binary(), options));
+
 	} catch (std::exception& e) {
 		printf(">>> Exception: %s\n", e.what());
 		// TODO: shutdown engine?

@@ -1,5 +1,4 @@
 #include "script.hpp"
-static std::shared_ptr<std::vector<uint8_t>> load_file(const std::string& filename);
 static std::unique_ptr<Script> gameplay1 = nullptr;
 static std::unique_ptr<Script> gameplay2 = nullptr;
 static std::unique_ptr<Script> events = nullptr;
@@ -19,22 +18,26 @@ Script* get_script(uint32_t machine_hash)
 	return nullptr;
 }
 
+#include "machine/blackbox.hpp"
+Blackbox blackbox;
+
 #include <unistd.h> /* usleep */
 int main()
 {
 	/* This binary will be shared among all the machines, for convenience */
-	auto binary = load_file("mods/hello_world/scripts/gameplay.elf");
+	blackbox.insert_binary("gameplay", "mods/hello_world/scripts/gameplay.elf");
+
 	Script::init();
 	/* Naming the machines allows us to call into one machine from another
 	   using this name (hashed). */
-	gameplay1.reset(new Script(binary, "gameplay1"));
+	gameplay1.reset(new Script(*blackbox.get("gameplay"), "gameplay1"));
 	/* The symbol file contains public functions that we don't want optimized away. */
 	gameplay1->hash_public_api_symbols("mods/hello_world/scripts/src/gameplay.symbols");
 
-	gameplay2.reset(new Script(binary, "gameplay2"));
+	gameplay2.reset(new Script(*blackbox.get("gameplay"), "gameplay2"));
 	gameplay2->hash_public_api_symbols("mods/hello_world/scripts/src/gameplay.symbols");
 
-	events.reset(new Script(binary, "events"));
+	events.reset(new Script(*blackbox.get("gameplay"), "events"));
 	events->hash_public_api_symbols("mods/hello_world/scripts/src/gameplay.symbols");
 
 	/* The event_loop function can be resumed later, and can execute work
@@ -61,26 +64,4 @@ int main()
 	}
 
 	return 0;
-}
-
-
-#include <unistd.h>
-std::shared_ptr<std::vector<uint8_t>> load_file(const std::string& filename)
-{
-    size_t size = 0;
-    FILE* f = fopen(filename.c_str(), "rb");
-    if (f == NULL) throw std::runtime_error("Could not open file: " + filename);
-
-    fseek(f, 0, SEEK_END);
-    size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    auto result = std::make_shared<std::vector<uint8_t>> (size);
-    if (size != fread(result->data(), 1, size, f))
-    {
-        fclose(f);
-        throw std::runtime_error("Error when reading from file: " + filename);
-    }
-    fclose(f);
-    return result;
 }
