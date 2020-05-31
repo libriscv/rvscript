@@ -2,11 +2,26 @@
 
 An implementation of syscall-accelerated C++ binaries for the RISC-V scripting backend. CMake is used to make it easy to add new binaries.
 
-Check the CMakeLists.txt for build options, although the only really relevant one is `RTTI_EXCEPT` which enabled C++ RTTI and exceptions should you want that.
+Check the CMakeLists.txt for build options, although the only really relevant one is `RTTI_EXCEPT` which enables C++ RTTI and exceptions should you want that.
+
 
 ## Getting started
 
 You need the RISC-V compiler specified in the main README to be able to compile this. It's set up so that if the compiler is installed into `~/riscv` it will just work.
+
+Remember to add the compiler to your PATH variable. If you edit `~/.bashrc` you can add this line:
+```
+export PATH=$PATH:$HOME/riscv/bin
+```
+This gives you access to the compiler anywhere in the terminal. Just remember to close and reopen it after adding the line.
+
+
+## Code structure
+
+The `api` folder contains the public API and its inlined implementation. There is a tiny libc in the `libc` folder, as well as some overridden C++ headers to fast-path new/delete. System call wrappers are implemented in `libc/include/syscall.hpp`, while the numbers are in `api/syscalls.h`.
+
+This build system will take the libc, some compiler libraries and produce binaries which are defined in the games folder. You can find these in `engine/mods/hello_world`, and most of it in the scripts folder.
+
 
 ## Troubleshooting
 
@@ -33,5 +48,8 @@ You need the RISC-V compiler specified in the main README to be able to compile 
 - Can I build these binaries on Windows?
 	- With Docker I don't see a problem at all. I would not try to use this repository with a docker container that compiles the code, rather put everything in the container and build the executables from within. Then share the output directories so that you build them where the engine already finds them. I'm probably simplifying somewhat, but it should be doable.
 	- With the WSL2 it should be even easier, however I have no experience with that. Definitely something I want to try, and I'll add some scripts for that when I try it.
-
+- How do I check if a particular binary has a public function?
+	- Use `riscv32-unknown-elf-readelf -a <mybinary>`. The long list of symbols at the end is the symbol table. Functions are FUNC unless there's a missing function then its UND (undefined), which could be the problem.
+- Is it possible to strip these binaries so that only the public API is visible?
+	- Absolutely, and I'll add a CMake option for it eventually. If you enable the GCSECTIONS option this will already happen.
 
