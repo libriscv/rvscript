@@ -15,11 +15,8 @@ riscv::Page Script::g_hidden_stack;
 
 void Script::init()
 {
-	for (auto& shpage : g_shared_area)
-		shpage.attr.shared = true;
 	// the hidden area is read-only for the guest
 	g_hidden_stack.attr.write  = false;
-	g_hidden_stack.attr.shared = true;
 }
 
 Script::Script(const riscv::Machine<riscv::RISCV32>& smach,
