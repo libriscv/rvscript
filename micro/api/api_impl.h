@@ -59,12 +59,12 @@ inline void each_frame_helper(int count, int reason)
 	for (int i = 0; i < count; i++)
 		microthread::wakeup_one_blocked(reason);
 }
-inline void wait_next_frame()
+inline void wait_next_tick()
 {
 	microthread::block(REASON_FRAME);
 }
 template <typename T, typename... Args>
-inline void each_frame(const T&& func, Args&&... args)
+inline void each_tick(const T&& func, Args&&... args)
 {
 	static bool init = false;
 	if (!init) {

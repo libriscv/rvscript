@@ -46,11 +46,6 @@ public:
 	void print_backtrace(const uint32_t addr);
 	long measure(uint32_t address);
 
-	static Script& current_script() {
-	    assert(g_current_script != nullptr && "Access nullptr");
-	    return *g_current_script;
-	}
-
 	static auto&    shared_memory_page() noexcept { return g_shared_area; }
 	static size_t   shared_memory_size() noexcept { return g_shared_area.size(); };
 	static uint32_t shared_memory_location() noexcept { return 0x2000; };
@@ -67,7 +62,6 @@ private:
 	bool machine_initialize(bool shared);
 	void machine_setup(riscv::Machine<riscv::RISCV32>&);
 	void setup_syscall_interface(riscv::Machine<riscv::RISCV32>&);
-	static Script* g_current_script;
 	static std::array<riscv::Page, 2> g_shared_area; // shared memory area
 	static riscv::Page g_hidden_stack; // page used by the internal APIs
 
@@ -87,13 +81,9 @@ private:
 template <typename... Args>
 inline long Script::call(uint32_t address, Args&&... args)
 {
-	const auto oldval = Script::g_current_script;
-	Script::g_current_script = this; // set current context
 	try {
-		const long ret = machine().vmcall<MAX_INSTRUCTIONS>(
+		return machine().vmcall<MAX_INSTRUCTIONS>(
 			address, std::forward<Args>(args)...);
-		Script::g_current_script = oldval;
-		return ret;
 	}
 	catch (const riscv::MachineTimeoutException& e) {
 		this->handle_timeout(address);
@@ -101,7 +91,6 @@ inline long Script::call(uint32_t address, Args&&... args)
 	catch (const std::exception& e) {
 		this->handle_exception(address);
 	}
-	Script::g_current_script = oldval;
 	return -1;
 }
 template <typename... Args>
@@ -118,14 +107,11 @@ inline long Script::call(const std::string& func, Args&&... args)
 template <typename... Args>
 inline long Script::preempt(uint32_t address, Args&&... args)
 {
-	const auto oldval = Script::g_current_script;
 	const auto regs = machine().cpu.registers();
-	Script::g_current_script = this; // set current context
 	try {
 		const long ret = machine().preempt<MAX_INSTRUCTIONS, true, false>(
 			address, std::forward<Args>(args)...);
 		machine().cpu.registers() = regs;
-		Script::g_current_script = oldval;
 		return ret;
 	}
 	catch (const riscv::MachineTimeoutException& e) {
@@ -135,14 +121,11 @@ inline long Script::preempt(uint32_t address, Args&&... args)
 		this->handle_exception(address);
 	}
 	machine().cpu.registers() = regs;
-	Script::g_current_script = oldval;
 	return -1;
 }
 
 inline void Script::resume(uint64_t cycles)
 {
-	const auto oldval = Script::g_current_script;
-	Script::g_current_script = this; // set current context
 	try {
 		machine().simulate<false>(cycles);
 	}
@@ -150,5 +133,4 @@ inline void Script::resume(uint64_t cycles)
 		this->handle_exception(machine().cpu.pc());
 		this->m_crashed = true;
 	}
-	Script::g_current_script = oldval;
 }

@@ -35,16 +35,23 @@ The output from the program should look like this after completion:
 ```
 >>> [events] says: Entering event loop...
 >>> [gameplay1] says: Hello world!
-> median 3ns  		lowest: 3ns     	highest: 3ns
+> median 3ns  		lowest: 3ns     	highest: 4ns
 >>> Measurement "VM function call overhead" median: 3 nanos
 
-> median 105ns  		lowest: 104ns     	highest: 130ns
->>> Measurement "Thread creation overhead" median: 105 nanos
+> median 122ns  		lowest: 120ns     	highest: 162ns
+>>> Measurement "Thread creation overhead" median: 122 nanos
 
 >>> [gameplay2] says: Hello Remote World! value = 1234!
 >>> [gameplay1] says: Back again in the start() function! Return value: 1234
 >>> [gameplay1] says: Hello Microthread World!
 >>> [gameplay1] says: Back again in the start() function!
+...
+>>> [gameplay1] says: Tick 0!
+>>> [gameplay1] says: I have a 44!
+>>> [gameplay1] says: Tick 1!
+>>> [gameplay1] says: I have a 44!
+>>> [gameplay1] says: Tick 2!
+>>> [gameplay1] says: I have a 44!
 ...
 >>> [gameplay1] says: Hello Belated Microthread World! 1 second passed.
 >>> [events] says: I am being run on another machine!

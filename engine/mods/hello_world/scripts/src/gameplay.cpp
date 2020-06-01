@@ -51,6 +51,24 @@ PUBLIC_API void start()
 	long r = FARCALL("gameplay2", "some_function", 1234);
 	api::print("Back again in the start() function! Return value: ", r, "\n");
 
+	/* Create events that will run each physics tick.
+	   We will be waiting immediately, so that we don't run the
+	   event code now, but instead when each tick happens. */
+	api::each_tick([] {
+		while (true) {
+			api::wait_next_tick();
+			static int i = 0;
+			api::print("Tick ", i++, "!\n");
+		}
+	});
+	int value = 44;
+	api::each_tick([value] {
+		while (true) {
+			api::wait_next_tick();
+			api::print("I have a ", value, "!\n");
+		}
+	});
+
 	/* This creates a new threads with no arguments and immediately starts
 	   executing it. The sleep() will block the thread until some time has
 	   passed, and then resume. At the end we make a remote function call

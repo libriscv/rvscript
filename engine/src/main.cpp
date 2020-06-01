@@ -55,6 +55,11 @@ int main()
 	gameplay1->call("start");
 
 	printf("...\n");
+	/* Simulate some physics ticks */
+	for (int n = 0; n < 3; n++)
+		gameplay1->each_tick_event();
+
+	printf("...\n");
 	/* Ordinarily a game engine has a physics loop that ticks regularly,
 	   but we don't in this example. Instead we will just sleep until
 	   the next available timer. And resume the event loop in between. */

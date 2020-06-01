@@ -9,7 +9,6 @@
 static const uint32_t MAX_MEMORY    = 1024*1024 * 2;
 static const uint32_t MAX_HEAP      = 1024*1024 * 6;
 static const bool     TRUSTED_CALLS = true;
-Script* Script::g_current_script = nullptr;
 std::array<riscv::Page, 2> Script::g_shared_area;
 riscv::Page Script::g_hidden_stack;
 
@@ -79,7 +78,6 @@ bool Script::machine_initialize(bool shared)
 	// clear some state belonging to previous initialization
 	this->m_tick_event = 0;
 	// run through the initialization
-	Script::g_current_script = this;
 	try {
 		machine().simulate(MAX_INSTRUCTIONS);
 
@@ -102,6 +100,7 @@ bool Script::machine_initialize(bool shared)
 }
 void Script::machine_setup(riscv::Machine<riscv::RISCV32>& machine)
 {
+	machine.set_userdata<Script>(this);
 	// add system call interface
 	auto* arena = setup_native_heap_syscalls<4>(machine, MAX_HEAP);
 	setup_native_memory_syscalls<4>(machine, TRUSTED_CALLS);

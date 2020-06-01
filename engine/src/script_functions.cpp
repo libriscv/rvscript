@@ -6,7 +6,7 @@ static_assert(ECALL_LAST - GAME_API_BASE <= 100, "Room for system calls");
 
 #define APICALL(func) static long func(machine_t& machine [[maybe_unused]])
 
-static Script& gscript() { return Script::current_script(); }
+inline Script& script(machine_t& m) { return *m.get_userdata<Script> (); }
 
 APICALL(api_self_test)
 {
@@ -26,7 +26,7 @@ APICALL(assert_fail)
 	auto [expr, file, line, func] =
 		machine.sysargs<std::string, std::string, int, std::string> ();
 	printf(">>> [%s] assertion failed: %s in %s:%d, function %s\n",
-		gscript().name().c_str(), expr.c_str(), file.c_str(), line, func.c_str());
+		script(machine).name().c_str(), expr.c_str(), file.c_str(), line, func.c_str());
 	machine.stop();
 	return -1;
 }
@@ -36,9 +36,9 @@ APICALL(api_write)
 	auto [address, len] = machine.sysargs<uint32_t, uint32_t> ();
 	const uint32_t len_g = std::min(1024u, len);
 	machine.memory.memview(address, len_g,
-		[] (const uint8_t* data, size_t len) {
+		[&machine] (const uint8_t* data, size_t len) {
 			printf(">>> [%s] says: %.*s",
-				gscript().name().c_str(), (int) len, data);
+				script(machine).name().c_str(), (int) len, data);
 		});
 	return len_g;
 }
@@ -46,7 +46,7 @@ APICALL(api_write)
 APICALL(api_measure)
 {
 	auto [test, address] = machine.template sysargs <std::string, uint32_t> ();
-	auto time_ns = gscript().measure(address);
+	auto time_ns = script(machine).measure(address);
 	printf(">>> Measurement \"%s\" median: %ld nanos\n\n",
 			test.c_str(), time_ns);
 	return time_ns;
@@ -58,20 +58,20 @@ APICALL(api_farcall)
 	const uint32_t fhash = machine.template sysarg <uint32_t> (1);
 	auto* script = get_script(mhash);
 	if (script == nullptr) return -1;
-	// copy argument registers (1 less integer register)
-	const auto& current = gscript().machine().cpu.registers();
-	auto& regs = script->machine().cpu.registers();
-	for (int i = 0; i < 6; i++) {
-		regs.get(10 + i) = current.get(12 + i);
-	}
-	for (int i = 0; i < 8; i++) {
-		regs.getfl(10 + i) = current.getfl(10 + i);
-	}
-
-	// vmcall with no arguments to avoid clobbering registers
+	// first check if the function exists
 	const auto addr = script->api_function_from_hash(fhash);
-	if (LIKELY(addr != 0)) {
-		// normal machine call
+	if (LIKELY(addr != 0))
+	{
+		// copy argument registers (1 less integer register)
+		const auto& current = machine.cpu.registers();
+		auto& regs = script->machine().cpu.registers();
+		for (int i = 0; i < 6; i++) {
+			regs.get(10 + i) = current.get(12 + i);
+		}
+		for (int i = 0; i < 8; i++) {
+			regs.getfl(10 + i) = current.getfl(10 + i);
+		}
+		// vmcall with no arguments to avoid clobbering registers
 		return script->call(addr);
 	}
 	fprintf(stderr, "Unable to find public API function from hash: %#x\n",
@@ -99,13 +99,13 @@ APICALL(api_interrupt)
 
 APICALL(api_machine_hash)
 {
-	return gscript().hash();
+	return script(machine).hash();
 }
 
 APICALL(api_each_frame)
 {
 	auto [addr, reason] = machine.template sysargs <uint32_t, int> ();
-	gscript().set_tick_event((uint32_t) addr, (int) reason);
+	script(machine).set_tick_event((uint32_t) addr, (int) reason);
 	return 0;
 }
 
@@ -128,9 +128,9 @@ APICALL(api_timer_oneshot)
 	machine.memory.memcpy_out(capture.data(), data, size);
 
 	return timers.oneshot(time,
-		[addr = (uint32_t) addr, capture, &script = gscript()] (int id) {
+		[addr = (uint32_t) addr, capture, &machine] (int id) {
 			std::copy(capture.begin(), capture.end(), Script::hidden_area().data());
-			script.call(addr, (int) id, (uint32_t) Script::HIDDEN_AREA);
+			script(machine).call(addr, (int) id, (uint32_t) Script::HIDDEN_AREA);
         });
 }
 APICALL(api_timer_periodic)
@@ -145,9 +145,9 @@ APICALL(api_timer_periodic)
 	machine.memory.memcpy_out(capture.data(), data, size);
 
 	return timers.periodic(time, peri,
-		[addr = (uint32_t) addr, capture, &script = gscript()] (int id) {
+		[addr = (uint32_t) addr, capture, &machine] (int id) {
 			std::copy(capture.begin(), capture.end(), Script::hidden_area().data());
-			script.call(addr, (int) id, (uint32_t) Script::HIDDEN_AREA);
+			script(machine).call(addr, (int) id, (uint32_t) Script::HIDDEN_AREA);
         });
 }
 APICALL(api_timer_stop)
