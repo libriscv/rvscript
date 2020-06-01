@@ -42,7 +42,7 @@ This build system will take the libc, some compiler libraries and produce binari
 - I can't enable `-fstack-protector`?
 	- Unfortunately there is a compiler bug preventing using this for now. Maybe there is a work-around.
 - Should I enable `-gc-sections`?
-	- Probably not, it prevents some optimizations, and the size of the binaries matters much less than the locality of the code being executes. If you are good with hot/cold attributes and other things that make the code stay inside the same page as much as possible, you will not lose any performance.
+	- Probably not, it prevents some optimizations, and the size of the binaries matters much less than the locality of the code being executed. If you are good with hot/cold attributes and other things that make the code stay inside the same page as much as possible, you will not lose any performance.
 - Should I enable the RISC-V compressed instructions (C-extension)?
 	- Maybe. I've seen it increase performance overall, but I've also seen the opposite more often. It's disabled by default.
 - Can I build these binaries on Windows?

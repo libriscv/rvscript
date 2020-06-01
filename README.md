@@ -30,7 +30,7 @@ bash build.sh
 
 The engine itself should have no external dependencies outside of libriscv.
 
-The output from the engine should look like this after completion:
+The output from the program should look like this after completion:
 
 ```
 >>> [events] says: Entering event loop...
