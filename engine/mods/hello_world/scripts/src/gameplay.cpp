@@ -24,7 +24,7 @@ FAST_API void thread_function() {
 }
 
 /* This is the function that gets called at the start */
-/* See engine/src/main.cpp:47 */
+/* See engine/src/main.cpp:55 */
 PUBLIC_API void start()
 {
 	/* This function is implemented in api_impl.h, and it makes a

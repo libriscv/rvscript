@@ -1,52 +1,57 @@
 #include "script.hpp"
-static std::unique_ptr<Script> gameplay1 = nullptr;
-static std::unique_ptr<Script> gameplay2 = nullptr;
-static std::unique_ptr<Script> events = nullptr;
+#include "util/crc32.hpp"
+#include <unistd.h> /* usleep */
 
 #include "timers.hpp"
 Timers timers; // put this in a level structure
 
-/* This is the worlds fastest hash map. (C) (R) 2020 */
-Script* get_script(uint32_t machine_hash)
-{
-	if (machine_hash == gameplay1->hash())
-		return gameplay1.get();
-	if (machine_hash == gameplay2->hash())
-		return gameplay2.get();
-	if (machine_hash == events->hash())
-		return events.get();
-	return nullptr;
-}
-
 #include "machine/blackbox.hpp"
 Blackbox blackbox;
 
-#include <unistd.h> /* usleep */
+
+static std::map<uint32_t, Script> machines;
+/* Retrieve machines based on name (hashed) */
+Script* get_script(uint32_t machine_hash)
+{
+	auto it = machines.find(machine_hash);
+	if (it != machines.end()) {
+		return &it->second;
+	}
+	return nullptr;
+}
+static Script& create_machine(const std::string& name,
+	const std::string& bbname, const std::string& symbolfile)
+{
+	auto it = machines.emplace(std::piecewise_construct,
+		std::forward_as_tuple(crc32(name.c_str())),
+		std::forward_as_tuple(*blackbox.get(bbname), name));
+	auto& script = it.first->second;
+	script.hash_public_api_symbols(symbolfile);
+	return script;
+}
+
+
 int main()
 {
 	/* This binary will be shared among all the machines, for convenience */
 	blackbox.insert_binary("gameplay", "mods/hello_world/scripts/gameplay.elf");
+	static const char* symbols = "mods/hello_world/scripts/src/gameplay.symbols";
 
 	Script::init();
 	/* Naming the machines allows us to call into one machine from another
-	   using this name (hashed). */
-	gameplay1.reset(new Script(*blackbox.get("gameplay"), "gameplay1"));
-	/* The symbol file contains public functions that we don't want optimized away. */
-	gameplay1->hash_public_api_symbols("mods/hello_world/scripts/src/gameplay.symbols");
-
-	gameplay2.reset(new Script(*blackbox.get("gameplay"), "gameplay2"));
-	gameplay2->hash_public_api_symbols("mods/hello_world/scripts/src/gameplay.symbols");
-
-	events.reset(new Script(*blackbox.get("gameplay"), "events"));
-	events->hash_public_api_symbols("mods/hello_world/scripts/src/gameplay.symbols");
+	   using this name (hashed). These machines will be fully intialized. */
+	for (int n = 0; n < 100; n++)
+		create_machine("gameplay" + std::to_string(n), "gameplay", symbols);
 
 	/* The event_loop function can be resumed later, and can execute work
 	   that has been preemptively handed to it from other machines. */
-	events->call("event_loop");
+	auto& events = create_machine("events", "gameplay", symbols);
+	events.call("event_loop");
 
 	/* This is the main start function, which would be something like the
 	   starting function for the current levels script. You can find the
 	   implementation in mods/hello_world/scripts/src/gameplay.cpp:28. */
+	auto* gameplay1 = get_script(crc32("gameplay1"));
 	gameplay1->call("start");
 
 	printf("...\n");
@@ -60,7 +65,7 @@ int main()
 		   the maximum number of instructions that we allow it to use.
 		   This can work well as a substitute for time spent, provided
 		   each complex system call increments the counter sufficiently. */
-		events->resume(5'000);
+		events.resume(5'000);
 	}
 
 	return 0;
