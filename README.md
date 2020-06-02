@@ -13,7 +13,7 @@ https://gist.github.com/fwsGonzo/f874ba58f2bab1bf502cad47a9b2fbed
 
 Note that some benchmarks have and will continue improve in the future, and I don't update the gist often. The key benchmark is showing the low overhead to calling into the script.
 
-The overhead of a system call is around 23ns last time I measured it, so keep that in mind. If you can share memory between the engine and the machine you can benefit greatly by not having to use system calls for simple things.
+The overhead of a system call is around 5ns last time I measured it, so keep that in mind. The threshold for benefiting from using a dedicated system call is very low, but for simple things like reading the position of an entity you should be using shared memory. Read-only to the machine.
 
 The cost of doing a function-like system call (trapping jumps) can be higher than a regular system call because the caller has to save registers, and there is no way to indicate that a function call clobbers nothing that I know of. If there is, it would be quite interesting. Take a look at `syscall.hpp:21` to see how it's done.
 
@@ -97,7 +97,7 @@ You can share symbol file with any other binaries, and if you don't have a parti
 
 Go into the micro folder. Enable the RTTI_EXCEPT CMake option using ccmake or edit the build.sh shell script. Simply appending `-DRTTI_EXCEPT=ON` will be enough. Run `build.sh` to build any changes.
 
-Exceptions and RTTI will bloat the binary by at least 170k according to my measurements. Additionally, you will have to increase the maximum allotted number of instructions to a call by at least 600k instructions, as the first exception thrown will have to run through a massive amount of code. However, any code that does not throw exceptions as part of normal operation will be fine. It could also be fine to just give up when an exception is throw, although I recommend re-initializing the machine (around 14ns on my hardware).
+Exceptions and RTTI will bloat the binary by at least 170k according to my measurements. Additionally, you will have to increase the maximum allotted number of instructions to a call by at least 600k instructions, as the first exception thrown will have to run through a massive amount of code. However, any code that does not throw exceptions as part of normal operation will be fine. It could also be fine to just give up when an exception is throw, although I recommend re-initializing the machine (around 10-20 micros on my hardware).
 
 The binary that comes with the repository for testing does not have C++ exceptions enabled.
 
