@@ -81,7 +81,7 @@ bool Script::machine_initialize(bool shared)
 	try {
 		machine().simulate(MAX_INSTRUCTIONS);
 
-		if (UNLIKELY(machine().cpu.instruction_counter() == MAX_INSTRUCTIONS)) {
+		if (UNLIKELY(machine().cpu.instruction_counter() >= MAX_INSTRUCTIONS)) {
 			printf(">>> Exception: Ran out of instructions\n");
 			return false;
 		}
