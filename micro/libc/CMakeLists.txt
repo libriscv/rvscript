@@ -1,13 +1,13 @@
 
 set(LIBC_SOURCES
 	start.cpp
-	libc.cpp
-	heap.cpp
 	assert.cpp
-	libcxx.cpp
-	write.cpp
-	microthread.cpp
 	engine.cpp
+	write.cpp
+	${BBLIBCPATH}/heap.cpp
+	${BBLIBCPATH}/libc.cpp
+	${BBLIBCPATH}/libcxx.cpp
+	${BBLIBCPATH}/microthread.cpp
   )
 
 add_library(libc STATIC ${LIBC_SOURCES})

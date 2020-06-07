@@ -12,7 +12,7 @@ operator new[](size_t size, size_t, size_t, const char*, int, unsigned, const ch
 	return ::operator new[] (size);
 }
 
-#include "../heap.hpp"
+#include <heap.hpp>
 
 inline void* operator new(size_t size) {
 	return sys_malloc(size);

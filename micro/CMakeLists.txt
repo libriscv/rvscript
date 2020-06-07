@@ -56,6 +56,11 @@ set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "") # remove -rdynamic
 set(LIBGCC ${LIBRARY_DIR}/libgcc.a)
 set(SUPCPP ${CRTLIB_DIR}/libsupc++.a)
 
+# enforce correct global include order for our tiny libc
+include_directories(libc)
+set (BBLIBCPATH "${CMAKE_SOURCE_DIR}/../ext/libriscv/binaries/barebones/libc")
+include_directories(${BBLIBCPATH})
+
 add_subdirectory(ext)
 add_subdirectory(libc)
 target_include_directories(libc PUBLIC ${APIPATH})
@@ -77,7 +82,6 @@ endfunction()
 
 function (add_micro_binary NAME VERFILE)
 	add_executable(${NAME} ${ARGN})
-	target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/libc)
 	target_link_libraries(${NAME} -static -Wl,--whole-archive libc -Wl,--no-whole-archive supc++ gcc)
 	target_link_libraries(${NAME} frozen::frozen strf)
 	# place ELF into the sub-projects source folder
