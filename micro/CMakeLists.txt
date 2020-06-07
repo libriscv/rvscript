@@ -6,6 +6,7 @@ option(GCSECTIONS  "Garbage collect empty sections" OFF)
 option(DEBUGGING   "Add debugging information" OFF)
 option(RTTI_EXCEPT "C++ RTTI and exceptions" OFF)
 set(VERSION_FILE   "symbols.map" CACHE STRING "Retained symbols file")
+option(STRIP_SYMBOLS "Remove all symbols except the public API" ON)
 
 #
 # Mod settings
@@ -21,16 +22,17 @@ set (APIPATH "${ENGINE_PATH}/api")
 set (UTILPATH "${ENGINE_PATH}/src/util")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-	set(RISCV_ABI "-target riscv32 -march=rv32imfd")
+	set(RISCV_ABI "-target riscv32 -march=rv32g")
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
 else()
-	set(RISCV_ABI "-march=rv32imfd -mabi=ilp32d")
+	set(RISCV_ABI "-march=rv32g -mabi=ilp32d")
 endif()
 
 set(WARNINGS  "-Wall -Wextra")
-set(COMMON    "-O2 -fno-stack-protector -nostdlib -fno-builtin -fno-math-errno")
+set(COMMON    "-nostdlib -fno-builtin -fno-math-errno -fno-threadsafe-statics")
+set(COMMON    "-O2 -fstack-protector ${COMMON}")
 if (DEBUGGING)
-	set (COMMON "-g ${COMMON}")
+	set (COMMON "${COMMON} -ggdb3 -O1")
 endif()
 set(CMAKE_C_FLAGS "${WARNINGS} ${RISCV_ABI} -std=c11 ${COMMON}")
 set(CMAKE_CXX_FLAGS "${WARNINGS} ${RISCV_ABI} -std=c++17 ${COMMON}")
@@ -88,19 +90,30 @@ function (add_micro_binary NAME VERFILE)
 	set_target_properties(${NAME}
 		PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 	)
-	# public API support
-	if (GCSECTIONS)
+	# strip symbols but keep public API
+	if (GCSECTIONS OR STRIP_SYMBOLS)
+		if (NOT DEBUGGING)
 		set(VERFILE "${CMAKE_CURRENT_SOURCE_DIR}/${VERFILE}")
 		if (EXISTS "${VERFILE}")
 			add_verfile(${NAME} ${VERFILE})
 		else()
 			add_verfile(${NAME} ${CMAKE_SOURCE_DIR}/symbols.map)
 		endif()
+		add_custom_command(TARGET ${NAME} POST_BUILD
+		COMMAND ${CMAKE_STRIP} --strip-debug -R .note -R .comment -- ${CMAKE_CURRENT_SOURCE_DIR}/${NAME})
+		endif()
 	endif()
 endfunction()
 
 add_subdirectory (${MODPATH} mod)
 
+set(API_SOURCES
+	${APIPATH}/api.h
+	${APIPATH}/api_impl.h
+	${APIPATH}/api_structs.h
+	${APIPATH}/shared_memory.h
+	${APIPATH}/syscalls.h
+)
 add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/api/*.h ${APIPATH}
 	DEPENDS ${CMAKE_SOURCE_DIR}/api/api.h
@@ -108,17 +121,9 @@ add_custom_command(
 			${CMAKE_SOURCE_DIR}/api/api_structs.h
 			${CMAKE_SOURCE_DIR}/api/shared_memory.h
 			${CMAKE_SOURCE_DIR}/api/syscalls.h
-	OUTPUT  ${APIPATH}/api.h
-			${APIPATH}/api_impl.h
-			${APIPATH}/api_structs.h
-			${APIPATH}/shared_memory.h
-			${APIPATH}/syscalls.h
+	OUTPUT  ${API_SOURCES}
 )
 add_custom_target(install_headers
-	DEPENDS ${APIPATH}/api.h
-			${APIPATH}/api_impl.h
-			${APIPATH}/api_structs.h
-			${APIPATH}/shared_memory.h
-			${APIPATH}/syscalls.h
+	DEPENDS ${API_SOURCES}
 )
 add_dependencies(libc install_headers)

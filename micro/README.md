@@ -25,6 +25,10 @@ This build system will take the libc, some compiler libraries and produce binari
 
 ## Troubleshooting
 
+- Can I build these binaries on Windows?
+	- Yes, with WSL2 you can build these binaries without making any changes to the build system or code. It just works.
+- Should I enable the RISC-V compressed instructions (C-extension)?
+	- Maybe. I've seen it increase performance overall, but I've also seen the opposite more often. It's disabled by default.
 - I'm unable to execute a specific function on a remote machine.
 	- You have to remotely execute a function that exists on that machine, and not the machine you are executing from.
 - After using `vmcall()` on a machine it stops working
@@ -39,17 +43,10 @@ This build system will take the libc, some compiler libraries and produce binari
 	- No, but I could drop in support for ubsan. However, personally I think it's not going to provide much value in this particular environment. See my barebones repository for how it's done.
 - Backtraces?
 	- Possible. I have read that when linking in libgcc you should have access to `__builtin_return_address (N > 0)`, which would make it possible to implement backtraces inside the environment. You have some limited access to backtraces from outside the machine, which automatically gets printed any time a CPU exception happens.
-- I can't enable `-fstack-protector`?
-	- Unfortunately there is a compiler bug preventing using this for now. Maybe there is a work-around.
 - Should I enable `-gc-sections`?
 	- Probably not, it prevents some optimizations, and the size of the binaries matters much less than the locality of the code being executed. If you are good with hot/cold attributes and other things that make the code stay inside the same page as much as possible, you will not lose any performance.
-- Should I enable the RISC-V compressed instructions (C-extension)?
-	- Maybe. I've seen it increase performance overall, but I've also seen the opposite more often. It's disabled by default.
-- Can I build these binaries on Windows?
-	- With Docker I don't see a problem at all. I would not try to use this repository with a docker container that compiles the code, rather put everything in the container and build the executables from within. Then share the output directories so that you build them where the engine already finds them. I'm probably simplifying somewhat, but it should be doable.
-	- With the WSL2 it should be even easier, however I have no experience with that. Definitely something I want to try, and I'll add some scripts for that when I try it.
 - How do I check if a particular binary has a public function?
 	- Use `riscv32-unknown-elf-readelf -a <mybinary>`. The long list of symbols at the end is the symbol table. Functions are FUNC unless there's a missing function then its UND (undefined), which could be the problem.
 - Is it possible to strip these binaries so that only the public API is visible?
-	- Absolutely, and I'll add a CMake option for it eventually. If you enable the GCSECTIONS option this will already happen.
+	- Enable the STRIP_SYMBOLS option, and make sure that your symbols file is up to date with your public functions.
 

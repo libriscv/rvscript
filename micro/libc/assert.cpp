@@ -1,7 +1,6 @@
 #include <include/libc.hpp>
 #include <cstdarg>
 #include <strf.hpp>
-uintptr_t __stack_chk_guard __attribute__((section(".data"))) = 0x0C0A00FF;
 
 extern "C"
 __attribute__((noreturn))
@@ -41,9 +40,14 @@ void __assert_func(
 	panic("Assertion failed");
 }
 
-extern "C" __attribute__((noreturn))
-void __stack_chk_fail()
+extern "C"
 {
-	print_backtrace();
-	panic("Stack protector failed check");
+	__attribute__((used))
+	uintptr_t __stack_chk_guard __attribute__((section(".data"))) = 0x0C0A00FF;
+	__attribute__((used))
+	void __stack_chk_fail()
+	{
+		print_backtrace();
+		panic("Stack protector failed check");
+	}
 }

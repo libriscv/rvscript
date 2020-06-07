@@ -244,6 +244,10 @@ inline long perform_test(riscv::Machine<4>& machine, uint32_t func)
 {
 	auto regs = machine.cpu.registers();
 	auto counter = machine.cpu.instruction_counter();
+	// this is a very hacky way of avoiding blowing up the stack
+	// because vmcall() resets the stack pointer on each call
+	auto old_stack = machine.memory.stack_initial();
+	machine.memory.set_stack_initial(machine.cpu.reg(riscv::RISCV::REG_SP) & ~0xF);
 	asm("" : : : "memory");
 	auto t0 = time_now();
 	asm("" : : : "memory");
@@ -256,6 +260,7 @@ inline long perform_test(riscv::Machine<4>& machine, uint32_t func)
 	machine.cpu.registers() = regs;
 	machine.cpu.reset_instruction_counter();
 	machine.cpu.increment_counter(counter);
+	machine.memory.set_stack_initial(old_stack);
 	machine.stop(false);
 	return nanodiff(t0, t1);
 }
