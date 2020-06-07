@@ -36,7 +36,7 @@ public:
 	bool crashed() const noexcept { return m_crashed; }
 
 	void  add_shared_memory();
-	bool  reset(bool shared); // true if the reset was successful
+	bool  reset(); // true if the reset was successful
 
 	void hash_public_api_symbols(const std::string& file);
 	std::string symbol_name(uint32_t address) const;
@@ -59,7 +59,7 @@ private:
 	void handle_exception(uint32_t);
 	void handle_timeout(uint32_t);
 	bool install_binary(const std::string& file, bool shared = true);
-	bool machine_initialize(bool shared);
+	bool machine_initialize();
 	void machine_setup(riscv::Machine<riscv::RISCV32>&);
 	void setup_syscall_interface(riscv::Machine<riscv::RISCV32>&);
 	static std::array<riscv::Page, 2> g_shared_area; // shared memory area

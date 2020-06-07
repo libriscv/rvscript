@@ -22,12 +22,12 @@ Script::Script(const riscv::Machine<riscv::RISCV32>& smach,
 	const std::string& name)
 	: m_source_machine(smach), m_name(name), m_hash(crc32(name.c_str()))
 {
-	this->reset(true);
+	this->reset();
 }
 
 Script::~Script() {}
 
-bool Script::reset(bool shared)
+bool Script::reset()
 {
 	try {
 		riscv::MachineOptions<riscv::RISCV32> options {
@@ -42,7 +42,7 @@ bool Script::reset(bool shared)
 		// TODO: shutdown engine?
 		exit(1);
 	}
-	if (this->machine_initialize(shared)) {
+	if (this->machine_initialize()) {
 		this->m_crashed = false;
 		return true;
 	}
@@ -69,12 +69,12 @@ void Script::add_shared_memory()
 	mem.install_shared_page(HIDDEN_AREA >> riscv::Page::SHIFT, g_hidden_stack);
 }
 
-bool Script::machine_initialize(bool shared)
+bool Script::machine_initialize()
 {
 	// setup system calls and traps
 	this->machine_setup(machine());
 	// install the shared memory area
-	if (shared) this->add_shared_memory();
+	this->add_shared_memory();
 	// clear some state belonging to previous initialization
 	this->m_tick_event = 0;
 	// run through the initialization
@@ -288,7 +288,11 @@ long Script::measure(uint32_t address)
 timespec time_now()
 {
 	timespec t;
-	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t);
+#ifdef __linux__
+	clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t);
+#else
+	clock_gettime(CLOCK_MONOTONIC, &t);
+#endif
 	return t;
 }
 long nanodiff(timespec start_time, timespec end_time)
