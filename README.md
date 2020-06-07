@@ -67,6 +67,10 @@ There are several ways to do this. However for now one requirement is to install
 ```
 git clone https://github.com/riscv/riscv-gnu-toolchain.git
 cd riscv-gnu-toolchain
+git submodule update --init riscv-binutils
+git submodule update --init riscv-gcc
+git submodule update --init riscv-newlib
+<install dependencies for GCC on your particular system here>
 ./configure --prefix=$HOME/riscv --with-arch=rv32g --with-abi=ilp32d
 make -j8
 ```
@@ -100,6 +104,17 @@ Go into the micro folder. Enable the RTTI_EXCEPT CMake option using ccmake or ed
 Exceptions and RTTI will bloat the binary by at least 170k according to my measurements. Additionally, you will have to increase the maximum allotted number of instructions to a call by at least 600k instructions, as the first exception thrown will have to run through a massive amount of code. However, any code that does not throw exceptions as part of normal operation will be fine. It could also be fine to just give up when an exception is throw, although I recommend re-initializing the machine (around 10-20 micros on my hardware).
 
 The binary that comes with the repository for testing does not have C++ exceptions enabled.
+
+
+## WSL2 support
+
+Follow this to install WSL2 on Windows 10: https://docs.microsoft.com/en-us/windows/wsl/install-win10
+
+There is nothing different that you have to do on WSL2. Install dependencies for GCC, then clone and install the RISC-V toolchain like above. It will just work.
+
+Install cmake, cmake-curses-gui and clang-10 if you want a separate compiler that can build RISC-V binaries. Note that you must build the RISC-V toolchain regardless as we need all the system headers that C++ uses.
+
+You must be on the latest insider version for this at the time of writing.
 
 
 ## Using other programming languages
@@ -144,3 +159,10 @@ Part 3 is a good introduction that will among other things answer the 'why'.
 	- Hard question. If they are only going to write scripts for the actual levels it might be good enough to use a web API endpoint to compile these simpler binaries. You don't have to do the compilation in a Docker container, so it should be fairly straight-forward for a dedicated server. You could also have an editor in the browser, and when you press Save or Compile the resulting binary is sent to you. They can then move it to the folder it's supposed to be in, and restart the level. Something like that. I'm sure something that is even higher iteration can be done with some thought put into it.
 - Will you add support for SIMD-like instructions for RISC-V?
 	- Definitely. The extension isn't finalized yet, but if I think it's close to the real thing I'll do it. It should make it possible to implement most vector functions in the script, but benchmarking is needed.
+- I'm unable to build one of the projects because of missing files.
+	- If you're having problems with missing files, you might not have initialized all git submodules in the project. All the `ext` folders contain sub-projects. You can explicitl initialize these folders by going into each of them and running `git submodule update --init`.
+- I'm worried about the impact on the performance from the ever-growing larger binaries, especially when using string formatting.
+	- So far I haven't noticed any performance degradation from this, although I did notice when I enabled C++ exceptions. Don't use GC-sections as a band-aid - I've never seen it improve performance.
+- I have real-time requirements.
+	- As long as pausing the script to continue later is an option, you will not have any trouble. Just don't pause the script while it's in a thread and then accidentally vmcall into it from somewhere else. This will clobber all registers and you can't resume the machine later. You can use preempt provided that it returns to the same thread again (although you are able to yield back to a thread manually). There are many options where things will be OK. In my engine all long-running tasks are running on separate machines, alone.
+
