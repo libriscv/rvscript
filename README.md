@@ -4,14 +4,15 @@ This repository implements a game engine oriented scripting system using [libris
 
 The environment is freestanding C++17 (or later) with an option for enabling RTTI and exceptions. Several CRT functions have been implemented as system calls, and will have native speeds.
 
-This example environment has some basic example timers and threads, as well as multiple machines to call into and between. The repository is a starting point for anyone who wants to try to use this in their game engine.
+The example C++ environment has some basic example timers and threads, as well as multiple machines to call into and between. The repository is a starting point for anyone who wants to try to use this in their game engine.
 
+In no uncertain terms: This requires compiling ahead of time, and there is no JIT, although that means you can use it on consoles. I have no issues compiling my script on WSL2 or any Linux.
 
 ## Benchmarks
 
 https://gist.github.com/fwsGonzo/f874ba58f2bab1bf502cad47a9b2fbed
 
-Note that some benchmarks have and will continue improve in the future, and I don't update the gist often. The key benchmark is showing the low overhead to calling into the script.
+Note that I update the gist now and then as I make improvements. The key benchmark is showing the low overhead to calling into the script.
 
 The overhead of a system call is around 5ns last time I measured it, so keep that in mind. The threshold for benefiting from using a dedicated system call is very low, but for simple things like reading the position of an entity you should be using shared memory. Read-only to the machine.
 
@@ -35,11 +36,11 @@ The output from the program should look like this after completion:
 ```
 >>> [events] says: Entering event loop...
 >>> [gameplay1] says: Hello world!
-> median 3ns  		lowest: 3ns     	highest: 4ns
+> median 3ns  		lowest: 3ns     	highest: 17ns
 >>> Measurement "VM function call overhead" median: 3 nanos
 
-> median 122ns  		lowest: 120ns     	highest: 162ns
->>> Measurement "Thread creation overhead" median: 122 nanos
+> median 75ns  		lowest: 73ns     	highest: 116ns
+>>> Measurement "Thread creation overhead" median: 75 nanos
 
 >>> [gameplay2] says: Hello Remote World! value = 1234!
 >>> [gameplay1] says: Back again in the start() function! Return value: 1234
@@ -57,7 +58,7 @@ The output from the program should look like this after completion:
 >>> [events] says: I am being run on another machine!
 ```
 
-There are additional lines if you enable RTTI and exceptions.
+There are additional lines if you enable C++ RTTI and exceptions.
 
 
 ## Getting a RISC-V compiler
@@ -114,7 +115,7 @@ There is nothing different that you have to do on WSL2. Install dependencies for
 
 Install clang-10 if you want a separate compiler that can build RISC-V binaries. Note that you must build the RISC-V toolchain regardless as we need all the system headers that C++ uses.
 
-You must be on the latest insider version for this at the time of writing.
+You must be on the latest Windows insider version for this at the time of writing.
 
 
 ## Using other programming languages
@@ -167,3 +168,10 @@ Part 3 is a good introduction that will among other things answer the 'why'.
 	- As long as pausing the script to continue later is an option, you will not have any trouble. Just don't pause the script while it's in a thread and then accidentally vmcall into it from somewhere else. This will clobber all registers and you can't resume the machine later. You can use preempt provided that it returns to the same thread again (although you are able to yield back to a thread manually). There are many options where things will be OK. In my engine all long-running tasks are running on separate machines, alone.
 - I need to share more than 2GB memory with my machines.
 	- One thing to keep in mind is that the immediate instructions in RISC-V have a certain range that if exceeded requires you to rebuild everything with a separate, less efficient machine model. Not recommended. Instead, you should just be spamming more machines. They cost around 4-5k memory each and you can share anything you want with each machine, even the binary pages. This is already done as an example in this repository.
+
+## Why not WASM?
+
+I haven't figured out how to even use WASM for scripting at present. But, I guess it's possible. I know that WASM is accessible through webkit on iOS which means that you can get JIT on iOS using that.
+
+Still, why not WASM? Well, because I made the emulator! It's also very light-weight and it Just Works. I'm not really selling here, so think thrice if you are considering using this project. For me, this is my idea of fun. :) 
+

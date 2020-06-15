@@ -23,6 +23,12 @@ The `api` folder contains the public API and its inlined implementation. There i
 This build system will take the libc, some compiler libraries and produce binaries which are defined in the games folder. You can find these in `engine/mods/hello_world`, and most of it in the scripts folder.
 
 
+## Calling convention
+
+See: https://riscv.org/wp-content/uploads/2015/01/riscv-calling.pdf
+
+You can also use `libc/include/syscall.hpp` as a cheat sheet as system calls and function calls use the same registers, except A7 is used for the system call number.
+
 ## Troubleshooting
 
 - Can I build these binaries on Windows?
