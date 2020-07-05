@@ -53,7 +53,7 @@ void Script::add_shared_memory()
 {
 	const int shared_pageno = shared_memory_location() >> riscv::Page::SHIFT;
 	const int heap_pageno   = 0x40000000 >> riscv::Page::SHIFT;
-	const int stack_pageno  = heap_pageno - 1;
+	const int stack_pageno  = heap_pageno - 2;
 	auto& mem = machine().memory;
 	mem.set_stack_initial((uint32_t) stack_pageno << riscv::Page::SHIFT);
 	// Install our shared guard-page around the shared-
@@ -78,6 +78,10 @@ bool Script::machine_initialize()
 	// clear some state belonging to previous initialization
 	this->m_tick_event = 0;
 	// run through the initialization
+#ifdef RISCV_DEBUG
+	this->enable_debugging();
+	//machine().verbose_registers = true;
+#endif
 	try {
 		machine().simulate(MAX_INSTRUCTIONS);
 
@@ -106,6 +110,10 @@ void Script::machine_setup(riscv::Machine<riscv::RISCV32>& machine)
 	setup_native_memory_syscalls<4>(machine, TRUSTED_CALLS);
 	this->m_threads = setup_native_threads<4>(machine, arena);
     setup_syscall_interface(machine);
+	machine.on_unhandled_syscall(
+		[] (int number) {
+			printf("Unhandled system call: %d\n", number);
+		});
 
 	// create execute trapping syscall page
 	// this is the last page in the 32-bit address space
@@ -116,15 +124,9 @@ void Script::machine_setup(riscv::Machine<riscv::RISCV32>& machine)
 			// invoke a system call
 			machine.system_call(1024 - sysn / 4);
 			// return to caller
-#ifndef RISCV_DEBUG
 			const auto retaddr = machine.cpu.reg(riscv::RISCV::REG_RA);
 			machine.cpu.jump(retaddr);
 			return 0;
-#else
-			// in debug mode we need to return the RET instruction here
-			// because we rely on memory reads to trap
-			return 0x8067;
-#endif
 		});
 
 	// we need to pass the .eh_frame location to a supc++ function,
@@ -145,6 +147,8 @@ void Script::handle_exception(uint32_t address)
 	catch (const std::exception& e) {
 		fprintf(stderr, "Script::call exception: %s\n", e.what());
 	}
+	printf("Program page: %s\n", machine().memory.get_page_info(machine().cpu.pc()).c_str());
+	printf("Stack page: %s\n", machine().memory.get_page_info(machine().cpu.reg(2)).c_str());
 	// close all threads
 	auto* mt = (multithreading<4>*) m_threads;
 	while (mt->get_thread()->tid != 0) {
@@ -236,6 +240,14 @@ void Script::each_tick_event()
 	}
 	this->preempt(this->m_tick_event, (int) count, (int) this->m_tick_block_reason);
 	assert(mt->get_thread()->tid == 0 && "Avoid clobbering regs");
+}
+
+void Script::enable_debugging()
+{
+#ifdef RISCV_DEBUG
+	machine().verbose_instructions = true;
+	
+#endif
 }
 
 inline timespec time_now();

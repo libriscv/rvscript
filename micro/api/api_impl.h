@@ -64,7 +64,7 @@ inline void wait_next_tick()
 	microthread::block(REASON_FRAME);
 }
 template <typename T, typename... Args>
-inline void each_tick(const T&& func, Args&&... args)
+inline void each_tick(const T& func, Args&&... args)
 {
 	static bool init = false;
 	if (!init) {

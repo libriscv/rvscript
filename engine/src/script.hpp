@@ -5,7 +5,7 @@
 
 class Script {
 public:
-	static constexpr uint64_t MAX_INSTRUCTIONS = 800'000;
+	static constexpr uint64_t MAX_INSTRUCTIONS = 16'000'000;
 	static constexpr uint32_t READONLY_AREA   = 0x20000;
 	static constexpr uint32_t HIDDEN_AREA     = 0x10000;
 
@@ -50,6 +50,8 @@ public:
 	static size_t   shared_memory_size() noexcept { return g_shared_area.size(); };
 	static uint32_t shared_memory_location() noexcept { return 0x2000; };
 	static auto&    hidden_area() noexcept { return g_hidden_stack; }
+
+	void enable_debugging();
 
 	Script(const riscv::Machine<riscv::RISCV32>&, const std::string& name);
 	~Script();

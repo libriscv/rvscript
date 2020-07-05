@@ -29,7 +29,7 @@ else()
 endif()
 
 set(WARNINGS  "-Wall -Wextra")
-set(COMMON    "-nostdlib -fno-builtin -fno-math-errno -fno-threadsafe-statics")
+set(COMMON    "-fno-math-errno -fno-threadsafe-statics")
 set(COMMON    "-O2 -fstack-protector ${COMMON}")
 if (DEBUGGING)
 	set (COMMON "${COMMON} -ggdb3 -O1")
@@ -55,8 +55,7 @@ endif()
 
 set(BUILD_SHARED_LIBS OFF)
 set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "") # remove -rdynamic
-set(LIBGCC ${LIBRARY_DIR}/libgcc.a)
-set(SUPCPP ${CRTLIB_DIR}/libsupc++.a)
+set(USE_NEWLIB ON)
 
 # enforce correct global include order for our tiny libc
 include_directories(libc)
@@ -82,9 +81,10 @@ function (add_verfile NAME VERFILE)
 	endif()
 endfunction()
 
+
 function (add_micro_binary NAME VERFILE)
 	add_executable(${NAME} ${ARGN})
-	target_link_libraries(${NAME} -static -Wl,--whole-archive libc -Wl,--no-whole-archive supc++ gcc)
+	target_link_libraries(${NAME} -static -Wl,--whole-archive libc -Wl,--no-whole-archive)
 	target_link_libraries(${NAME} frozen::frozen strf)
 	# place ELF into the sub-projects source folder
 	set_target_properties(${NAME}

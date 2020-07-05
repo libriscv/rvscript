@@ -7,12 +7,13 @@ struct _reent* _impure_ptr = &reent;
 
 asm(".global _exit\n"
 	"_exit:\n"
-	"\tebreak;\n");
+	"\tebreak;\n"
+	"\tj _exit;\n");
 
 extern "C" {
 	__attribute__((noreturn))
 	void _exit(int);
-	void __register_frame(void*);
+	void __register_frame(const void*);
 }
 
 static void

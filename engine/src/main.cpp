@@ -52,6 +52,9 @@ int main()
 	   starting function for the current levels script. You can find the
 	   implementation in mods/hello_world/scripts/src/gameplay.cpp:28. */
 	auto* gameplay1 = get_script(crc32("gameplay1"));
+#ifdef RISCV_DEBUG
+	gameplay1->enable_debugging();
+#endif
 	gameplay1->call("start");
 
 	printf("...\n");

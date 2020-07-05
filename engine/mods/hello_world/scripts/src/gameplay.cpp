@@ -1,8 +1,8 @@
 #include <api.h>
 #include "events.hpp"
 
-__attribute__((constructor))
-static void gconstr() {
+int main()
+{
 	/* This gets called before anything else, on each machine */
 }
 

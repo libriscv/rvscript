@@ -34,9 +34,14 @@ APICALL(assert_fail)
 APICALL(api_write)
 {
 	auto [address, len] = machine.sysargs<uint32_t, uint32_t> ();
-	const uint32_t len_g = std::min(1024u, len);
+	const uint32_t len_g = std::min(1024u, (uint32_t) len);
 	machine.memory.memview(address, len_g,
 		[&machine] (const uint8_t* data, size_t len) {
+			if (data == nullptr) {
+				printf(">>> [%s] had an illegal write\n",
+					script(machine).name().c_str());
+				return;
+			}
 			printf(">>> [%s] says: %.*s",
 				script(machine).name().c_str(), (int) len, data);
 		});

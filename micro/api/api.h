@@ -21,7 +21,7 @@ uint32_t current_machine();
 
 /** Events **/
 template <typename T, typename... Args>
-void each_tick(const T&& func, Args&&... args);
+void each_tick(const T& func, Args&&... args);
 void wait_next_tick();
 
 /** Timers **/
