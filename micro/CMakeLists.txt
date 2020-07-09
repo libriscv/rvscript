@@ -22,10 +22,10 @@ set (APIPATH "${ENGINE_PATH}/api")
 set (UTILPATH "${ENGINE_PATH}/src/util")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-	set(RISCV_ABI "-target riscv32 -march=rv32g")
+	set(RISCV_ABI "-target riscv32 -march=rv32gc")
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
 else()
-	set(RISCV_ABI "-march=rv32g -mabi=ilp32d")
+	set(RISCV_ABI "-march=rv32gc -mabi=ilp32d")
 endif()
 
 set(WARNINGS  "-Wall -Wextra")

@@ -33,8 +33,6 @@ You can also use `libc/include/syscall.hpp` as a cheat sheet as system calls and
 
 - Can I build these binaries on Windows?
 	- Yes, with WSL2 you can build these binaries without making any changes to the build system or code. It just works.
-- Should I enable the RISC-V compressed instructions (C-extension)?
-	- Maybe. I've seen it increase performance overall, but I've also seen the opposite more often. It's disabled by default.
 - I'm unable to execute a specific function on a remote machine.
 	- You have to remotely execute a function that exists on that machine, and not the machine you are executing from.
 - After using `vmcall()` on a machine it stops working

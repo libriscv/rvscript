@@ -72,16 +72,13 @@ git submodule update --init riscv-binutils
 git submodule update --init riscv-gcc
 git submodule update --init riscv-newlib
 <install dependencies for GCC on your particular system here>
-./configure --prefix=$HOME/riscv --with-arch=rv32g --with-abi=ilp32d
+./configure --prefix=$HOME/riscv --with-arch=rv32gc --with-abi=ilp32d
 make -j8
 ```
 
 This compiler will be automatically used by the CMake script in the micro folder. Check out `micro/toolchain.cmake` for the details.
 
 It's technically possible to build without any system files at all, but you will need to provide some minimal C++ headers for convenience: All freestanding headers, functional, type_traits and whatever else you need yourself. I recommend just installing the whole thing and just not link against it.
-
-If you want to enable the compressed extension you can use `rv32gc`, but you must also enable the same feature in `engine/build.sh`: `-DRISCV_EXT_C=ON`.
-
 
 ## Building script files
 
@@ -168,10 +165,4 @@ Part 3 is a good introduction that will among other things answer the 'why'.
 	- As long as pausing the script to continue later is an option, you will not have any trouble. Just don't pause the script while it's in a thread and then accidentally vmcall into it from somewhere else. This will clobber all registers and you can't resume the machine later. You can use preempt provided that it returns to the same thread again (although you are able to yield back to a thread manually). There are many options where things will be OK. In my engine all long-running tasks are running on separate machines, alone.
 - I need to share more than 2GB memory with my machines.
 	- One thing to keep in mind is that the immediate instructions in RISC-V have a certain range that if exceeded requires you to rebuild everything with a separate, less efficient machine model. Not recommended. Instead, you should just be spamming more machines. They cost around 4-5k memory each and you can share anything you want with each machine, even the binary pages. This is already done as an example in this repository.
-
-## Why not WASM?
-
-I haven't figured out how to even use WASM for scripting at present. But, I guess it's possible. I know that WASM is accessible through webkit on iOS which means that you can get JIT on iOS using that.
-
-Still, why not WASM? Well, because I made the emulator! It's also very light-weight and it Just Works. I'm not really selling here, so think thrice if you are considering using this project. For me, this is my idea of fun. :) 
 
