@@ -11,7 +11,7 @@ set(MACHINE_SOURCES
 add_library(machine STATIC ${MACHINE_SOURCES})
 target_include_directories(machine PUBLIC ${PATH})
 target_compile_definitions(machine PRIVATE
-	NATIVE_SYSCALLS_BASE=80
+	NATIVE_SYSCALLS_BASE=70
 	THREADS_SYSCALL_BASE=90
 )
 target_link_libraries(machine riscv)

@@ -2,6 +2,7 @@
 #include <cassert>
 #include <functional>
 #include <libriscv/machine.hpp>
+#include <EASTL/unordered_map.h>
 
 class Script {
 public:
