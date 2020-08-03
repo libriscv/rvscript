@@ -34,13 +34,15 @@ The engine itself should have no external dependencies outside of libriscv.
 The output from the program should look like this after completion:
 
 ```
+$ ./engine 
 >>> [events] says: Entering event loop...
 >>> [gameplay1] says: Hello world!
-> median 3ns  		lowest: 3ns     	highest: 17ns
->>> Measurement "VM function call overhead" median: 3 nanos
+>>> [gameplay1] says: Exception caught!
+> median 4ns  		lowest: 3ns     	highest: 13ns
+>>> Measurement "VM function call overhead" median: 4 nanos
 
-> median 75ns  		lowest: 73ns     	highest: 116ns
->>> Measurement "Thread creation overhead" median: 75 nanos
+> median 72ns  		lowest: 72ns     	highest: 95ns
+>>> Measurement "Thread creation overhead" median: 72 nanos
 
 >>> [gameplay2] says: Hello Remote World! value = 1234!
 >>> [gameplay1] says: Back again in the start() function! Return value: 1234
@@ -58,12 +60,12 @@ The output from the program should look like this after completion:
 >>> [events] says: I am being run on another machine!
 ```
 
-There are additional lines if you enable C++ RTTI and exceptions.
+This particular output is with C++ RTTI and exceptions enabled.
 
 
 ## Getting a RISC-V compiler
 
-There are several ways to do this. However for now one requirement is to install the riscv-gnu-toolchains GCC 9.2.0 for RISC-V. Install it like this:
+There are several ways to do this. However for now one requirement is to install the riscv-gnu-toolchains GCC 10.1.0 for RISC-V. Install it like this:
 
 ```
 git clone https://github.com/riscv/riscv-gnu-toolchain.git
@@ -72,7 +74,7 @@ git submodule update --init riscv-binutils
 git submodule update --init riscv-gcc
 git submodule update --init riscv-newlib
 <install dependencies for GCC on your particular system here>
-./configure --prefix=$HOME/riscv --with-arch=rv32gc --with-abi=ilp32d
+./configure --prefix=$HOME/riscv --with-arch=rv32g --with-abi=ilp32d
 make -j8
 ```
 
@@ -101,7 +103,7 @@ Go into the micro folder. Enable the RTTI_EXCEPT CMake option using ccmake or ed
 
 Exceptions and RTTI will bloat the binary by at least 170k according to my measurements. Additionally, you will have to increase the maximum allotted number of instructions to a call by at least 600k instructions, as the first exception thrown will have to run through a massive amount of code. However, any code that does not throw exceptions as part of normal operation will be fine. It could also be fine to just give up when an exception is throw, although I recommend re-initializing the machine (around 10-20 micros on my hardware).
 
-The binary that comes with the repository for testing does not have C++ exceptions enabled.
+The binary that comes with the repository for testing does have C++ exceptions enabled. Atomics will probably have to be enabled to be able to catch exceptions. They are on by default.
 
 
 ## WSL2 support
