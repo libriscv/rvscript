@@ -21,7 +21,7 @@ set (MODPATH "${ENGINE_PATH}/mods/${MODNAME}")
 set (APIPATH "${ENGINE_PATH}/api")
 set (UTILPATH "${ENGINE_PATH}/src/util")
 
-set(RISCV_ABI "-march=rv32imfd -mabi=ilp32d")
+set(RISCV_ABI "-march=rv32imafd -mabi=ilp32d")
 set(WARNINGS  "-Wall -Wextra")
 set(COMMON    "-fno-math-errno -fno-threadsafe-statics")
 set(COMMON    "-O3 -fno-stack-protector ${COMMON}")
