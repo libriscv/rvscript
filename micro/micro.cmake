@@ -1,6 +1,3 @@
-cmake_minimum_required(VERSION 3.1.0)
-project(modbuilder CXX)
-
 option(LTO         "Link-time optimizations" ON)
 option(GCSECTIONS  "Garbage collect empty sections" OFF)
 option(DEBUGGING   "Add debugging information" OFF)
@@ -9,15 +6,9 @@ set(VERSION_FILE   "symbols.map" CACHE STRING "Retained symbols file")
 option(STRIP_SYMBOLS "Remove all symbols except the public API" ON)
 
 #
-# Mod settings
-#
-set (MODNAME "hello_world" CACHE STRING "Mod name")
-
-#
 # Build configuration
 #
-set (ENGINE_PATH "${CMAKE_SOURCE_DIR}/../engine")
-set (MODPATH "${ENGINE_PATH}/mods/${MODNAME}")
+set (ENGINE_PATH "${CMAKE_SOURCE_DIR}/engine")
 set (APIPATH "${ENGINE_PATH}/api")
 set (UTILPATH "${ENGINE_PATH}/src/util")
 
@@ -50,11 +41,11 @@ set(USE_NEWLIB ON)
 
 # enforce correct global include order for our tiny libc
 include_directories(libc)
-set (BBLIBCPATH "${CMAKE_SOURCE_DIR}/../ext/libriscv/binaries/barebones/libc")
+set (BBLIBCPATH "${CMAKE_SOURCE_DIR}/ext/libriscv/binaries/barebones/libc")
 include_directories(${BBLIBCPATH})
 
-add_subdirectory(ext)
-add_subdirectory(libc)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/ext  ext)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/libc libc)
 target_include_directories(libc PUBLIC ${APIPATH})
 target_include_directories(libc PUBLIC ${UTILPATH})
 
@@ -88,15 +79,13 @@ function (add_micro_binary NAME VERFILE)
 		if (EXISTS "${VERFILE}")
 			add_verfile(${NAME} ${VERFILE})
 		else()
-			add_verfile(${NAME} ${CMAKE_SOURCE_DIR}/symbols.map)
+			add_verfile(${NAME} ${CMAKE_CURRENT_LIST_DIR}/symbols.map)
 		endif()
 		add_custom_command(TARGET ${NAME} POST_BUILD
 		COMMAND ${CMAKE_STRIP} --strip-debug -R .note -R .comment -- ${CMAKE_CURRENT_SOURCE_DIR}/${NAME})
 		endif()
 	endif()
 endfunction()
-
-add_subdirectory (${MODPATH} mod)
 
 set(API_SOURCES
 	${APIPATH}/api.h
@@ -106,12 +95,12 @@ set(API_SOURCES
 	${APIPATH}/syscalls.h
 )
 add_custom_command(
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/api/*.h ${APIPATH}
-	DEPENDS ${CMAKE_SOURCE_DIR}/api/api.h
-			${CMAKE_SOURCE_DIR}/api/api_impl.h
-			${CMAKE_SOURCE_DIR}/api/api_structs.h
-			${CMAKE_SOURCE_DIR}/api/shared_memory.h
-			${CMAKE_SOURCE_DIR}/api/syscalls.h
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/api/*.h ${APIPATH}
+	DEPENDS ${CMAKE_CURRENT_LIST_DIR}/api/api.h
+			${CMAKE_CURRENT_LIST_DIR}/api/api_impl.h
+			${CMAKE_CURRENT_LIST_DIR}/api/api_structs.h
+			${CMAKE_CURRENT_LIST_DIR}/api/shared_memory.h
+			${CMAKE_CURRENT_LIST_DIR}/api/syscalls.h
 	OUTPUT  ${API_SOURCES}
 )
 add_custom_target(install_headers

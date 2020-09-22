@@ -105,6 +105,8 @@ bool Script::machine_initialize()
 void Script::machine_setup(riscv::Machine<riscv::RISCV32>& machine)
 {
 	machine.set_userdata<Script>(this);
+	machine.memory.set_exit_address(machine.address_of("exit"));
+	assert(machine.memory.exit_address() != 0);
 	// add system call interface
 	auto* arena = setup_native_heap_syscalls<4>(machine, MAX_HEAP);
 	setup_native_memory_syscalls<4>(machine, TRUSTED_CALLS);

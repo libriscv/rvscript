@@ -10,7 +10,7 @@ int puts(const char* string)
 }
 
 extern "C"
-ssize_t write(void*, const void* buffer, size_t len)
+ssize_t write(int, const void* buffer, size_t len)
 {
 	return sys_write(buffer, len);
 }

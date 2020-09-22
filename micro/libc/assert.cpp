@@ -1,6 +1,20 @@
 #include <include/libc.hpp>
 #include <cstdarg>
 #include <strf.hpp>
+#include <syscalls.h>
+
+template <typename... Args>
+inline void print(Args&&... args)
+{
+	char buffer[500];
+	auto res = strf::to(buffer) (std::forward<Args> (args)...);
+	psyscall(ECALL_WRITE, buffer, res.ptr - buffer);
+}
+
+inline void print_backtrace()
+{
+	syscall(SYSCALL_BACKTRACE);
+}
 
 extern "C"
 __attribute__((noreturn))
@@ -9,7 +23,7 @@ void panic(const char* reason)
 	print("\n\n!!! PANIC !!!\n", reason, '\n');
 
 	// the end
-	_exit(-1);
+	exit(-1);
 }
 
 extern "C"

@@ -1,6 +1,8 @@
 #pragma once
 #include <new>
 #include <utility>
+#include <syscalls.h>
+#include <strf.hpp>
 #include <include/crc32.hpp>
 #include <include/libc.hpp>
 #include <include/function.hpp>
@@ -18,6 +20,14 @@ extern "C" void _exit(int) __attribute__((noreturn));
 
 inline constexpr uint32_t operator "" _hash (const char* value, std::size_t len) {
 	return crc32(value, len);
+}
+
+template <typename Ret = long, typename... Args>
+inline Ret apicall(int syscall_n, Args&&... args)
+{
+	using function_t = Ret (*) (...);
+	// System call number is offset / 4
+	return ((function_t) (-syscall_n*4)) (std::forward<Args>(args)...);
 }
 
 inline auto rdcycle()

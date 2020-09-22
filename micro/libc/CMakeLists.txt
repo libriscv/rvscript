@@ -23,6 +23,8 @@ target_compile_definitions(libc PRIVATE
 )
 target_compile_definitions(libc PUBLIC
 	USE_THREADCALLS=1
+	NATIVE_SYSCALLS_BASE=70
+	THREAD_SYSCALLS_BASE=90
 )
 if (USE_NEWLIB)
 	target_compile_definitions(libc PUBLIC
