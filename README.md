@@ -38,10 +38,10 @@ $ ./engine
 >>> [events] says: Entering event loop...
 >>> [gameplay1] says: Hello world!
 >>> [gameplay1] says: Exception caught!
-> median 4ns  		lowest: 3ns     	highest: 13ns
->>> Measurement "VM function call overhead" median: 4 nanos
+> median 2ns  		lowest: 2ns     	highest: 2ns
+>>> Measurement "VM function call overhead" median: 2 nanos
 
-> median 72ns  		lowest: 72ns     	highest: 95ns
+> median 72ns  		lowest: 71ns     	highest: 106ns
 >>> Measurement "Thread creation overhead" median: 72 nanos
 
 >>> [gameplay2] says: Hello Remote World! value = 1234!
