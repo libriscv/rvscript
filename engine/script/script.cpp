@@ -1,4 +1,5 @@
-#include "script_functions.hpp"
+#include "script.hpp"
+using gaddr_t = Script::gaddr_t;
 
 #include "util/crc32.hpp"
 #include <fstream> // Windows doesn't implement C getline()

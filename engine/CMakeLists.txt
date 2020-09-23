@@ -32,9 +32,15 @@ if (GPROF)
 endif()
 
 add_subdirectory(../ext ext)
-add_subdirectory(src)
+add_subdirectory(script)
 
-add_executable(engine src/main.cpp)
-target_link_libraries(engine libengine -static-libstdc++ -static-libgcc)
+add_executable(engine
+    src/main.cpp
+    src/script_functions.cpp
+    src/timers.cpp
+)
+
+target_include_directories(engine PUBLIC .)
+target_link_libraries(engine script -static-libstdc++ -static-libgcc)
 set_target_properties(engine PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})

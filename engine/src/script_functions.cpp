@@ -1,5 +1,5 @@
 #include "script_functions.hpp"
-#include "machine/include_api.hpp"
+#include <script/machine/include_api.hpp>
 #include "timers.hpp"
 extern Timers timers;
 static_assert(ECALL_LAST - GAME_API_BASE <= 100, "Room for system calls");

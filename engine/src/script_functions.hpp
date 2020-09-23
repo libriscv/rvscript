@@ -1,5 +1,5 @@
 #pragma once
-#include "script.hpp"
+#include <script/script.hpp>
 using gaddr_t = Script::gaddr_t;
 using machine_t = Script::machine_t;
 

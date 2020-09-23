@@ -1,11 +1,11 @@
-#include "script.hpp"
-#include "util/crc32.hpp"
+#include <script/script.hpp>
+#include <script/util/crc32.hpp>
 #include <unistd.h> /* usleep */
 
 #include "timers.hpp"
 Timers timers; // put this in a level structure
 
-#include "machine/blackbox.hpp"
+#include <script/machine/blackbox.hpp>
 static Blackbox<Script::MARCH> blackbox;
 
 
