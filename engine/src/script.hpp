@@ -6,7 +6,7 @@
 
 class Script {
 public:
-	static constexpr int MARCH = riscv::RISCV64;
+	static constexpr int MARCH = (RISCV_ARCH == 32) ? 4 : 8;
 	using gaddr_t = riscv::address_type<MARCH>;
 	using machine_t = riscv::Machine<MARCH>;
 	static constexpr uint64_t MAX_INSTRUCTIONS = 16'000'000;
