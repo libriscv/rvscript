@@ -27,7 +27,8 @@ inline Ret apicall(int syscall_n, Args&&... args)
 {
 	using function_t = Ret (*) (...);
 	// System call number is offset / 4
-	return ((function_t) (-syscall_n*4)) (std::forward<Args>(args)...);
+	const auto addr32 = (uint32_t) (-syscall_n*4);
+	return ((function_t) (uintptr_t) addr32) (std::forward<Args>(args)...);
 }
 
 inline auto rdcycle()
@@ -51,12 +52,12 @@ inline auto rdtime()
 
 template <typename Expr, typename T>
 constexpr inline void check_assertion(
-	Expr expr, const T& left, const T& right, const char* exprstring, 
+	Expr expr, const T& left, const T& right, const char* exprstring,
 	const char* file, const char* func, const int line)
 {
 	if (UNLIKELY(!expr())) {
 		print("assertion (", left, ") ", exprstring, " (", right,
-			") failed: \"", file, "\", line ", line, 
+			") failed: \"", file, "\", line ", line,
 			func ? ", function: " : "", func ? func : "", '\n');
 		syscall(SYSCALL_BACKTRACE);
 		_exit(-1);
@@ -64,12 +65,12 @@ constexpr inline void check_assertion(
 }
 template <typename Expr, typename T>
 constexpr inline void check_assertion(
-	Expr expr, const T& left, nullptr_t, const char* exprstring, 
+	Expr expr, const T& left, nullptr_t, const char* exprstring,
 	const char* file, const char* func, const int line)
 {
 	if (UNLIKELY(!expr())) {
 		print("assertion (", left, ") ", exprstring, " (null",
-			") failed: \"", file, "\", line ", line, 
+			") failed: \"", file, "\", line ", line,
 			func ? ", function: " : "", func ? func : "", '\n');
 		syscall(SYSCALL_BACKTRACE);
 		_exit(-1);
@@ -79,4 +80,3 @@ constexpr inline void check_assertion(
 	check_assertion([&] { return (l op r); }, l, r, \
 	#l " " #op " " #r,\
 	__FILE__, __FUNCTION__, __LINE__)
-

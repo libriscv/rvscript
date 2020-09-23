@@ -27,6 +27,6 @@ struct SharedMemoryArea
 	}
 
 private:
-	static constexpr uint32_t ALIGN_MASK = ~0x3;
-	uint32_t dst = 0x4000;
+	static constexpr uintptr_t ALIGN_MASK = ~0x3;
+	uintptr_t dst = 0x4000;
 };

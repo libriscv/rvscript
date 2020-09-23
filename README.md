@@ -34,7 +34,7 @@ The engine itself should have no external dependencies outside of libriscv.
 The output from the program should look like this after completion:
 
 ```
-$ ./engine 
+$ ./engine
 >>> [events] says: Entering event loop...
 >>> [gameplay1] says: Hello world!
 >>> [gameplay1] says: Exception caught!
@@ -74,7 +74,7 @@ git submodule update --init riscv-binutils
 git submodule update --init riscv-gcc
 git submodule update --init riscv-newlib
 <install dependencies for GCC on your particular system here>
-./configure --prefix=$HOME/riscv --with-arch=rv32g --with-abi=ilp32d
+./configure --prefix=$HOME/riscv --with-arch=rv64g --with-abi=lp64d
 make -j8
 ```
 
@@ -122,7 +122,7 @@ You must be on the latest Windows insider version for this at the time of writin
 This is not so easy, as you will have to create a tiny freestanding environment for your language (hard), and also implement the system call layer that your API relies on (easy). Both these things require writing inline assembly, although you only have to create the syscall wrappers once. That said, I have a Rust implementation here:
 https://github.com/fwsGonzo/script_bench/tree/master/rvprogram/rustbin
 
-You can use any programming language that can output RISC-V binaries. A tiny bit of info about Rust is that I was unable to build anything but rv32gc binaries, so you would need to enable the C extension in the build.sh script (where it is explicitly set to OFF).
+You can use any programming language that can output RISC-V binaries. A tiny bit of info about Rust is that I was unable to build anything but rv64gc binaries, so you would need to enable the C extension in the build.sh script (where it is explicitly set to OFF).
 
 Good luck.
 
@@ -148,7 +148,7 @@ Part 3 is a good introduction that will among other things answer the 'why'.
 - I can't seem to call a public API function in another machine.
 	- The function has to be added to the symbol file for it to not be removed as an optimization, assuming no other function references it. It's also possible that the remote machine you are calling into simply doesn't have that function - if it's running another binary.
 - How do I share memory with the engine?
-	- Create aligned memory in your engine and use the `machine.memory.insert_non_owned_memory()` function to insert it using the given page attributes. The machine will then create non-owning pages pointing to this memory sequentially. You can do this on as many machines as you want. The challenge then is to be able to use the pages as memory for your objects, and access the readable members in a portable way (the VMs are 32-bit).
+	- Create aligned memory in your engine and use the `machine.memory.insert_non_owned_memory()` function to insert it using the given page attributes. The machine will then create non-owning pages pointing to this memory sequentially. You can do this on as many machines as you want. The challenge then is to be able to use the pages as memory for your objects, and access the readable members in a portable way (the VMs are default 64-bit).
 - My thread blocked and when it returned some shared data is stale now.
 	- The microthread block function is an inline system call, which is not a full function call. If it was a function call then the compiler will assume memory is clobbered. You can solve this by adding a memory clobber somewhere where you think it makes the most sense. You can see what it looks like in the implementation of `block()` with a condition. You can also make the system call into a function by using a jump trap. See the implementation of `apicall` to see how it's done.
 - Passing strings are slow.
@@ -167,4 +167,3 @@ Part 3 is a good introduction that will among other things answer the 'why'.
 	- As long as pausing the script to continue later is an option, you will not have any trouble. Just don't pause the script while it's in a thread and then accidentally vmcall into it from somewhere else. This will clobber all registers and you can't resume the machine later. You can use preempt provided that it returns to the same thread again (although you are able to yield back to a thread manually). There are many options where things will be OK. In my engine all long-running tasks are running on separate machines, alone.
 - I need to share more than 2GB memory with my machines.
 	- One thing to keep in mind is that the immediate instructions in RISC-V have a certain range that if exceeded requires you to rebuild everything with a separate, less efficient machine model. Not recommended. Instead, you should just be spamming more machines. They cost around 4-5k memory each and you can share anything you want with each machine, even the binary pages. This is already done as an example in this repository.
-

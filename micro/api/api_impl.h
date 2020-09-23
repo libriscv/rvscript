@@ -82,7 +82,7 @@ inline void Game::exit()
 using timer_callback = void (*) (int, void*);
 inline Timer timer_oneshot(double time, timer_callback callback, void* data, size_t size)
 {
-	return {apicall(ECALL_TIMER_ONESHOT, time, callback, data, size)};
+	return {(int) apicall(ECALL_TIMER_ONESHOT, time, callback, data, size)};
 }
 inline Timer Timer::oneshot(double time, Function<void(Timer)> callback)
 {
@@ -93,7 +93,7 @@ inline Timer Timer::oneshot(double time, Function<void(Timer)> callback)
 }
 inline Timer timer_periodic(double time, double period, timer_callback callback, void* data, size_t size)
 {
-	return {apicall(ECALL_TIMER_PERIODIC, time, period, callback, data, size)};
+	return {(int) apicall(ECALL_TIMER_PERIODIC, time, period, callback, data, size)};
 }
 inline Timer timer_periodic(double period, timer_callback callback, void* data, size_t size)
 {

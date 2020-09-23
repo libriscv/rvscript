@@ -1,10 +1,11 @@
 #!/bin/bash
 set -e
-export CC=riscv32-unknown-elf-gcc
-export CXX=riscv32-unknown-elf-g++
+GCC_TRIPLE="riscv64-unknown-elf"
+export CC=$GCC_TRIPLE-gcc
+export CXX=$GCC_TRIPLE-g++
 
 mkdir -p build
 pushd build
-cmake .. -DCMAKE_TOOLCHAIN_FILE=../micro/toolchain.cmake
+cmake .. -DGCC_TRIPLE=$GCC_TRIPLE -DCMAKE_TOOLCHAIN_FILE=../micro/toolchain.cmake
 make -j4
 popd

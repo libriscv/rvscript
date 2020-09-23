@@ -12,7 +12,11 @@ set (ENGINE_PATH "${CMAKE_SOURCE_DIR}/engine")
 set (APIPATH "${ENGINE_PATH}/api")
 set (UTILPATH "${ENGINE_PATH}/src/util")
 
-set(RISCV_ABI "-march=rv32imafd -mabi=ilp32d")
+if (GCC_TRIPLE STREQUAL "riscv32-unknown-elf")
+	set(RISCV_ABI "-march=rv32imfd -mabi=ilp32d")
+else()
+	set(RISCV_ABI "-march=rv64imfd -mabi=lp64d")
+endif()
 set(WARNINGS  "-Wall -Wextra")
 set(COMMON    "-fno-math-errno -fno-threadsafe-statics")
 set(COMMON    "-O3 -fno-stack-protector ${COMMON}")
@@ -95,6 +99,7 @@ set(API_SOURCES
 	${APIPATH}/syscalls.h
 )
 add_custom_command(
+	COMMAND ${CMAKE_COMMAND} -E make_directory ${APIPATH}
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/api/*.h ${APIPATH}
 	DEPENDS ${CMAKE_CURRENT_LIST_DIR}/api/api.h
 			${CMAKE_CURRENT_LIST_DIR}/api/api_impl.h

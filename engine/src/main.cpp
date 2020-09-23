@@ -6,7 +6,7 @@
 Timers timers; // put this in a level structure
 
 #include "machine/blackbox.hpp"
-static Blackbox blackbox;
+static Blackbox<Script::MARCH> blackbox;
 
 
 static std::map<uint32_t, Script> machines;

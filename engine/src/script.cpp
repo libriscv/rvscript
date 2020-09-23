@@ -18,7 +18,7 @@ void Script::init()
 	g_hidden_stack.attr.write  = false;
 }
 
-Script::Script(const riscv::Machine<riscv::RISCV32>& smach,
+Script::Script(const machine_t& smach,
 	const std::string& name)
 	: m_source_machine(smach), m_name(name), m_hash(crc32(name.c_str()))
 {
@@ -30,11 +30,11 @@ Script::~Script() {}
 bool Script::reset()
 {
 	try {
-		riscv::MachineOptions<riscv::RISCV32> options {
+		riscv::MachineOptions<MARCH> options {
 			.memory_max = MAX_MEMORY,
 			.owning_machine = &this->m_source_machine
 		};
-		m_machine.reset(new riscv::Machine<riscv::RISCV32> (
+		m_machine.reset(new machine_t(
 			m_source_machine.memory.binary(), options));
 
 	} catch (std::exception& e) {
@@ -55,7 +55,7 @@ void Script::add_shared_memory()
 	const int heap_pageno   = 0x40000000 >> riscv::Page::SHIFT;
 	const int stack_pageno  = heap_pageno - 2;
 	auto& mem = machine().memory;
-	mem.set_stack_initial((uint32_t) stack_pageno << riscv::Page::SHIFT);
+	mem.set_stack_initial((gaddr_t) stack_pageno << riscv::Page::SHIFT);
 	// Install our shared guard-page around the shared-
 	// memory area, put the shared page in the middle.
 	auto& guard_page = riscv::Page::guard_page();
@@ -102,15 +102,15 @@ bool Script::machine_initialize()
 	}
     return true;
 }
-void Script::machine_setup(riscv::Machine<riscv::RISCV32>& machine)
+void Script::machine_setup(machine_t& machine)
 {
 	machine.set_userdata<Script>(this);
 	machine.memory.set_exit_address(machine.address_of("exit"));
 	assert(machine.memory.exit_address() != 0);
 	// add system call interface
-	auto* arena = setup_native_heap_syscalls<4>(machine, MAX_HEAP);
-	setup_native_memory_syscalls<4>(machine, TRUSTED_CALLS);
-	this->m_threads = setup_native_threads<4>(machine, arena);
+	auto* arena = setup_native_heap_syscalls<MARCH>(machine, MAX_HEAP);
+	setup_native_memory_syscalls<MARCH>(machine, TRUSTED_CALLS);
+	this->m_threads = setup_native_threads<MARCH>(machine, arena);
     setup_syscall_interface(machine);
 	machine.on_unhandled_syscall(
 		[] (int number) {
@@ -135,7 +135,7 @@ void Script::machine_setup(riscv::Machine<riscv::RISCV32>& machine)
 	// if C++ RTTI and Exceptions is enabled
 	machine.cpu.reg(11) = machine.memory.resolve_section(".eh_frame");
 }
-void Script::handle_exception(uint32_t address)
+void Script::handle_exception(gaddr_t address)
 {
 	try {
 		throw;
@@ -152,7 +152,7 @@ void Script::handle_exception(uint32_t address)
 	printf("Program page: %s\n", machine().memory.get_page_info(machine().cpu.pc()).c_str());
 	printf("Stack page: %s\n", machine().memory.get_page_info(machine().cpu.reg(2)).c_str());
 	// close all threads
-	auto* mt = (multithreading<4>*) m_threads;
+	auto* mt = (multithreading<MARCH>*) m_threads;
 	while (mt->get_thread()->tid != 0) {
 		auto* thread = mt->get_thread();
 		fprintf(stderr, "Script::call Closing running thread: %d\n", thread->tid);
@@ -163,14 +163,14 @@ void Script::handle_exception(uint32_t address)
 	fprintf(stderr, "Function call: %s\n", callsite.name.c_str());
 	this->print_backtrace(address);
 }
-void Script::handle_timeout(uint32_t address)
+void Script::handle_timeout(gaddr_t address)
 {
 	this->m_budget_overruns ++;
 	auto callsite = machine().memory.lookup(address);
 	fprintf(stderr, "Script::call hit max instructions for: %s"
 		" (Overruns: %d)\n", callsite.name.c_str(), m_budget_overruns);
 	// check if we need to suspend a thread
-	auto* mt = (multithreading<4>*) m_threads;
+	auto* mt = (multithreading<MARCH>*) m_threads;
 	auto* thread = mt->get_thread();
 	if (thread->tid != 0) {
 		// try to do the right thing here
@@ -183,14 +183,14 @@ void Script::handle_timeout(uint32_t address)
 		mt->wakeup_next();
 	}
 }
-void Script::print_backtrace(const uint32_t addr)
+void Script::print_backtrace(const gaddr_t addr)
 {
 	machine().memory.print_backtrace(
 		[] (const char* buffer, size_t len) {
 			printf("-> %.*s\n", (int)len, buffer);
 		});
 	auto origin = machine().memory.lookup(addr);
-	printf("-> [-] 0x%08x + 0x%.3x: %s\n", 
+	printf("-> [-] 0x%08x + 0x%.3x: %s\n",
 			origin.address, origin.offset, origin.name.c_str());
 }
 
@@ -213,15 +213,15 @@ void Script::hash_public_api_symbols(const std::string& file)
 		}
 	}
 }
-uint32_t Script::resolve_address(const std::string& name) const {
+gaddr_t Script::resolve_address(const std::string& name) const {
 	return machine().address_of(name.c_str());
 }
-std::string Script::symbol_name(uint32_t address) const
+std::string Script::symbol_name(gaddr_t address) const
 {
 	auto callsite = machine().memory.lookup(address);
 	return callsite.name;
 }
-uint32_t Script::api_function_from_hash(uint32_t hash) {
+gaddr_t Script::api_function_from_hash(uint32_t hash) {
 	auto it = m_public_api.find(hash);
 	if (it != m_public_api.end()) return it->second;
 	return 0;
@@ -231,7 +231,7 @@ void Script::each_tick_event()
 {
 	if (this->m_tick_event == 0)
 		return;
-	auto* mt = (multithreading<4>*) this->m_threads;
+	auto* mt = (multithreading<MARCH>*) this->m_threads;
 	assert(mt->get_thread()->tid == 0 && "Avoid clobbering regs");
 
 	int count = 0;
@@ -248,7 +248,7 @@ void Script::enable_debugging()
 {
 #ifdef RISCV_DEBUG
 	machine().verbose_instructions = true;
-	
+
 #endif
 }
 
@@ -256,7 +256,7 @@ inline timespec time_now();
 inline long nanodiff(timespec start_time, timespec end_time);
 
 template <int ROUNDS = 2000>
-inline long perform_test(riscv::Machine<4>& machine, uint32_t func)
+inline long perform_test(Script::machine_t& machine, gaddr_t func)
 {
 	auto regs = machine.cpu.registers();
 	auto counter = machine.cpu.instruction_counter();
@@ -281,7 +281,7 @@ inline long perform_test(riscv::Machine<4>& machine, uint32_t func)
 	return nanodiff(t0, t1);
 }
 
-long Script::measure(uint32_t address)
+long Script::measure(gaddr_t address)
 {
 	static constexpr size_t TIMES = 2000;
 

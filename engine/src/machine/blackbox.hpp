@@ -1,6 +1,7 @@
 #include <libriscv/machine.hpp>
 #include <map>
 
+template <int W>
 struct MachineData
 {
 	MachineData(std::vector<uint8_t> b)
@@ -8,9 +9,10 @@ struct MachineData
 	{}
 
 	const std::vector<uint8_t> binary;
-	const riscv::Machine<riscv::RISCV32> machine;
+	const riscv::Machine<W> machine;
 };
 
+template <int W>
 struct Blackbox
 {
 	void insert_binary(const std::string& name, const std::string& binpath);
@@ -20,15 +22,16 @@ struct Blackbox
 		if (it != m_data.end()) {
 			return &it->second.machine;
 		}
-		return (const riscv::Machine<4>*) nullptr;
+		return (const riscv::Machine<W>*) nullptr;
 	}
 
 private:
-	std::map<std::string, MachineData> m_data;
+	std::map<std::string, MachineData<W>> m_data;
 	std::vector<uint8_t> load_file(const std::string& filename);
 };
 
-inline void Blackbox::insert_binary(
+template <int W>
+inline void Blackbox<W>::insert_binary(
 	const std::string& name, const std::string& binpath)
 {
 	const auto binary = load_file(binpath);
@@ -44,7 +47,8 @@ inline void Blackbox::insert_binary(
 }
 
 #include <unistd.h>
-inline std::vector<uint8_t> Blackbox::load_file(const std::string& filename)
+template <int W>
+inline std::vector<uint8_t> Blackbox<W>::load_file(const std::string& filename)
 {
     size_t size = 0;
     FILE* f = fopen(filename.c_str(), "rb");
