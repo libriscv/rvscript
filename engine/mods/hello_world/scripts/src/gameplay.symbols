@@ -1,6 +1,7 @@
 exit
 start
 some_function
+cpp_function
 
 event_loop
 add_work

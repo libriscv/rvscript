@@ -74,7 +74,7 @@ private:
 	std::unique_ptr<machine_t> m_machine = nullptr;
 	const machine_t& m_source_machine;
 	void*       m_threads;
-	gaddr_t    m_tick_event = 0;
+	gaddr_t     m_tick_event = 0;
 	int         m_tick_block_reason = 0;
 	std::string m_name;
 	uint32_t    m_hash;
@@ -104,7 +104,8 @@ inline long Script::call(const std::string& func, Args&&... args)
 {
 	const auto address = machine().address_of(func.c_str());
 	if (UNLIKELY(address == 0)) {
-		fprintf(stderr, "Script::call could not find: %s!\n", func.c_str());
+		fprintf(stderr, "Script::call(): Could not find: '%s' in '%s'\n",
+			func.c_str(), name().c_str());
 		return -1;
 	}
 	return call(address, std::forward<Args>(args)...);

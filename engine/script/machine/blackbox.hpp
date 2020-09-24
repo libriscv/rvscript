@@ -4,25 +4,27 @@
 template <int W>
 struct MachineData
 {
-	MachineData(std::vector<uint8_t> b)
-		: binary{std::move(b)}, machine {binary}
+	MachineData(std::vector<uint8_t> b, const std::string& syms)
+		: binary{std::move(b)}, machine {binary}, sympath {syms}
 	{}
 
 	const std::vector<uint8_t> binary;
 	const riscv::Machine<W> machine;
+	const std::string sympath;
 };
 
 template <int W>
 struct Blackbox
 {
-	void insert_binary(const std::string& name, const std::string& binpath);
+	void insert_binary(const std::string& name,
+		const std::string& binpath, const std::string& sympath);
 
-	const auto* get(const std::string& name) const {
+	const auto& get(const std::string& name) const {
 		auto it = m_data.find(name);
 		if (it != m_data.end()) {
-			return &it->second.machine;
+			return it->second;
 		}
-		return (const riscv::Machine<W>*) nullptr;
+		throw std::runtime_error("Could not find: " + name);
 	}
 
 private:
@@ -31,15 +33,15 @@ private:
 };
 
 template <int W>
-inline void Blackbox<W>::insert_binary(
-	const std::string& name, const std::string& binpath)
+inline void Blackbox<W>::insert_binary(const std::string& name,
+	const std::string& binpath, const std::string& sympath)
 {
 	const auto binary = load_file(binpath);
 	try {
 		// insert into map
 		m_data.emplace(std::piecewise_construct,
 			std::forward_as_tuple(name),
-			std::forward_as_tuple(std::move(binary)));
+			std::forward_as_tuple(std::move(binary), sympath));
 	} catch (std::exception& e) {
 		printf(">>> Exception: %s\n", e.what());
 		throw;

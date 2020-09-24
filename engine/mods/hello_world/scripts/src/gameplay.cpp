@@ -20,7 +20,7 @@ void thread_function() {
 }
 
 /* This is the function that gets called at the start */
-/* See engine/src/main.cpp:55 */
+/* See engine/src/main.cpp:69 */
 PUBLIC_API void start()
 {
 	/* This function is implemented in api_impl.h, and it makes a
@@ -57,11 +57,12 @@ PUBLIC_API void start()
 			api::print("Tick ", i++, "!\n");
 		}
 	});
-	int value = 44;
-	api::each_tick([value] {
+	int physics_value = 44;
+	api::each_tick([physics_value] {
+		int v = physics_value;
 		while (true) {
 			api::wait_next_tick();
-			api::print("I have a ", value, "!\n");
+			api::print("I have a ", v++, "!\n");
 		}
 	});
 
@@ -75,6 +76,9 @@ PUBLIC_API void start()
 		api::print("Hello Belated Microthread World! 1 second passed.\n");
 		/* REMOTE_EXEC is implemented in events.hpp */
 		REMOTE_EXEC("events", [] {
+			/* This works because gameplay and events are running
+			   the same binary, so they share read-only memory,
+			   such as strings, constant structs and functions. */
 			api::print("I am being run on another machine!\n");
 		});
 	});
@@ -89,4 +93,17 @@ PUBLIC_API long some_function(int value)
 {
 	api::print("Hello Remote World! value = ", value, "!\n");
 	return value;
+}
+
+struct C {
+	std::string to_string() const {
+		return std::string(&c, 1) + "++";
+	}
+private:
+	char c;
+};
+PUBLIC_API void cpp_function(const char* a, const C& c, const char* b)
+{
+	/* Hello C++ World */
+	api::print(a, " ", c.to_string(), " ", b, "\n");
 }
