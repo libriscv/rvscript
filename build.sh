@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-GCC_TRIPLE="riscv32-unknown-elf"
+GCC_TRIPLE="riscv64-unknown-elf"
 export CC=$GCC_TRIPLE-gcc
 export CXX=$GCC_TRIPLE-g++
 

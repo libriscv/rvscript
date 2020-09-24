@@ -1,4 +1,4 @@
-set(ARCH 32 CACHE STRING "RISC-V architecture")
+set(ARCH 64 CACHE STRING "RISC-V architecture")
 
 add_subdirectory(machine)
 

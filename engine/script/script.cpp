@@ -7,9 +7,9 @@ using gaddr_t = Script::gaddr_t;
 #include <include/threads.hpp>
 #include "machine/include_api.hpp"
 
-static const uint32_t MAX_MEMORY    = 1024*1024 * 2;
-static const uint32_t MAX_HEAP      = 1024*1024 * 6;
-static const bool     TRUSTED_CALLS = true;
+static const gaddr_t MAX_MEMORY    = 1024*1024 * 16;
+static const gaddr_t MAX_HEAP      = 1024*1024 * 8;
+static const bool    TRUSTED_CALLS = true;
 // the shared area is read-write for the guest
 std::array<riscv::Page, 2> Script::g_shared_area;
 // the hidden area is read-only for the guest
