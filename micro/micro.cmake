@@ -111,4 +111,4 @@ add_custom_command(
 add_custom_target(install_headers
 	DEPENDS ${API_SOURCES}
 )
-add_dependencies(libc install_headers)
+#add_dependencies(libc install_headers)
