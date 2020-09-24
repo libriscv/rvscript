@@ -38,11 +38,11 @@ $ ./engine
 >>> [events] says: Entering event loop...
 >>> [gameplay1] says: Hello world!
 >>> [gameplay1] says: Exception caught!
-> median 2ns  		lowest: 2ns     	highest: 2ns
+> median 2ns  		lowest: 2ns     	highest: 9ns
 >>> Measurement "VM function call overhead" median: 2 nanos
 
-> median 72ns  		lowest: 71ns     	highest: 106ns
->>> Measurement "Thread creation overhead" median: 72 nanos
+> median 147ns  		lowest: 139ns     	highest: 262ns
+>>> Measurement "Thread creation overhead" median: 147 nanos
 
 >>> [gameplay2] says: Hello Remote World! value = 1234!
 >>> [gameplay1] says: Back again in the start() function! Return value: 1234
@@ -52,12 +52,13 @@ $ ./engine
 >>> [gameplay1] says: Tick 0!
 >>> [gameplay1] says: I have a 44!
 >>> [gameplay1] says: Tick 1!
->>> [gameplay1] says: I have a 44!
+>>> [gameplay1] says: I have a 45!
 >>> [gameplay1] says: Tick 2!
->>> [gameplay1] says: I have a 44!
+>>> [gameplay1] says: I have a 46!
 ...
 >>> [gameplay1] says: Hello Belated Microthread World! 1 second passed.
 >>> [events] says: I am being run on another machine!
+>>> [gameplay2] says: Hello C++ World
 ```
 
 This particular output is with C++ RTTI and exceptions enabled.
@@ -84,26 +85,37 @@ It's technically possible to build without any system files at all, but you will
 
 ## Building script files
 
-If you have installed the RISC-V compiler above, the rest should be simple enough. Just run `build.sh` in the micro folder.
+If you have installed the RISC-V compiler above, the rest should be simple enough. Just run `build.sh` in the root folder. It will create a new folder simply called `build` and build all the programs that are defined in `engine/mods/hello_world/scripts/CMakeLists.txt`:
 
-If you want to build more binaries you can edit the CMakeLists.txt in the `engine/mods/hello_world/scripts` folder. There is one binary there being built by a single function called `add_micro_binary`. Simply call that function again with new arguments:
+```
+add_micro_binary(gameplay.elf "src/gameplay.symbols"
+	"src/gameplay.cpp"
+	"src/events.cpp"
+)
+```
+
+It only builds one binary currently, however that binary is used for many purposes.
+
+If you want to build more binaries you can edit `CMakeLists.txt` and add a new binary like so:
 
 ```
 add_micro_binary(my.elf "src/my.symbols"
 	"src/mycode.cpp"
+	"src/morecode.cpp"
 )
 ```
 
-You can share symbol file with any other binaries, and if you don't have a particular symbol that is listed that is fine. It should be possible to reuse the same symbol file for all binaries. The symbol file is a list of symbols that are public, and can be called from the outside. If `start` is public, then you can do `machine.vmcall("start")`.
+You can share symbol file with any other binaries, and if you don't have a particular symbol that is listed that is fine. It should be possible to reuse the same symbol file for all binaries. The symbol file is a list of symbols that are public, and can be called from outside of the machine. In other words, if `start` is made public, by adding it to a symbols file, then you can call the function froom the outside like so: `myscript.call("start")`.
 
+There is a lot of helper functionality built to make it easy to drop in new programs. See `engine/src/main.cpp` for some example code.
 
 ## Building with C++ RTTI and exceptions
 
-Go into the micro folder. Enable the RTTI_EXCEPT CMake option using ccmake or edit the build.sh shell script. Simply appending `-DRTTI_EXCEPT=ON` will be enough. Run `build.sh` to build any changes.
+The root `CMakeLists.txt` is used to build programs. Go into the root `build` folder for programs. Enable the RTTI_EXCEPT CMake option using ccmake or edit the build.sh shell script. You can also edit `build.sh` and add `-DRTTI_EXCEPT=ON` to the arguments passed to cmake. Run `build.sh` in the root to build any changes.
 
-Exceptions and RTTI will bloat the binary by at least 170k according to my measurements. Additionally, you will have to increase the maximum allotted number of instructions to a call by at least 600k instructions, as the first exception thrown will have to run through a massive amount of code. However, any code that does not throw exceptions as part of normal operation will be fine. It could also be fine to just give up when an exception is throw, although I recommend re-initializing the machine (around 10-20 micros on my hardware).
+Exceptions and RTTI will bloat the binary by at least 170k according to my measurements. Additionally, you will have to increase the maximum allotted number of instructions to a call by at least 600k instructions, as the first exception thrown will have to run through a massive amount of code. However, any code that does not throw exceptions as part of normal operation will be fine. It could also be fine to just give up when an exception is thrown, although I recommend re-initializing the machine (around 10-20 micros on my hardware).
 
-The binary that comes with the repository for testing does have C++ exceptions enabled. Atomics will probably have to be enabled to be able to catch exceptions. They are on by default.
+The binary that comes with the repository for testing does have C++ exceptions enabled. Atomics will probably have to be enabled to be able to catch exceptions. They are on by default and has no known associated performance penalty.
 
 
 ## WSL2 support
@@ -123,6 +135,8 @@ This is not so easy, as you will have to create a tiny freestanding environment 
 https://github.com/fwsGonzo/script_bench/tree/master/rvprogram/rustbin
 
 You can use any programming language that can output RISC-V binaries. A tiny bit of info about Rust is that I was unable to build anything but rv64gc binaries, so you would need to enable the C extension in the build.sh script (where it is explicitly set to OFF).
+
+The easiest languages to integrate are those that transpile to C or C++, such as Nim and Pythran.
 
 Good luck.
 
