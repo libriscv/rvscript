@@ -1,5 +1,6 @@
 #include <array>
 #include <cstdint>
+#include <cstddef>
 
 template <uint32_t POLYNOMIAL>
 inline constexpr auto gen_crc32_table()
