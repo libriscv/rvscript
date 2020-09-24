@@ -49,7 +49,6 @@ int main()
 		"mods/hello_world/scripts/gameplay.elf",
 		"mods/hello_world/scripts/src/gameplay.symbols");
 
-	Script::init();
 	/* Naming the machines allows us to call into one machine from another
 	   using this name (hashed). These machines will be fully intialized. */
 	for (int n = 0; n < 100; n++)

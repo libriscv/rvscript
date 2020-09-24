@@ -10,22 +10,16 @@ using gaddr_t = Script::gaddr_t;
 static const uint32_t MAX_MEMORY    = 1024*1024 * 2;
 static const uint32_t MAX_HEAP      = 1024*1024 * 6;
 static const bool     TRUSTED_CALLS = true;
+// the shared area is read-write for the guest
 std::array<riscv::Page, 2> Script::g_shared_area;
-riscv::Page Script::g_hidden_stack;
+// the hidden area is read-only for the guest
+riscv::Page Script::g_hidden_stack {{ .write = false }};
 
-void Script::init()
-{
-	// the hidden area is read-only for the guest
-	g_hidden_stack.attr.write  = false;
-}
-
-Script::Script(const machine_t& smach,
-	const std::string& name)
+Script::Script(const machine_t& smach, const std::string& name)
 	: m_source_machine(smach), m_name(name), m_hash(crc32(name.c_str()))
 {
 	this->reset();
 }
-
 Script::~Script() {}
 
 bool Script::reset()
@@ -249,7 +243,6 @@ void Script::enable_debugging()
 {
 #ifdef RISCV_DEBUG
 	machine().verbose_instructions = true;
-
 #endif
 }
 

@@ -59,7 +59,6 @@ public:
 
 	Script(const machine_t&, const std::string& name);
 	~Script();
-	static void init();
 
 private:
 	void handle_exception(gaddr_t);
