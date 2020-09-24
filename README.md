@@ -14,27 +14,19 @@ https://gist.github.com/fwsGonzo/f874ba58f2bab1bf502cad47a9b2fbed
 
 Note that I update the gist now and then as I make improvements. The key benchmark is showing the low overhead to calling into the script.
 
-The overhead of a system call is around 5ns last time I measured it, so keep that in mind. The threshold for benefiting from using a dedicated system call is very low, but for simple things like reading the position of an entity you should be using shared memory. Read-only to the machine.
-
-The cost of doing a function-like system call (trapping jumps) can be higher than a regular system call because the caller has to save registers, and there is no way to indicate that a function call clobbers nothing that I know of. If there is, it would be quite interesting. Take a look at `syscall.hpp:21` to see how it's done.
+The overhead of a system call is around 5ns last time I measured it, so keep that in mind. The threshold for benefiting from using a dedicated system call is very low, but for simple things like reading the position of an entity you could be using shared memory. Read-only to the machine.
 
 
-## Getting started
+## Demonstration
 
-Install cmake, git, clang-10 or 11 (trunk) for your system. Don't use GCC - it's slower on all benchmarks.
+This repository is built as an example on how you could use advanced techniques to speed up and blur the lines between native and emulated modern C++. The main function is in [engine/src](engine/src/main.cpp).
 
-Run `setup.sh` to make sure that libriscv is initialized properly. Then go into the engine folder and run:
-
-```bash
-bash build.sh
-```
-
-The engine itself should have no external dependencies outside of libriscv.
+All the host-side code is in the engine folder, and is written as if it was running inside a game engine, kinda.
 
 The output from the program should look like this after completion:
 
 ```
-$ ./engine
+engine$ ./engine
 >>> [events] says: Entering event loop...
 >>> [gameplay1] says: Hello world!
 >>> [gameplay1] says: Exception caught!
@@ -63,6 +55,20 @@ $ ./engine
 
 This particular output is with C++ RTTI and exceptions enabled.
 
+
+## Getting started
+
+Install cmake, git, clang-10 or 11 (trunk) for your system. Don't use GCC - it's slower on all benchmarks.
+
+Run `setup.sh` to make sure that libriscv is initialized properly. Then go into the engine folder and run:
+
+```bash
+bash build.sh
+```
+
+The engine itself should have no external dependencies outside of libriscv.
+
+Running the engine is only half the equation as you will also want to be able to modify the scripts themselves. To do that you need a RISC-V compiler. However, the gameplay binary is provided with the repo so that you can run the engine demonstration without having to download and build a RISC-V compiler.
 
 ## Getting a RISC-V compiler
 
