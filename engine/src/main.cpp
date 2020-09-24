@@ -1,4 +1,5 @@
 #include <script/script.hpp>
+#include <script/event.hpp>
 #include <script/util/crc32.hpp>
 #include <unistd.h> /* usleep */
 
@@ -99,6 +100,39 @@ int main()
 	};
 	auto& another_machine = SCRIPT(gameplay2);
 	another_machine.call("cpp_function", "Hello", C{}, "World");
+
+	printf("...\n");
+
+	/* Call events of a shared game object */
+	struct GameObject {
+		bool alive = false;
+		char name[30] = {0};
+
+		Event onDeath;
+		Event onAction;
+	};
+	GameObject objects[100];
+
+	/* Insert objects into memory, and as this is just example
+	   code we won't try to align anything to page sizes.
+	   This allows zero-copy sharing of game state. */
+	static constexpr Script::gaddr_t OBJECT_AREA = 0xC000000;
+	another_machine.machine().memory.insert_non_owned_memory(
+		OBJECT_AREA, objects, sizeof(objects));
+
+	/* Initialize object */
+	auto& obj = objects[0];
+	obj.alive = true;
+	snprintf(obj.name, sizeof(GameObject::name), "%s", "myobject");
+	obj.onDeath = Event(another_machine, "myobject_death");
+
+	printf("Object is alive? %s\n", obj.alive ? "true" : "false");
+
+	/* Simulate object dying */
+	obj.onDeath.call(OBJECT_AREA + 0 * sizeof(GameObject));
+
+	printf("Object is alive? %s\n", obj.alive ? "true" : "false");
+	assert(obj.alive == false);
 
 	return 0;
 }

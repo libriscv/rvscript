@@ -107,3 +107,16 @@ PUBLIC_API void cpp_function(const char* a, const C& c, const char* b)
 	/* Hello C++ World */
 	api::print(a, " ", c.to_string(), " ", b, "\n");
 }
+
+/* Example game object logic */
+struct GameObject {
+	bool alive;
+	char name[30];
+};
+
+PUBLIC_API void myobject_death(GameObject& object)
+{
+	api::print("Object '", object.name, "' is dying!\n");
+	/* SFX: Ugh... */
+	object.alive = false;
+}

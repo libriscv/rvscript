@@ -51,6 +51,10 @@ engine$ ./engine
 >>> [gameplay1] says: Hello Belated Microthread World! 1 second passed.
 >>> [events] says: I am being run on another machine!
 >>> [gameplay2] says: Hello C++ World
+...
+Object is alive? true
+>>> [gameplay2] says: Object 'myobject' is dying!
+Object is alive? false
 ```
 
 This particular output is with C++ RTTI and exceptions enabled.

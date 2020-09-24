@@ -5,3 +5,5 @@ cpp_function
 
 event_loop
 add_work
+
+myobject_death
