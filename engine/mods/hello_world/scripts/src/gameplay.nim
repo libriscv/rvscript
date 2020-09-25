@@ -1,9 +1,6 @@
 import strformat
-proc sys_print(data: cstring, len: cint) {.importcpp: "sys_print(@)", header: "ffi.h".}
+from ffi import print
 proc nim_test() {.exportc: "nim_test", used.}
-
-proc print(data: string) =
-    sys_print(data.cstring, data.len.cint)
 
 type
   Person = object
