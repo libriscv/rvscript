@@ -134,5 +134,11 @@ int main()
 	printf("Object is alive? %s\n", obj.alive ? "true" : "false");
 	assert(obj.alive == false);
 
+	/* If nim is enabled, we can run the nim test */
+	if (another_machine.resolve_address("nim_test")) {
+		printf("...\n");
+		another_machine.call("nim_test");
+	}
+
 	return 0;
 }

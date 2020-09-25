@@ -4,6 +4,7 @@ option(DEBUGGING   "Add debugging information" OFF)
 option(RTTI_EXCEPT "C++ RTTI and exceptions" OFF)
 set(VERSION_FILE   "symbols.map" CACHE STRING "Retained symbols file")
 option(STRIP_SYMBOLS "Remove all symbols except the public API" ON)
+option(HAVE_NIM    "Nim is installed" OFF)
 
 #
 # Build configuration
@@ -56,15 +57,15 @@ target_include_directories(libc PUBLIC ${UTILPATH})
 function (add_verfile NAME VERFILE)
 	set_target_properties(${NAME} PROPERTIES LINK_DEPENDS ${VERFILE})
 	target_link_libraries(${NAME} "-Wl,--retain-symbols-file=${VERFILE}")
-	if (GCSECTIONS)
-		file(STRINGS "${VERFILE}" SYMBOLS)
-		foreach(SYMBOL ${SYMBOLS})
-			if (NOT ${SYMBOL} STREQUAL "")
-				#message(STATUS "Symbol retained: ${SYMBOL}")
-				target_link_libraries(${NAME} "-Wl,--undefined=${SYMBOL}")
-			endif()
-		endforeach()
-	endif()
+	# certain languages don't allow you to mark functions as used
+	# so we need to explicitly keep these functions this way:
+	file(STRINGS "${VERFILE}" SYMBOLS)
+	foreach(SYMBOL ${SYMBOLS})
+		if (NOT ${SYMBOL} STREQUAL "")
+			#message(STATUS "Symbol retained: ${SYMBOL}")
+			target_link_libraries(${NAME} "-Wl,--undefined=${SYMBOL}")
+		endif()
+	endforeach()
 endfunction()
 
 
@@ -72,6 +73,9 @@ function (add_micro_binary NAME VERFILE)
 	add_executable(${NAME} ${ARGN})
 	target_link_libraries(${NAME} -static -Wl,--whole-archive libc -Wl,--no-whole-archive)
 	target_link_libraries(${NAME} frozen::frozen strf)
+	if (HAVE_NIM)
+		target_compile_definitions(${NAME} PUBLIC HAVE_NIM=1)
+	endif()
 	# place ELF into the sub-projects source folder
 	set_target_properties(${NAME}
 		PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -91,24 +95,7 @@ function (add_micro_binary NAME VERFILE)
 	endif()
 endfunction()
 
-set(API_SOURCES
-	${APIPATH}/api.h
-	${APIPATH}/api_impl.h
-	${APIPATH}/api_structs.h
-	${APIPATH}/shared_memory.h
-	${APIPATH}/syscalls.h
-)
-add_custom_command(
-	COMMAND ${CMAKE_COMMAND} -E make_directory ${APIPATH}
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/api/*.h ${APIPATH}
-	DEPENDS ${CMAKE_CURRENT_LIST_DIR}/api/api.h
-			${CMAKE_CURRENT_LIST_DIR}/api/api_impl.h
-			${CMAKE_CURRENT_LIST_DIR}/api/api_structs.h
-			${CMAKE_CURRENT_LIST_DIR}/api/shared_memory.h
-			${CMAKE_CURRENT_LIST_DIR}/api/syscalls.h
-	OUTPUT  ${API_SOURCES}
-)
-add_custom_target(install_headers
-	DEPENDS ${API_SOURCES}
-)
-#add_dependencies(libc install_headers)
+if (HAVE_NIM)
+	# Nim backend
+	include(${CMAKE_CURRENT_LIST_DIR}/nim.cmake)
+endif()

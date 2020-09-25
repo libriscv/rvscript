@@ -2,9 +2,9 @@
 
 This repository implements a game engine oriented scripting system using [libriscv](https://github.com/fwsGonzo/libriscv) as a backend. By using a fast virtual machine with low call overhead and modern programming techniques like compile-time programming we can have a fast budgeted script that lives in a separate address space.
 
-The environment is freestanding C++17 (or later) with an option for enabling RTTI and exceptions. Several CRT functions have been implemented as system calls, and will have native speeds.
+The guest environment is modern C++20 using GCC 10.2 with an option for enabling RTTI and exceptions. Several CRT functions have been implemented as system calls, and will have native speeds. There is also Nim support and some example code.
 
-The example C++ environment has some basic example timers and threads, as well as multiple machines to call into and between. The repository is a starting point for anyone who wants to try to use this in their game engine.
+The example program has some basic example timers and threads, as well as multiple machines to call into and between. The repository is a starting point for anyone who wants to try to use this in their game engine.
 
 In no uncertain terms: This requires compiling ahead of time, and there is no JIT, although that means you can use it on consoles. I have no issues compiling my script on WSL2 or any Linux.
 
@@ -150,6 +150,14 @@ The easiest languages to integrate are those that transpile to C or C++, such as
 
 Good luck.
 
+
+## Nim language support
+
+There is Nim support with the HAVE_NIM boolean CMake option enabled. Once enabled, the `nim` program must be in PATH, and `NIM_LIBS` must point to the nim lib folder. For example `/home/user/nim-1.2.6/lib`. Nim support is very experimental, but general computation should be well supported.
+
+Remember to use `.exportc` to make your Nim entry functions callable from the outside, and also add them to your symbols file. Last, you will need to call `NimMain()` from the `int main()` entry function. All of this is shown in the `gameplay.nim` example as well as `gameplay.cpp`. The example code gets run from `main.cpp` with `another_machine.call("nim_test");`.
+
+You may also have to enable RTTI and exceptions.
 
 ## Details
 

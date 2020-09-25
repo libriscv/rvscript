@@ -7,3 +7,4 @@ event_loop
 add_work
 
 myobject_death
+nim_test

@@ -1,9 +1,13 @@
 #include <api.h>
 #include "events.hpp"
+extern void NimMain();
 
 int main()
 {
 	/* This gets called before anything else, on each machine */
+#ifdef HAVE_NIM
+	NimMain();
+#endif
 }
 
 /* These are used for benchmarking */
