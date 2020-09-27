@@ -13,7 +13,8 @@ function(add_nim_sources NAME FILENAME)
 				${C_SOURCES}
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	)
-	file(GLOB C_SOURCES "${NIMCACHE}/*.cpp")
+	file(GLOB ALL_SOURCES "${NIMCACHE}/*.cpp")
+	list(APPEND C_SOURCES ${ALL_SOURCES})
 	set_source_files_properties(${C_SOURCES}
 		PROPERTIES GENERATED TRUE
 		COMPILE_FLAGS -Wno-write-strings)
