@@ -30,11 +30,11 @@ engine$ ./engine
 >>> [events] says: Entering event loop...
 >>> [gameplay1] says: Hello world!
 >>> [gameplay1] says: Exception caught!
-> median 2ns  		lowest: 2ns     	highest: 9ns
+> median 2ns  		lowest: 2ns     	highest: 2ns
 >>> Measurement "VM function call overhead" median: 2 nanos
 
-> median 147ns  		lowest: 139ns     	highest: 262ns
->>> Measurement "Thread creation overhead" median: 147 nanos
+> median 94ns  		lowest: 94ns     	highest: 127ns
+>>> Measurement "Thread creation overhead" median: 94 nanos
 
 >>> [gameplay2] says: Hello Remote World! value = 1234!
 >>> [gameplay1] says: Back again in the start() function! Return value: 1234
@@ -55,9 +55,13 @@ engine$ ./engine
 Object is alive? true
 >>> [gameplay2] says: Object 'myobject' is dying!
 Object is alive? false
+...
+>>> [gameplay2] says: Hello from Nim!
+>>> [gameplay2] says: John is 45 years old
+>>> [gameplay2] says: Kate is 30 years old
 ```
 
-This particular output is with C++ RTTI and exceptions enabled.
+This particular output is with C++ RTTI and exceptions, as well as the Nim example, enabled.
 
 
 ## Getting started
