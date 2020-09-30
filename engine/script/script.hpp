@@ -42,7 +42,8 @@ public:
 	void  add_shared_memory();
 	bool  reset(); // true if the reset was successful
 
-	void hash_public_api_symbols(const std::string& file);
+	void hash_public_api_symbols_file(const std::string& file);
+	void hash_public_api_symbols(std::string_view lines);
 	std::string symbol_name(gaddr_t address) const;
 	gaddr_t resolve_address(const std::string& name) const;
 	gaddr_t api_function_from_hash(uint32_t);

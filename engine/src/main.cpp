@@ -21,7 +21,10 @@ static Script& create_script(const std::string& name, const std::string& bbname)
 		std::forward_as_tuple(crc32(name.c_str())),
 		std::forward_as_tuple(box.machine, name));
 	auto& script = it.first->second;
-	script.hash_public_api_symbols(box.sympath);
+	if (!box.symbols.empty())
+		script.hash_public_api_symbols(box.symbols);
+	else
+		script.hash_public_api_symbols_file(box.sympath);
 	return script;
 }
 /* Retrieve machines based on name (hashed), used by system calls.
@@ -48,10 +51,21 @@ Script& get_script(uint32_t machine_hash, const char* name)
 
 int main()
 {
+#ifndef EMBEDDED_MODE
 	/* A single program that will be shared among all the machines, for convenience */
 	blackbox.insert_binary("gameplay",
 		"mods/hello_world/scripts/gameplay.elf",
 		"mods/hello_world/scripts/src/gameplay.symbols");
+#else
+	/* Program embedded into the engine */
+	extern char _binary_gameplay_elf_start;
+	extern char _binary_gameplay_elf_end;
+	extern char _binary_gameplay_symbols_start;
+	extern char _binary_gameplay_symbols_end;
+	blackbox.insert_embedded_binary("gameplay",
+		&_binary_gameplay_elf_start, &_binary_gameplay_elf_end,
+		&_binary_gameplay_symbols_start, &_binary_gameplay_symbols_end);
+#endif
 
 	/* Naming the machines allows us to call into one machine from another
 	   using this name (hashed). These machines will be fully intialized. */

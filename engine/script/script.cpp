@@ -3,6 +3,7 @@ using gaddr_t = Script::gaddr_t;
 
 #include "util/crc32.hpp"
 #include <fstream> // Windows doesn't implement C getline()
+#include <sstream>
 #include <include/syscall_helpers.hpp>
 #include <include/threads.hpp>
 #include "machine/include_api.hpp"
@@ -189,8 +190,22 @@ void Script::print_backtrace(const gaddr_t addr)
 			origin.address, origin.offset, origin.name.c_str());
 }
 
-void Script::hash_public_api_symbols(const std::string& file)
+void Script::hash_public_api_symbols(std::string_view contents)
 {
+	std::stringstream infile {std::string(contents)};
+
+	for (std::string line; infile >> line; )
+	{
+		m_public_api.insert({
+			crc32(line.c_str()), machine().address_of(line.c_str())
+		});
+	}
+}
+void Script::hash_public_api_symbols_file(const std::string& file)
+{
+	/* Ignore symbol file when not specified */
+	if (file.empty()) return;
+
 	std::ifstream infile(file);
 	if (!infile) {
 		printf(">>> Could not find symbols file: %s, ignoring...\n",
@@ -198,16 +213,12 @@ void Script::hash_public_api_symbols(const std::string& file)
 		return;
 	}
 
-	std::string line;
-	for (std::string line; std::getline(infile, line); )
-	{
-		if (!line.empty()) {
-			m_public_api.insert({
-				crc32(line.c_str()), machine().address_of(line.c_str())
-			});
-		}
-	}
+	std::string str((std::istreambuf_iterator<char>(infile)),
+	                 std::istreambuf_iterator<char>());
+
+	this->hash_public_api_symbols(str);
 }
+
 gaddr_t Script::resolve_address(const std::string& name) const {
 	return machine().address_of(name.c_str());
 }
