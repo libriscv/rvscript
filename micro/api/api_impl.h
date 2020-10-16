@@ -24,13 +24,19 @@ inline void print(Args&&... args)
 template <typename T>
 inline long measure(const char* testname, T testfunc)
 {
-	return apicall<long>(ECALL_MEASURE, testname, static_cast<void(*)()>(testfunc));
+	return syscall(ECALL_MEASURE, (long) testname, (long) static_cast<void(*)()>(testfunc));
+}
+
+__attribute__((noinline))
+inline long farcall_helper(uint32_t a, uint32_t b, ...)
+{
+	return syscall(ECALL_FARCALL, a, b);
 }
 
 template <typename Ret = long, typename... Args>
 inline Ret farcall(uint32_t mhash, uint32_t fhash, Args&&... args)
 {
-	return apicall<Ret>(ECALL_FARCALL, mhash, fhash, std::forward<Args>(args)...);
+	return (Ret) farcall_helper(mhash, fhash, std::forward<Args>(args)...);
 }
 #define FARCALL(mach, function, ...) \
 		api::farcall(crc32(mach), crc32(function), ## __VA_ARGS__)
@@ -80,42 +86,52 @@ inline void Game::exit()
 }
 
 using timer_callback = void (*) (int, void*);
-inline Timer timer_oneshot(double time, timer_callback callback, void* data, size_t size)
+inline Timer timer_periodic(float time, float period, timer_callback callback, void* data, size_t size)
 {
-	return {(int) apicall(ECALL_TIMER_ONESHOT, time, callback, data, size)};
+	register float fa0 asm("fa0") = time;
+	register float fa1 asm("fa1") = period;
+	register long a0 asm("a0") = (long) callback;
+	register long a1 asm("a1") = (long) data;
+	register long a2 asm("a2") = (long) size;
+	register long syscall_id asm("a7") = ECALL_TIMER_PERIODIC;
+
+	asm volatile ("scall"
+	 	: "+r"(a0) : "f"(fa0), "f"(fa1), "r"(a1), "r"(a2), "r"(syscall_id) : "memory");
+
+	return {(int) a0};
 }
-inline Timer Timer::oneshot(double time, Function<void(Timer)> callback)
-{
-	return timer_oneshot(time,
-		(timer_callback) [] (int id, void* data) {
-			(*(decltype(&callback)) data) ({id});
-		}, &callback, sizeof(callback));
-}
-inline Timer timer_periodic(double time, double period, timer_callback callback, void* data, size_t size)
-{
-	return {(int) apicall(ECALL_TIMER_PERIODIC, time, period, callback, data, size)};
-}
-inline Timer timer_periodic(double period, timer_callback callback, void* data, size_t size)
+inline Timer timer_periodic(float period, timer_callback callback, void* data, size_t size)
 {
 	return timer_periodic(period, period, callback, data, size);
 }
-inline Timer Timer::periodic(double time, double period, Function<void(Timer)> callback)
+inline Timer Timer::periodic(float time, float period, Function<void(Timer)> callback)
 {
 	return timer_periodic(time, period,
 		(timer_callback) [] (int id, void* data) {
 			(*(decltype(&callback)) data) ({id});
 		}, &callback, sizeof(callback));
 }
-inline Timer Timer::periodic(double period, Function<void(Timer)> callback)
+inline Timer Timer::periodic(float period, Function<void(Timer)> callback)
 {
 	return Timer::periodic(period, period, std::move(callback));
+}
+inline Timer timer_oneshot(float time, timer_callback callback, void* data, size_t size)
+{
+	return timer_periodic(time, 0.0f, std::move(callback), data, size);
+}
+inline Timer Timer::oneshot(float time, Function<void(Timer)> callback)
+{
+	return timer_oneshot(time,
+		(timer_callback) [] (int id, void* data) {
+			(*(decltype(&callback)) data) ({id});
+		}, &callback, sizeof(callback));
 }
 
 inline void Timer::stop() const {
 	(void) syscall(ECALL_TIMER_STOP, this->id);
 }
 
-inline long sleep(double seconds) {
+inline long sleep(float seconds) {
 	const int tid = microthread::gettid();
 	Timer::oneshot(seconds, [tid] (auto) {
 		microthread::unblock(tid);

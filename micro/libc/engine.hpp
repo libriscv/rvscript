@@ -22,15 +22,6 @@ inline constexpr uint32_t operator "" _hash (const char* value, std::size_t len)
 	return crc32(value, len);
 }
 
-template <typename Ret = long, typename... Args>
-inline Ret apicall(int syscall_n, Args&&... args)
-{
-	using function_t = Ret (*) (...);
-	// System call number is offset / 4
-	const auto addr32 = (uint32_t) (-syscall_n*4);
-	return ((function_t) (uintptr_t) addr32) (std::forward<Args>(args)...);
-}
-
 inline auto rdcycle()
 {
 	union {

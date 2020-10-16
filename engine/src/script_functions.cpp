@@ -122,26 +122,10 @@ APICALL(api_game_exit)
 
 /** Timers **/
 
-APICALL(api_timer_oneshot)
-{
-	auto time = machine.sysarg<double> (0); // FA0
-	auto addr = machine.sysarg<gaddr_t> (0); // A0
-	auto data = machine.sysarg<uint32_t> (1);
-	auto size = machine.sysarg<uint32_t> (2);
-	std::array<uint8_t, 32> capture;
-	assert(size <= sizeof(capture) && "Must fit inside temp buffer");
-	machine.memory.memcpy_out(capture.data(), data, size);
-
-	return timers.oneshot(time,
-		[addr = (gaddr_t) addr, capture, &machine] (int id) {
-			std::copy(capture.begin(), capture.end(), Script::hidden_area().data());
-			script(machine).call(addr, (int) id, (gaddr_t) Script::HIDDEN_AREA);
-        });
-}
 APICALL(api_timer_periodic)
 {
-	auto time = machine.sysarg<double> (0); // FA0
-	auto peri = machine.sysarg<double> (1); // FA1
+	auto time = machine.sysarg<float> (0); // FA0
+	auto peri = machine.sysarg<float> (1); // FA1
 	auto addr = machine.sysarg<gaddr_t> (0);  // A0
 	auto data = machine.sysarg<uint32_t> (1); // A1
 	auto size = machine.sysarg<uint32_t> (2); // A2
@@ -228,7 +212,6 @@ void Script::setup_syscall_interface(machine_t& machine)
 
 		{ECALL_GAME_EXIT,   api_game_exit},
 
-		{ECALL_TIMER_ONESHOT, api_timer_oneshot},
 		{ECALL_TIMER_PERIODIC, api_timer_periodic},
 		{ECALL_TIMER_STOP,  api_timer_stop},
 

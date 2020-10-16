@@ -28,14 +28,14 @@ void wait_next_tick();
 
 struct Timer {
 	using Callback = Function<void(Timer)>;
-	static Timer oneshot(double time, Callback);
-	static Timer periodic(double period, Callback);
-	static Timer periodic(double time, double period, Callback);
+	static Timer oneshot(float time, Callback);
+	static Timer periodic(float period, Callback);
+	static Timer periodic(float time, float period, Callback);
 	void stop() const;
 	const int id;
 };
 
-long  sleep(double seconds);
+long  sleep(float seconds);
 
 /** Math **/
 

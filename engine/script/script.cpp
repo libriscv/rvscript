@@ -113,20 +113,6 @@ void Script::machine_setup(machine_t& machine)
 			printf("Unhandled system call: %d\n", number);
 		});
 
-	// create execute trapping syscall page
-	// this is the last page in the 32-bit address space
-	auto& page = machine.memory.create_page(0xFFFFF);
-	// create an execution trap on the page
-	page.set_trap(
-		[&machine] (riscv::Page&, uint32_t sysn, int, int64_t) -> int64_t {
-			// invoke a system call
-			machine.system_call(1024 - (sysn / 4) % 1024);
-			// return to caller
-			const auto retaddr = machine.cpu.reg(riscv::RISCV::REG_RA);
-			machine.cpu.jump(retaddr);
-			return 0;
-		});
-
 	// we need to pass the .eh_frame location to a supc++ function,
 	// if C++ RTTI and Exceptions is enabled
 	machine.cpu.reg(11) = machine.memory.resolve_section(".eh_frame");
