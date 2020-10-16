@@ -27,11 +27,7 @@ inline long measure(const char* testname, T testfunc)
 	return syscall(ECALL_MEASURE, (long) testname, (long) static_cast<void(*)()>(testfunc));
 }
 
-__attribute__((noinline))
-inline long farcall_helper(uint32_t a, uint32_t b, ...)
-{
-	return syscall(ECALL_FARCALL, a, b);
-}
+extern "C" long farcall_helper(uint32_t a, uint32_t b, ...);
 
 template <typename Ret = long, typename... Args>
 inline Ret farcall(uint32_t mhash, uint32_t fhash, Args&&... args)
