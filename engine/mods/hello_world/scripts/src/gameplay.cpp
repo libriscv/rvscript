@@ -1,5 +1,6 @@
 #include <api.h>
 #include "events.hpp"
+using namespace std::string_literals;
 extern void NimMain();
 
 int main()
@@ -74,8 +75,8 @@ PUBLIC_API void start()
 	   executing it. The sleep() will block the thread until some time has
 	   passed, and then resume. At the end we make a remote function call
 	   to a long-running process that sits in an event loop waiting for work. */
-	microthread::direct([] {
-		api::print("Hello Microthread World!\n");
+	microthread::direct([] (std::string mt) {
+		api::print("Hello ", mt, " World!\n");
 		api::sleep(1.0);
 		api::print("Hello Belated Microthread World! 1 second passed.\n");
 		/* REMOTE_EXEC is implemented in events.hpp */
@@ -85,7 +86,7 @@ PUBLIC_API void start()
 			   such as strings, constant structs and functions. */
 			api::print("I am being run on another machine!\n");
 		});
-	});
+	}, "Microthread"s);
 	api::print("Back again in the start() function!\n");
 }
 
