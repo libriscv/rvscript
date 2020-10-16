@@ -1,6 +1,7 @@
 #include <libriscv/machine.hpp>
 #include <map>
 #include <string_view>
+#include <stdexcept>
 
 template <int W>
 struct MachineData

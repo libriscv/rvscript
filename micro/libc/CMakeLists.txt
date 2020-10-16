@@ -22,7 +22,6 @@ target_compile_definitions(libc PRIVATE
 	NATIVE_MEM_SYSCALLS=1
 )
 target_compile_definitions(libc PUBLIC
-	USE_THREADCALLS=1
 	NATIVE_SYSCALLS_BASE=70
 	THREAD_SYSCALLS_BASE=90
 )

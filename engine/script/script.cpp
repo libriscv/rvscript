@@ -86,7 +86,7 @@ bool Script::machine_initialize()
 			return false;
 		}
 	} catch (riscv::MachineException& me) {
-		printf(">>> Machine exception %d: %s (data: %d)\n",
+		printf(">>> Machine exception %d: %s (data: 0x%lX)\n",
 				me.type(), me.what(), me.data());
 #ifdef RISCV_DEBUG
 		m_machine->print_and_pause();
@@ -120,7 +120,7 @@ void Script::machine_setup(machine_t& machine)
 	page.set_trap(
 		[&machine] (riscv::Page&, uint32_t sysn, int, int64_t) -> int64_t {
 			// invoke a system call
-			machine.system_call(1024 - sysn / 4);
+			machine.system_call(1024 - (sysn / 4) % 1024);
 			// return to caller
 			const auto retaddr = machine.cpu.reg(riscv::RISCV::REG_RA);
 			machine.cpu.jump(retaddr);
@@ -137,7 +137,7 @@ void Script::handle_exception(gaddr_t address)
 		throw;
 	}
 	catch (const riscv::MachineException& e) {
-		fprintf(stderr, "Script::call exception: %s (data: %d)\n", e.what(), e.data());
+		fprintf(stderr, "Script::call exception: %s (data: 0x%lX)\n", e.what(), e.data());
 		fprintf(stderr, ">>> Machine registers:\n[PC\t%08X] %s\n",
 			machine().cpu.pc(),
 			machine().cpu.registers().to_string().c_str());

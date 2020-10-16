@@ -20,7 +20,7 @@ FAST_API void empty_function() {
 	__builtin_unreachable();
 }
 void thread_function() {
-	microthread::direct([] (auto&) {   });
+	microthread::direct([] { /* ... */ });
 }
 
 /* This is the function that gets called at the start */
@@ -74,7 +74,7 @@ PUBLIC_API void start()
 	   executing it. The sleep() will block the thread until some time has
 	   passed, and then resume. At the end we make a remote function call
 	   to a long-running process that sits in an event loop waiting for work. */
-	microthread::direct([] (auto&) {
+	microthread::direct([] {
 		api::print("Hello Microthread World!\n");
 		api::sleep(1.0);
 		api::print("Hello Belated Microthread World! 1 second passed.\n");
