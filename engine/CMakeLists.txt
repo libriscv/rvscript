@@ -55,12 +55,10 @@ function (embed_file NAME PATH BINARY)
         WORKING_DIRECTORY ${PATH}
         COMMAND ${CMAKE_OBJCOPY} -Ibinary -Oelf64-x86-64 -Bi386 ${BINARY} ${OUTFILE}
         OUTPUT  ${OUTFILE}
+        DEPENDS ${PATH}/${BINARY}
     )
     set_source_files_properties(${OUTFILE} PROPERTIES GENERATED TRUE)
     target_sources(${NAME} PRIVATE ${OUTFILE})
-
-    add_custom_target(${NAME}.${FILENAME} DEPENDS ${OUTFILE})
-    add_dependencies(${NAME} ${NAME}.${FILENAME})
 endfunction()
 
 if (EMBEDDED_MODE)
