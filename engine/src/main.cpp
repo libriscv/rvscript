@@ -21,6 +21,7 @@ static Script& create_script(const std::string& name, const std::string& bbname)
 		std::forward_as_tuple(crc32(name.c_str())),
 		std::forward_as_tuple(box.machine, name));
 	auto& script = it.first->second;
+	/* When embedding a program, the public API symbols are stored in memory */
 	if (!box.symbols.empty())
 		script.hash_public_api_symbols(box.symbols);
 	else

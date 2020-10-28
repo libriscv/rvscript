@@ -124,8 +124,8 @@ void Script::handle_exception(gaddr_t address)
 	}
 	catch (const riscv::MachineException& e) {
 		fprintf(stderr, "Script::call exception: %s (data: 0x%lX)\n", e.what(), e.data());
-		fprintf(stderr, ">>> Machine registers:\n[PC\t%08X] %s\n",
-			machine().cpu.pc(),
+		fprintf(stderr, ">>> Machine registers:\n[PC\t%08lX] %s\n",
+			(long) machine().cpu.pc(),
 			machine().cpu.registers().to_string().c_str());
 	}
 	catch (const std::exception& e) {
