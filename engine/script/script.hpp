@@ -83,6 +83,7 @@ private:
 	// hash to public API direct function map
 	eastl::unordered_map<uint32_t, gaddr_t> m_public_api;
 };
+static_assert(RISCV_ARCH == 32 || RISCV_ARCH == 64, "Architecture must be 32- or 64-bit");
 
 template <typename... Args>
 inline long Script::call(gaddr_t address, Args&&... args)
@@ -90,9 +91,6 @@ inline long Script::call(gaddr_t address, Args&&... args)
 	try {
 		return machine().vmcall<MAX_INSTRUCTIONS>(
 			address, std::forward<Args>(args)...);
-	}
-	catch (const riscv::MachineTimeoutException& e) {
-		this->handle_timeout(address);
 	}
 	catch (const std::exception& e) {
 		this->handle_exception(address);
@@ -120,9 +118,6 @@ inline long Script::preempt(gaddr_t address, Args&&... args)
 			address, std::forward<Args>(args)...);
 		machine().cpu.registers() = regs;
 		return ret;
-	}
-	catch (const riscv::MachineTimeoutException& e) {
-		this->handle_timeout(address);
 	}
 	catch (const std::exception& e) {
 		this->handle_exception(address);

@@ -102,7 +102,8 @@ void Script::machine_setup(machine_t& machine)
 {
 	machine.set_userdata<Script>(this);
 	machine.memory.set_exit_address(machine.address_of("exit"));
-	assert(machine.memory.exit_address() != 0);
+	if (UNLIKELY(machine.memory.exit_address() == 0))
+		throw std::runtime_error("Exit function not visible/available in program");
 	// add system call interface
 	auto* arena = setup_native_heap_syscalls<MARCH>(machine, MAX_HEAP);
 	setup_native_memory_syscalls<MARCH>(machine, TRUSTED_CALLS);
@@ -120,13 +121,17 @@ void Script::machine_setup(machine_t& machine)
 void Script::handle_exception(gaddr_t address)
 {
 	try {
-		throw;
+		throw; // re-throw
 	}
 	catch (const riscv::MachineException& e) {
 		fprintf(stderr, "Script::call exception: %s (data: 0x%lX)\n", e.what(), e.data());
 		fprintf(stderr, ">>> Machine registers:\n[PC\t%08lX] %s\n",
 			(long) machine().cpu.pc(),
 			machine().cpu.registers().to_string().c_str());
+	}
+	catch (const riscv::MachineTimeoutException& e) {
+		this->handle_timeout(address);
+		return; // NOTE: might wanna stay
 	}
 	catch (const std::exception& e) {
 		fprintf(stderr, "Script::call exception: %s\n", e.what());
