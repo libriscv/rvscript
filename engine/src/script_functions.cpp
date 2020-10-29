@@ -76,6 +76,9 @@ APICALL(api_farcall)
 		for (int i = 0; i < 8; i++) {
 			regs.getfl(10 + i) = current.getfl(10 + i);
 		}
+		// we short-circuit the ret pseudo-instruction:
+		// when we return to the source machine, we are already back at caller
+		machine.cpu.jump(current.get(riscv::RISCV::REG_RA) - 4);
 		// vmcall with no arguments to avoid clobbering registers
 		return script->call(addr);
 	}

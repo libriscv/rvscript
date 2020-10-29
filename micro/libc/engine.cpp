@@ -9,5 +9,5 @@ static_assert(ECALL_FARCALL == 104, "The farcall syscall number is hard-coded in
 asm(".global farcall_helper\n"
 "farcall_helper:\n"
 "	li a7, 104\n"
-"	ecall\n"
-"");
+"	ecall\n" // Note how there is no ret here
+""); // The system call handler must jump back to caller
