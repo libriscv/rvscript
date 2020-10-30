@@ -30,11 +30,14 @@ engine$ ./engine
 >>> [events] says: Entering event loop...
 >>> [gameplay1] says: Hello world!
 >>> [gameplay1] says: Exception caught!
-> median 2ns  		lowest: 2ns     	highest: 2ns
+> median 2ns  		lowest: 2ns     	highest: 3ns
 >>> Measurement "VM function call overhead" median: 2 nanos
 
-> median 94ns  		lowest: 94ns     	highest: 127ns
->>> Measurement "Thread creation overhead" median: 94 nanos
+> median 79ns  		lowest: 79ns     	highest: 121ns
+>>> Measurement "Thread creation overhead" median: 79 nanos
+
+> median 26ns  		lowest: 25ns     	highest: 55ns
+>>> Measurement "Function group handler" median: 26 nanos
 
 >>> [gameplay2] says: Hello Remote World! value = 1234!
 >>> [gameplay1] says: Back again in the start() function! Return value: 1234
@@ -59,6 +62,8 @@ Object is alive? false
 >>> [gameplay2] says: Hello from Nim!
 >>> [gameplay2] says: John is 45 years old
 >>> [gameplay2] says: Kate is 30 years old
+...
+Hello from a function group handler (also 1234)
 ```
 
 This particular output is with C++ RTTI and exceptions, as well as the Nim example, enabled.
