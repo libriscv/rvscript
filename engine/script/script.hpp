@@ -3,12 +3,14 @@
 #include <functional>
 #include <libriscv/machine.hpp>
 #include <EASTL/unordered_map.h>
+#include "function_group.hpp"
 
 class Script {
 public:
 	static constexpr int MARCH = (RISCV_ARCH == 32) ? 4 : 8;
 	using gaddr_t = riscv::address_type<MARCH>;
 	using machine_t = riscv::Machine<MARCH>;
+	using ghandler_t = std::function<void(machine_t&)>;
 	static constexpr uint64_t MAX_INSTRUCTIONS = 16'000'000;
 	static constexpr gaddr_t READONLY_AREA   = 0x20000;
 	static constexpr gaddr_t HIDDEN_AREA     = 0x10000;
@@ -32,15 +34,21 @@ public:
 	}
 	void each_tick_event();
 
+	// returns the effective system call number used
+	// can be called several times on the same index,
+	// and always updates the handler. will try to re-use sc number
+	int set_dynamic_function(int gid, int index, ghandler_t);
+
 	auto& machine() { return *m_machine; }
 	const auto& machine() const { return *m_machine; }
 
 	const auto& name() const noexcept { return m_name; }
 	uint32_t    hash() const noexcept { return m_hash; }
-	bool crashed() const noexcept { return m_crashed; }
 
-	void  add_shared_memory();
-	bool  reset(); // true if the reset was successful
+	bool crashed() const noexcept { return m_crashed; }
+	bool reset(); // true if the reset was successful
+	void print_backtrace(const gaddr_t addr);
+	long measure(gaddr_t address);
 
 	void hash_public_api_symbols_file(const std::string& file);
 	void hash_public_api_symbols(std::string_view lines);
@@ -48,14 +56,12 @@ public:
 	gaddr_t resolve_address(const std::string& name) const;
 	gaddr_t api_function_from_hash(uint32_t);
 
-	void print_backtrace(const gaddr_t addr);
-	long measure(gaddr_t address);
-
 	static auto&   shared_memory_page() noexcept { return g_shared_area; }
 	static size_t  shared_memory_size() noexcept { return g_shared_area.size(); };
 	static gaddr_t shared_memory_location() noexcept { return 0x2000; };
 	static auto&   hidden_area() noexcept { return g_hidden_stack; }
 
+	void add_shared_memory();
 	void enable_debugging();
 
 	Script(const machine_t&, const std::string& name);
@@ -82,6 +88,11 @@ private:
 	int         m_budget_overruns = 0;
 	// hash to public API direct function map
 	eastl::unordered_map<uint32_t, gaddr_t> m_public_api;
+	// groups of functions that dynamically extend engine functionality
+	eastl::unordered_map<int, FunctionGroup> m_groups;
+	// list of free (unused) system call numbers
+	eastl::fixed_vector<int, RISCV_SYSCALLS_MAX, false> m_free_sysno;
+	friend struct FunctionGroup;
 };
 static_assert(RISCV_ARCH == 32 || RISCV_ARCH == 64, "Architecture must be 32- or 64-bit");
 

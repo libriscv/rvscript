@@ -19,6 +19,9 @@ riscv::Page Script::g_hidden_stack {{ .write = false }};
 Script::Script(const machine_t& smach, const std::string& name)
 	: m_source_machine(smach), m_name(name), m_hash(crc32(name.c_str()))
 {
+	for (int n = ECALL_LAST; n < RISCV_SYSCALLS_MAX; n++) {
+		m_free_sysno.push_back(n);
+	}
 	this->reset();
 }
 Script::~Script() {}
@@ -32,6 +35,12 @@ bool Script::reset()
 		};
 		m_machine.reset(new machine_t(
 			m_source_machine.memory.binary(), options));
+
+		// unfortunately, we need to clear all the groups here
+		// as a reset will remove all pages in guest memory,
+		// which invalidates all groups. this will also give
+		// all the used system call numbers back.
+		m_groups.clear();
 
 	} catch (std::exception& e) {
 		printf(">>> Exception: %s\n", e.what());
@@ -239,6 +248,16 @@ void Script::each_tick_event()
 	}
 	this->preempt(this->m_tick_event, (int) count, (int) this->m_tick_block_reason);
 	assert(mt->get_thread()->tid == 0 && "Avoid clobbering regs");
+}
+
+int Script::set_dynamic_function(int gid, int index, ghandler_t handler)
+{
+	auto it = m_groups.find(gid);
+	if (it == m_groups.end()) {
+		it = m_groups.try_emplace(gid, gid, *this).first;
+	}
+	auto& group = it->second;
+	return group.install(index, std::move(handler));
 }
 
 void Script::enable_debugging()

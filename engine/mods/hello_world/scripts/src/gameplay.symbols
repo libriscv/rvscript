@@ -2,6 +2,7 @@ exit
 start
 some_function
 cpp_function
+test_function_groups
 
 event_loop
 add_work

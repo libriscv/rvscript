@@ -81,6 +81,8 @@ int main()
 
 	/* Get one of our gameplay machines */
 	auto& gameplay1 = SCRIPT(gameplay1);
+	/* Create an empty group function for benchmarking */
+	gameplay1.set_dynamic_function(1, 0, [] (auto&) {});
 #ifdef RISCV_DEBUG
 	gameplay1.enable_debugging();
 #endif
@@ -155,6 +157,20 @@ int main()
 		printf("...\n");
 		another_machine.call("nim_test");
 	}
+
+	printf("...\n");
+
+	/* Test dynamic functions */
+	const int GROUP = 1;
+	const int GROUP_INDEX = 1;
+	gameplay1.set_dynamic_function(GROUP, GROUP_INDEX,
+		[] (auto& m) {
+			auto [i, str] = m.template sysargs<int, std::string> ();
+			printf("%s from a function group handler (also %d)\n",
+				str.c_str(), i);
+			return 0;
+		});
+	gameplay1.call("test_function_groups");
 
 	return 0;
 }

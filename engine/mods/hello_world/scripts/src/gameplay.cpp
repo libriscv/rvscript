@@ -20,8 +20,11 @@ FAST_API void empty_function() {
 	asm("ebreak");
 	__builtin_unreachable();
 }
-void thread_function() {
+static void thread_function() {
 	microthread::direct([] { /* ... */ });
+}
+static void group_handler() {
+	api::groupcall<1> (0);
 }
 
 /* This is the function that gets called at the start */
@@ -44,6 +47,7 @@ PUBLIC_API void start()
 	   while preserving registers, and then prints some statistics. */
 	api::measure("VM function call overhead", empty_function);
 	api::measure("Thread creation overhead", thread_function);
+	api::measure("Function group handler", group_handler);
 
 	/* This function tells the engine to find the "gameplay2" machine,
 	   and then make a call into it with the provided function and arguments.
@@ -124,4 +128,10 @@ PUBLIC_API void myobject_death(GameObject& object)
 	api::print("Object '", object.name, "' is dying!\n");
 	/* SFX: Ugh... */
 	object.alive = false;
+}
+
+PUBLIC_API void test_function_groups()
+{
+	const int GROUP = 1;
+	api::groupcall<GROUP> (1, 1234, "Hello");
 }

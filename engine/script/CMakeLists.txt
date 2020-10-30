@@ -3,6 +3,7 @@ set(ARCH 64 CACHE STRING "RISC-V architecture")
 add_subdirectory(machine)
 
 set(SOURCES
+	function_group.cpp
 	script.cpp
 )
 

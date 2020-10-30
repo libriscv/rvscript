@@ -31,3 +31,6 @@ enum game_api_ids
 #define REASON_FRAME         10
 #define REASON_CAMERA_DOLLY  12
 #define REASON_DIALOGUE      22
+
+// Configurable location of function groups
+#define FUNCTION_GROUP_AREA  0xFF000000
