@@ -84,6 +84,19 @@ void FunctionGroup::install(unsigned idx, ghandler_t callback)
 	}
 }
 
+bool FunctionGroup::check(uint64_t bits) const
+{
+	for (unsigned i = 0; i < 64; i++) {
+		if (bits & ((uint64_t) 1 << i)) {
+			if (i >= m_syscall_handlers.size()
+				|| m_syscall_handlers[i] == nullptr)
+					return false;
+		}
+	}
+	return true;
+}
+
+
 void FunctionGroup::free_number(int sysno)
 {
 	m_script.m_free_sysno.push_back(sysno);

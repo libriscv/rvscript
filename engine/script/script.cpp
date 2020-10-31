@@ -253,9 +253,8 @@ void Script::each_tick_event()
 auto& Script::get_group(int gid)
 {
 	auto it = m_groups.find(gid);
-	if (it == m_groups.end()) {
+	if (it == m_groups.end())
 		it = m_groups.try_emplace(gid, gid, *this).first;
-	}
 	return it->second;
 }
 void Script::set_dynamic_function(int gid, int index, ghandler_t handler)
@@ -271,6 +270,12 @@ void Script::set_dynamic_functions(int gid, std::vector<std::pair<int, ghandler_
 }
 size_t Script::group_entries_max() const noexcept {
 	return FunctionGroup::GROUP_SIZE;
+}
+bool Script::check_group(int gid, uint64_t bits) const {
+	auto it = m_groups.find(gid);
+	if (it != m_groups.end())
+		return it->second.check(bits);
+	return false;
 }
 size_t Script::current_group() const noexcept {
 	return FunctionGroup::calculate_group(machine().cpu.pc());

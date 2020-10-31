@@ -137,6 +137,9 @@ static GroupCall<1, 1, void(int, const char*)> myfunction;
 
 PUBLIC(void test_function_groups())
 {
+	// Verify that the given indices have handlers
+	EXPECT(check_group(1, {1, 2, 33, 63}));
+
 	myfunction(1234, "Hello");
 
 	groupcall<1, 2, void()> ();

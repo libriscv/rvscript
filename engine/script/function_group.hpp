@@ -62,6 +62,8 @@ struct FunctionGroup
 
 	// installs the 'idx' entry for this group
 	void install(unsigned idx, ghandler_t);
+	// returns true if all set bit-indices have a corresponding handler
+	bool check(uint64_t bits) const;
 
 	// base address in guest memory
 	static uint64_t group_area() noexcept;

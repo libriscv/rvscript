@@ -99,6 +99,18 @@ inline auto groupcall(Args&&... args) {
 	return GroupCall<G, I, F> {} (std::forward<Args>(args)...);
 }
 
+inline bool check_group(int gid, std::initializer_list<int> indices)
+{
+	uint64_t bits = 0x0;
+	for (const int idx : indices) {
+		bits |= 1 << idx;
+	}
+	if constexpr(sizeof(void*) == 8)
+		return syscall(ECALL_CHECK_GROUP, gid, bits);
+	else // in 32-bit we pass the 64-bit integer in 2 registers
+		return syscall(ECALL_CHECK_GROUP, gid, bits >> 32, bits);
+}
+
 inline void Game::exit()
 {
 	(void) syscall(ECALL_GAME_EXIT);

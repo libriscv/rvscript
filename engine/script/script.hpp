@@ -39,6 +39,8 @@ public:
 	void set_dynamic_function(int gid, int index, ghandler_t);
 	void set_dynamic_functions(int gid, std::vector<std::pair<int, ghandler_t>>);
 	size_t group_entries_max() const noexcept;
+	// returns true if all set bit-indices have a corresponding handler
+	bool check_group(int gid, uint64_t bits) const;
 	// When a handler is being called, retrieve group/index
 	size_t current_group() const noexcept;
 	size_t current_group_index() const noexcept;
