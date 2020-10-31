@@ -165,7 +165,7 @@ int main()
 	int called = 0x0;
 	gameplay1.set_dynamic_functions(GROUP, {
 		{1, [&] (auto& script) {
-			auto& m = script.machine();
+			const auto& m = script.machine();
 			auto [i, str] = m.template sysargs<int, std::string> ();
 			printf("%s from a function group handler (also %d)\n",
 				str.c_str(), i);

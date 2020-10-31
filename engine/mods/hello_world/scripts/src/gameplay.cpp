@@ -13,7 +13,7 @@ int main()
 }
 
 /* These are used for benchmarking */
-FAST_API void empty_function() {
+static void empty_function() {
 	/* The ebreak-unreachable combo is a way to abruptly stop the machine, and
 	   we can also use it to make the compiler not emit function epilogues.
 	   You don't have to use this for anything other than making benchmark
@@ -30,7 +30,7 @@ static void group_handler() {
 
 /* This is the function that gets called at the start */
 /* See engine/src/main.cpp:69 */
-PUBLIC_API void start()
+PUBLIC(void start())
 {
 	/* This function is implemented in api_impl.h, and it makes a
 	   system call into the engine, which then writes to the terminal. */
@@ -99,7 +99,8 @@ PUBLIC_API void start()
    because the symbol files are used in the build system to preserve certain
    functions that would ordinarily get optimized out. It's name also has to
    unmangled, otherwise we can't find it in the ELF string tables. */
-PUBLIC_API long some_function(int value)
+extern "C"
+long some_function(int value)
 {
 	api::print("Hello Remote World! value = ", value, "!\n");
 	return value;
@@ -112,7 +113,8 @@ struct C {
 private:
 	char c;
 };
-PUBLIC_API void cpp_function(const char* a, const C& c, const char* b)
+extern "C"
+void cpp_function(const char* a, const C& c, const char* b)
 {
 	/* Hello C++ World */
 	api::print(a, " ", c.to_string(), " ", b, "\n");
@@ -124,7 +126,7 @@ struct GameObject {
 	char name[30];
 };
 
-PUBLIC_API void myobject_death(GameObject& object)
+PUBLIC(void myobject_death(GameObject& object))
 {
 	api::print("Object '", object.name, "' is dying!\n");
 	/* SFX: Ugh... */
@@ -133,7 +135,7 @@ PUBLIC_API void myobject_death(GameObject& object)
 
 static GroupCall<1, 1, void(int, const char*)> myfunction;
 
-PUBLIC_API void test_function_groups()
+PUBLIC(void test_function_groups())
 {
 	myfunction(1234, "Hello");
 

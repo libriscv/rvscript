@@ -1,7 +1,7 @@
 #include <api.h>
 #include <include/event_loop.hpp>
 
-PUBLIC_API bool add_work(const Events::Work*);
+PUBLIC(bool add_work(const Events::Work*));
 
 inline void execute_remotely(uint32_t mhash, Function<void()> func)
 {

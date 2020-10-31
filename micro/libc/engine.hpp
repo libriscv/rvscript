@@ -11,12 +11,7 @@
 #include "shared_memory.h"
 constexpr double PI = 3.14159265358979323846;
 extern "C" void _exit(int) __attribute__((noreturn));
-#define PUBLIC_API extern "C" __attribute__((used))
-#define FAST_API extern "C" __attribute__((used, naked))
-#define FAST_RETURN() { asm volatile("ebreak"); __builtin_unreachable(); }
-#define FAST_RETVAL(x) \
-		{register long __a0 asm("a0") = (long) (x); \
-		asm volatile("ebreak" :: "r"(__a0)); __builtin_unreachable(); }
+#define PUBLIC(...) extern "C" __attribute__((used)) __VA_ARGS__
 
 inline constexpr uint32_t operator "" _hash (const char* value, std::size_t len) {
 	return crc32(value, len);

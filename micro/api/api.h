@@ -67,7 +67,4 @@ struct MapFile {
 #ifdef __riscv
 extern void map_main(MapFile*);
 
-#define PUBLIC_API extern "C" __attribute__((used))
-#define FAST_API extern "C" __attribute__((used, naked))
-
 #endif

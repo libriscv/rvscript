@@ -3,7 +3,7 @@
 
 static std::array<Events, 2> events;
 
-PUBLIC_API void event_loop()
+PUBLIC(void event_loop())
 {
 	api::print("Entering event loop...\n");
 	while (true) {
@@ -12,7 +12,7 @@ PUBLIC_API void event_loop()
 	}
 }
 
-PUBLIC_API bool add_work(const Events::Work* work)
+PUBLIC(bool add_work(const Events::Work* work))
 {
 	EXPECT(work != nullptr);
 	for (auto& ev : events)
