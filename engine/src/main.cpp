@@ -168,7 +168,6 @@ int main()
 			auto [i, str] = m.template sysargs<int, std::string> ();
 			printf("%s from a function group handler (also %d)\n",
 				str.c_str(), i);
-			return 0;
 		});
 	gameplay1.call("test_function_groups");
 

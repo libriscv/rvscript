@@ -24,7 +24,7 @@ static void thread_function() {
 	microthread::direct([] { /* ... */ });
 }
 static void group_handler() {
-	api::groupcall<1> (0);
+	api::groupcall<1, 0> ();
 }
 
 /* This is the function that gets called at the start */
@@ -133,5 +133,5 @@ PUBLIC_API void myobject_death(GameObject& object)
 PUBLIC_API void test_function_groups()
 {
 	const int GROUP = 1;
-	api::groupcall<GROUP> (1, 1234, "Hello");
+	api::groupcall<GROUP, 1, void(int, const char*)> (1234, "Hello");
 }

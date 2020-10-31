@@ -76,13 +76,16 @@ inline void each_tick(const T& func, Args&&... args)
 	microthread::oneshot(func, std::forward<Args> (args)...);
 }
 
-template <int gid, typename... Args>
-inline long groupcall(int id, Args&&... args)
+template <int gid, int id, typename T = void(), typename... Args>
+inline auto groupcall(Args&&... args)
 {
 	static constexpr size_t GROUP_BYTES = 64 * 8;
 	const uintptr_t addr = FUNCTION_GROUP_AREA | (gid * GROUP_BYTES) | id * 8;
-	using groupcall_t = long(*)(...);
-	return ((groupcall_t) addr) (std::forward<Args>(args)...);
+	const auto& func = *(T*) addr;
+	if constexpr (std::is_same_v<void, decltype(func(args...))>)
+		func(std::forward<Args>(args)...);
+	else
+		return func(std::forward<Args>(args)...);
 }
 
 inline void Game::exit()
