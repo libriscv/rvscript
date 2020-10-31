@@ -68,10 +68,16 @@ void FunctionGroup::install(unsigned idx, ghandler_t callback)
 	auto& handler = m_syscall_handlers[idx];
 	handler = std::move(callback);
 
-	// create machine code in guests virtual memory
+	// Create machine code in guests virtual memory
 	if (handler != nullptr) {
+#ifdef RISCV_SI_SYSCALLS
+		// The first two entries are used by ECALL and EBREAK
+		static_assert( ECALL_LAST >= 2 );
+		m_data[idx*2+0] = 0x73  | ((m_sysno & 0x7FF) << 20); // ECALL.IMM
+#else
 		m_data[idx*2+0] = 0x893 | ((m_sysno & 0x7FF) << 20); // LI
 		m_data[idx*2+1] = 0x73; // ECALL
+#endif
 	} else {
 		m_data[idx*2+0] = 0x0;
 		m_data[idx*2+1] = 0x0;

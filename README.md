@@ -36,8 +36,8 @@ engine$ ./engine
 > median 79ns  		lowest: 79ns     	highest: 121ns
 >>> Measurement "Thread creation overhead" median: 79 nanos
 
-> median 26ns  		lowest: 25ns     	highest: 55ns
->>> Measurement "Function group handler" median: 26 nanos
+> median 20ns  		lowest: 19ns     	highest: 43ns
+>>> Measurement "Function group handler" median: 20 nanos
 
 >>> [gameplay2] says: Hello Remote World! value = 1234!
 >>> [gameplay1] says: Back again in the start() function! Return value: 1234
