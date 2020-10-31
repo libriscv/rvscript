@@ -76,16 +76,27 @@ inline void each_tick(const T& func, Args&&... args)
 	microthread::oneshot(func, std::forward<Args> (args)...);
 }
 
-template <int gid, int id, typename T = void(), typename... Args>
-inline auto groupcall(Args&&... args)
-{
-	static constexpr size_t GROUP_BYTES = 64 * 8;
-	const uintptr_t addr = FUNCTION_GROUP_AREA | (gid * GROUP_BYTES) | id * 8;
-	const auto& func = *(T*) addr;
-	if constexpr (std::is_same_v<void, decltype(func(args...))>)
-		func(std::forward<Args>(args)...);
-	else
+template <int G, int I, typename F>
+struct GroupCall {
+	static constexpr size_t GROUP_SIZE = 64;
+	static_assert(I >= 0 && I < GROUP_SIZE, "Index must be inside the group");
+	static constexpr uintptr_t addr = FUNCTION_GROUP_AREA + ((G * GROUP_SIZE) | I) * 8;
+	static_assert(addr >= FUNCTION_GROUP_AREA, "Address must be in the memory range");
+
+	static constexpr auto group() { return G; }
+	static constexpr auto index() { return I; }
+
+	template <typename... Args>
+	auto operator() (Args&&... args) const {
+		static_assert( std::is_invocable_v<F, Args...> );
+		const auto& func = *(F*) addr;
 		return func(std::forward<Args>(args)...);
+	}
+};
+
+template <int G, int I, typename F = void(), typename... Args>
+inline auto groupcall(Args&&... args) {
+	return GroupCall<G, I, F> {} (std::forward<Args>(args)...);
 }
 
 inline void Game::exit()

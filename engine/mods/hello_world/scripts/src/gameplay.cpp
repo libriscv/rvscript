@@ -1,5 +1,6 @@
 #include <api.h>
 #include "events.hpp"
+using namespace api;
 using namespace std::string_literals;
 extern void NimMain();
 
@@ -130,8 +131,9 @@ PUBLIC_API void myobject_death(GameObject& object)
 	object.alive = false;
 }
 
+static GroupCall<1, 1, void(int, const char*)> myfunction;
+
 PUBLIC_API void test_function_groups()
 {
-	const int GROUP = 1;
-	api::groupcall<GROUP, 1, void(int, const char*)> (1234, "Hello");
+	myfunction(1234, "Hello");
 }
