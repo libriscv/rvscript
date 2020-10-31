@@ -250,14 +250,33 @@ void Script::each_tick_event()
 	assert(mt->get_thread()->tid == 0 && "Avoid clobbering regs");
 }
 
-int Script::set_dynamic_function(int gid, int index, ghandler_t handler)
+auto& Script::get_group(int gid)
 {
 	auto it = m_groups.find(gid);
 	if (it == m_groups.end()) {
 		it = m_groups.try_emplace(gid, gid, *this).first;
 	}
-	auto& group = it->second;
-	return group.install(index, std::move(handler));
+	return it->second;
+}
+void Script::set_dynamic_function(int gid, int index, ghandler_t handler)
+{
+	get_group(gid).install(index, std::move(handler));
+}
+void Script::set_dynamic_functions(int gid, std::vector<std::pair<int, ghandler_t>> vec)
+{
+	auto& group = get_group(gid);
+	for (const auto& pair : vec) {
+		group.install(pair.first, std::move(pair.second));
+	}
+}
+size_t Script::group_entries_max() const noexcept {
+	return FunctionGroup::GROUP_SIZE;
+}
+size_t Script::current_group() const noexcept {
+	return FunctionGroup::calculate_group(machine().cpu.pc());
+}
+size_t Script::current_group_index() const noexcept {
+	return FunctionGroup::calculate_group_index(machine().cpu.pc());
 }
 
 void Script::enable_debugging()

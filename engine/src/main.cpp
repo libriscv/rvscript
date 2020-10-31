@@ -162,14 +162,36 @@ int main()
 
 	/* Test dynamic functions */
 	const int GROUP = 1;
-	const int GROUP_INDEX = 1;
-	gameplay1.set_dynamic_function(GROUP, GROUP_INDEX,
-		[] (auto& m) {
+	int called = 0x0;
+	gameplay1.set_dynamic_functions(GROUP, {
+		{1, [&] (auto& script) {
+			auto& m = script.machine();
 			auto [i, str] = m.template sysargs<int, std::string> ();
 			printf("%s from a function group handler (also %d)\n",
 				str.c_str(), i);
-		});
+			assert(gameplay1.current_group() == GROUP);
+			assert(gameplay1.current_group_index() == 1);
+			called |= 0x1;
+		}},
+		{2, [&] (auto&) {
+			assert(gameplay1.current_group() == GROUP);
+			assert(gameplay1.current_group_index() == 2);
+			called |= 0x2;
+		}},
+		{33, [&] (auto&) {
+			assert(gameplay1.current_group() == GROUP);
+			assert(gameplay1.current_group_index() == 33);
+			called |= 0x4;
+		}},
+		{63, [&] (auto&) {
+			assert(gameplay1.current_group() == GROUP);
+			assert(gameplay1.current_group_index() == 63);
+			called |= 0x8;
+		}}
+	});
 	gameplay1.call("test_function_groups");
+	// All the functions should have been called
+	if (called != 0xF) exit(1);
 
 	return 0;
 }

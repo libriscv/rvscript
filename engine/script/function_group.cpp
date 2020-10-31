@@ -3,6 +3,24 @@
 #include "machine/syscalls.h"
 #include "script.hpp"
 
+uint64_t FunctionGroup::group_area() noexcept {
+	return FUNCTION_GROUP_AREA;
+}
+size_t FunctionGroup::calculate_group(uint64_t pc) noexcept {
+	if (pc >= FunctionGroup::group_area()) {
+		pc -= FunctionGroup::group_area();
+		return pc / FunctionGroup::GROUP_BYTES;
+	}
+	return (size_t) -1;
+}
+size_t FunctionGroup::calculate_group_index(uint64_t pc) noexcept {
+	if (pc >= FunctionGroup::group_area()) {
+		pc -= FunctionGroup::group_area();
+		return (pc / 8) % FunctionGroup::GROUP_SIZE;
+	}
+	return (size_t) -1;
+}
+
 FunctionGroup::datatype_t& FunctionGroup::create_dataref(int gid, Script& s)
 {
 	static_assert(riscv::Page::size() % GROUP_BYTES == 0, "Groups must be PO2 less than page size");
@@ -23,38 +41,41 @@ FunctionGroup::datatype_t& FunctionGroup::create_dataref(int gid, Script& s)
 FunctionGroup::FunctionGroup(int gid, Script& s)
 	: m_script(s), m_data(create_dataref(gid, s))
 {
-	// NOTE: we may want to write helpful instructions to
-	// each entry, as you will get "Illegal opcode" right now.
-}
-FunctionGroup::~FunctionGroup()
-{
-	for (auto sysno : m_syscall_numbers)
-		if (sysno != 0) free_number(sysno);
-}
-
-int FunctionGroup::install(int idx, ghandler_t callback)
-{
-	auto& handler = m_syscall_handlers.at(idx);
-	handler = std::move(callback);
-	if (idx >= m_syscall_numbers.size())
-		m_syscall_numbers.resize(idx+1);
-	// request new system call number if not set
-	auto& sysno = m_syscall_numbers[idx];
-	if (sysno == 0) sysno = request_number();
-	// create machine code in guests virtual memory
-	m_data[idx*2+0] = 0x893 | ((sysno & 0x7FF) << 20); // LI
-	m_data[idx*2+1] = 0x73; // ECALL
+	m_sysno = request_number();
 	// install our syscall wrapper which calls the real handler
 	// and then safely returns back to the guests caller
-	m_script.machine().install_syscall_handler(sysno,
-		[&handler] (auto& m) {
-			// return back to caller immediately
+	m_script.machine().install_syscall_handler(m_sysno,
+		[this] (auto& m) {
+			auto index = (m.cpu.pc() / 8) % GROUP_SIZE;
+			auto& handler = m_syscall_handlers.at(index);
+			// call handler (std::function already checks null)
+			handler(m_script);
+			// return back to caller before returning
 			m.cpu.jump(m.cpu.reg(riscv::RISCV::REG_RA) - 4);
-			// call custom handler
-			handler(m);
 			return m.cpu.reg(riscv::RISCV::REG_RETVAL);
 		});
-	return sysno;
+}
+FunctionGroup::~FunctionGroup() {
+	free_number(this->m_sysno);
+}
+
+void FunctionGroup::install(unsigned idx, ghandler_t callback)
+{
+	assert(idx < GROUP_SIZE);
+	if (idx >= m_syscall_handlers.size()) {
+		m_syscall_handlers.resize(idx+1);
+	}
+	auto& handler = m_syscall_handlers[idx];
+	handler = std::move(callback);
+
+	// create machine code in guests virtual memory
+	if (handler != nullptr) {
+		m_data[idx*2+0] = 0x893 | ((m_sysno & 0x7FF) << 20); // LI
+		m_data[idx*2+1] = 0x73; // ECALL
+	} else {
+		m_data[idx*2+0] = 0x0;
+		m_data[idx*2+1] = 0x0;
+	}
 }
 
 void FunctionGroup::free_number(int sysno)

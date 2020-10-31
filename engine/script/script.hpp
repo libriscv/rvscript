@@ -10,12 +10,12 @@ public:
 	static constexpr int MARCH = (RISCV_ARCH == 32) ? 4 : 8;
 	using gaddr_t = riscv::address_type<MARCH>;
 	using machine_t = riscv::Machine<MARCH>;
-	using ghandler_t = std::function<void(machine_t&)>;
+	using ghandler_t = std::function<void(Script&)>;
 	static constexpr uint64_t MAX_INSTRUCTIONS = 16'000'000;
 	static constexpr gaddr_t READONLY_AREA   = 0x20000;
 	static constexpr gaddr_t HIDDEN_AREA     = 0x10000;
 
-	// call any script function, with any parameters
+	// Call any script function, with any parameters
 	template <typename... Args>
 	inline long call(const std::string& name, Args&&...);
 
@@ -25,7 +25,7 @@ public:
 	template <typename... Args>
 	inline long preempt(gaddr_t addr, Args&&...);
 
-	// run for a bit, then stop
+	// Run for a bit, then stop
 	inline void resume(uint64_t instruction_count);
 
 	void set_tick_event(gaddr_t addr, int reason) {
@@ -34,10 +34,14 @@ public:
 	}
 	void each_tick_event();
 
-	// returns the effective system call number used
-	// can be called several times on the same index,
-	// and always updates the handler. will try to re-use sc number
-	int set_dynamic_function(int gid, int index, ghandler_t);
+	// Install a callback function for a given group ID and index
+	// Can be invoked from the guest using the same group ID and index
+	void set_dynamic_function(int gid, int index, ghandler_t);
+	void set_dynamic_functions(int gid, std::vector<std::pair<int, ghandler_t>>);
+	size_t group_entries_max() const noexcept;
+	// When a handler is being called, retrieve group/index
+	size_t current_group() const noexcept;
+	size_t current_group_index() const noexcept;
 
 	auto& machine() { return *m_machine; }
 	const auto& machine() const { return *m_machine; }
@@ -90,6 +94,7 @@ private:
 	eastl::unordered_map<uint32_t, gaddr_t> m_public_api;
 	// groups of functions that dynamically extend engine functionality
 	eastl::unordered_map<int, FunctionGroup> m_groups;
+	auto& get_group(int);
 	// list of free (unused) system call numbers
 	eastl::fixed_vector<int, RISCV_SYSCALLS_MAX, false> m_free_sysno;
 	friend struct FunctionGroup;

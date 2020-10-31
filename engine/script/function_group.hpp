@@ -56,14 +56,18 @@ class Script;
 
 struct FunctionGroup
 {
-	static constexpr int MARCH = (RISCV_ARCH == 32) ? 4 : 8;
-	using ghandler_t = std::function<void(riscv::Machine<MARCH>&)>;
+	using ghandler_t = std::function<void(Script&)>;
 	static constexpr size_t GROUP_SIZE = 64; // functions in group
 	static constexpr size_t GROUP_BYTES = GROUP_SIZE * 8; // 2 instr
 
-	// installs the 'idx' entry for this group, and then
-	// returns the effective system call number
-	int install(int idx, ghandler_t);
+	// installs the 'idx' entry for this group
+	void install(unsigned idx, ghandler_t);
+
+	// base address in guest memory
+	static uint64_t group_area() noexcept;
+	// calculate group/index from PC
+	static size_t calculate_group(uint64_t) noexcept;
+	static size_t calculate_group_index(uint64_t) noexcept;
 
 	FunctionGroup(int gid, Script& s);
 	~FunctionGroup();
@@ -76,6 +80,6 @@ private:
 
 	Script&     m_script;
 	datatype_t& m_data;
-	std::vector<int> m_syscall_numbers = {};
-	std::array<ghandler_t, GROUP_SIZE> m_syscall_handlers;
+	int         m_sysno;
+	eastl::vector<ghandler_t> m_syscall_handlers;
 };

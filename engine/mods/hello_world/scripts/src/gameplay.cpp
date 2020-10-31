@@ -136,4 +136,10 @@ static GroupCall<1, 1, void(int, const char*)> myfunction;
 PUBLIC_API void test_function_groups()
 {
 	myfunction(1234, "Hello");
+
+	groupcall<1, 2, void()> ();
+	//groupcall<1, 3, void()> (); // illegal
+	groupcall<1, 33, void()> ();
+	groupcall<1, 63, void()> ();
+	//groupcall<1, 64, void()> (); // out of bounds
 }
