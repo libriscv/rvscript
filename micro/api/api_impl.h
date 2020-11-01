@@ -119,17 +119,9 @@ inline void Game::exit()
 using timer_callback = void (*) (int, void*);
 inline Timer timer_periodic(float time, float period, timer_callback callback, void* data, size_t size)
 {
-	register float fa0 asm("fa0") = time;
-	register float fa1 asm("fa1") = period;
-	register long a0 asm("a0") = (long) callback;
-	register long a1 asm("a1") = (long) data;
-	register long a2 asm("a2") = (long) size;
-	register long syscall_id asm("a7") = ECALL_TIMER_PERIODIC;
+	static GroupCall<2, 1, int(float, float, timer_callback, void*, size_t)> periodic_timer;
 
-	asm volatile ("scall"
-	 	: "+r"(a0) : "f"(fa0), "f"(fa1), "r"(a1), "r"(a2), "r"(syscall_id) : "memory");
-
-	return {(int) a0};
+	return {periodic_timer(time, period, callback, data, size)};
 }
 inline Timer timer_periodic(float period, timer_callback callback, void* data, size_t size)
 {
@@ -159,7 +151,8 @@ inline Timer Timer::oneshot(float time, Function<void(Timer)> callback)
 }
 
 inline void Timer::stop() const {
-	(void) syscall(ECALL_TIMER_STOP, this->id);
+	static GroupCall<2, 0, void(int)> stop_timer;
+	stop_timer(this->id);
 }
 
 inline long sleep(float seconds) {

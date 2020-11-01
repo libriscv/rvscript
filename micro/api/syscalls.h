@@ -14,9 +14,6 @@ enum game_api_ids
 	ECALL_EACH_FRAME,
 	ECALL_CHECK_GROUP,
 	ECALL_GAME_EXIT,
-	// Timers
-	ECALL_TIMER_PERIODIC,
-	ECALL_TIMER_STOP,
 	// Math
 	ECALL_SINF,
 	ECALL_RANDF,
@@ -35,3 +32,5 @@ enum game_api_ids
 
 // Configurable location of function groups
 #define FUNCTION_GROUP_AREA  0xFF000000
+
+#define GROUP_TIMERS 2

@@ -52,7 +52,6 @@ FunctionGroup::FunctionGroup(int gid, Script& s)
 			handler(m_script);
 			// return back to caller before returning
 			m.cpu.jump(m.cpu.reg(riscv::RISCV::REG_RA) - 4);
-			return m.cpu.reg(riscv::RISCV::REG_RETVAL);
 		});
 }
 FunctionGroup::~FunctionGroup()
