@@ -3,10 +3,11 @@
 class Script;
 
 /**
- *  Function groups allow you to allocate a group
- *  to a single purpose, hand it to a subsystem,
- *  and let that subsystem allocate its own system
- *  calls at the same speed as regular handlers.
+ *  Function groups allow you to allocate a group,
+ *  hand it to a subsystem, and let that subsystem
+ *  allocate its own calls at the same speed as
+ *  regular handlers, but with several convenience
+ *  factors.
  *
  *  The primary purpose is to set aside unique group
  *  ids to each subsystem that needs to add handlers.
@@ -22,10 +23,10 @@ class Script;
  *  Let's install the deallocate handler:
  *
  *  script.set_dynamic_function(44, 2,
- *     [] (auto& machine) {
+ *     [] (auto& script) {
  *        printf("Deallocating in ... 3.. 2.. 1..\n");
  *        exit(1);
- *     }
+ *     });
  *
  *  This function will be called from a dynamically
  *  allocated system call, which is written into the
@@ -34,21 +35,14 @@ class Script;
  *  this function group like this:
  *
  *  void custom_deallocate(void* p) {
- *      api::groupcall<44> (2, p);
+ *      groupcall<44, 2, void(void*)> (p);
  *  }
  *
  *  When the function is called, a system call handler is
- *  invoked on the host, which calls the given function.
+ *  invoked on the host, which again calls the user callback.
  *
  *  There are thousands of groups, which are automatically freed
  *  on group deletion, so everything is dynamically managed.
- *
- *  There is extra cost due to the abstraction
- *  of having a std::function wrapper, but it
- *  allows capturing arbitrary things into the handler.
- *  Inside the guest there is extra cost in having to
- *  do a function call (which clobbers memory), although
- *  it should be negligible.
  *  This works by writing instructions into a custom area
  *  in guest memory, which loads the correct system call number
  *  and then invokes a system call.

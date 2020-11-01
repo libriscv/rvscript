@@ -1,5 +1,6 @@
 #include "script_functions.hpp"
 #include <script/machine/include_api.hpp>
+#include <fmt/core.h>
 #include "timers.hpp"
 extern Timers timers;
 static_assert(ECALL_LAST - GAME_API_BASE <= 100, "Room for system calls");
@@ -15,7 +16,7 @@ APICALL(api_self_test)
 	assert(i32 == 44 && "Self-test 32-bit integer");
 	assert(i64_1 == 0x5678000012340000 && "Self-test 64-bit integer (1)");
 	assert(i64_2 == 0x8800440022001100 && "Self-test 64-bit integer (2)");
-	assert(std::string(str) == "This is a test" && "Self-test string");
+	assert(str == "This is a test" && "Self-test string");
 	return 0;
 }
 
@@ -25,8 +26,9 @@ APICALL(assert_fail)
 {
 	auto [expr, file, line, func] =
 		machine.sysargs<std::string, std::string, int, std::string> ();
-	printf(">>> [%s] assertion failed: %s in %s:%d, function %s\n",
-		script(machine).name().c_str(), expr.c_str(), file.c_str(), line, func.c_str());
+	fmt::print(stderr,
+		">>> [{}] assertion failed: {} in {}:{}, function {}\n",
+		script(machine).name(), expr, file, line, func);
 	machine.stop();
 	return -1;
 }
@@ -38,29 +40,32 @@ APICALL(api_write)
 	machine.memory.memview(address, len_g,
 		[&machine] (const uint8_t* data, size_t len) {
 			if (data == nullptr) {
-				printf(">>> [%s] had an illegal write\n",
-					script(machine).name().c_str());
+				fmt::print(stderr,
+					">>> [{}] had an illegal write\n",
+					script(machine).name());
 				return;
 			}
-			printf(">>> [%s] says: %.*s",
-				script(machine).name().c_str(), (int) len, data);
+			fmt::print(">>> [{}] says: {}",
+				script(machine).name(),
+				std::string_view((const char*) data, len));
 		});
 	return len_g;
 }
 
 APICALL(api_measure)
 {
-	auto [test, address] = machine.template sysargs <std::string, gaddr_t> ();
+	const auto [test, address] =
+		machine.template sysargs <std::string, gaddr_t> ();
 	auto time_ns = script(machine).measure(address);
-	printf(">>> Measurement \"%s\" median: %ld nanos\n\n",
-			test.c_str(), time_ns);
+	fmt::print(">>> Measurement \"{}\" median: {} nanos\n\n",
+		test, time_ns);
 	return time_ns;
 }
 
 APICALL(api_farcall)
 {
-	const auto mhash = machine.template sysarg <uint32_t> (0);
-	const auto fhash = machine.template sysarg <uint32_t> (1);
+	const auto [mhash, fhash] =
+		machine.template sysargs <uint32_t, uint32_t> ();
 	auto* script = get_script(mhash);
 	if (script == nullptr) return -1;
 	// first check if the function exists
@@ -82,16 +87,16 @@ APICALL(api_farcall)
 		// vmcall with no arguments to avoid clobbering registers
 		return script->call(addr);
 	}
-	fprintf(stderr, "Unable to find public API function from hash: %#x\n",
+	fmt::print(stderr,
+		"Unable to find public API function from hash: {:#08x}\n",
 		fhash); /** NOTE: we can turn this back into a string using reverse dictionary **/
 	return -1;
 }
 
 APICALL(api_interrupt)
 {
-	const auto mhash = machine.template sysarg <uint32_t> (0);
-	const auto fhash = machine.template sysarg <uint32_t> (1);
-	const gaddr_t data = machine.template sysarg <gaddr_t> (2);
+	const auto [mhash, fhash, data] =
+		machine.template sysargs <uint32_t, uint32_t, gaddr_t> ();
 	auto* script = get_script(mhash);
 	if (script == nullptr) return -1;
 	// vmcall with no arguments to avoid clobbering registers
@@ -100,7 +105,8 @@ APICALL(api_interrupt)
 		// interrupt the machine
 		return script->preempt(addr, (gaddr_t) data);
 	}
-	fprintf(stderr, "Unable to find public API function from hash: %#x\n",
+	fmt::print(stderr,
+		"Unable to find public API function from hash: {:#08x}\n",
 		fhash); /** NOTE: we can turn this back into a string using reverse dictionary **/
 	return -1;
 }
@@ -125,7 +131,7 @@ APICALL(api_check_group)
 
 APICALL(api_game_exit)
 {
-	printf("Game::exit() called from script!\n");
+	fmt::print("Game::exit() called from script!\n");
 	exit(0);
 }
 
@@ -209,6 +215,9 @@ APICALL(api_vector_normalize)
 
 void Script::setup_syscall_interface(machine_t& machine)
 {
+	// Implement the most basic functionality here,
+	// common to all scripts. The syscall numbers
+	// are stored in syscalls.h
 	machine.install_syscall_handlers({
 		{ECALL_SELF_TEST,   api_self_test},
 		{ECALL_ASSERT_FAIL, assert_fail},

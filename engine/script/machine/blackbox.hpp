@@ -1,4 +1,5 @@
 #include <libriscv/machine.hpp>
+#include <fmt/core.h>
 #include <map>
 #include <string_view>
 #include <stdexcept>
@@ -57,7 +58,7 @@ inline void Blackbox<W>::insert_binary(const std::string& name,
 			std::forward_as_tuple(name),
 			std::forward_as_tuple(std::move(binary), sympath));
 	} catch (std::exception& e) {
-		printf(">>> Exception: %s\n", e.what());
+		fmt::print(stderr, ">>> Exception: {}\n", e.what());
 		throw;
 	}
 }
@@ -73,7 +74,7 @@ inline void Blackbox<W>::insert_embedded_binary(const std::string& name,
 			std::forward_as_tuple(name),
 			std::forward_as_tuple(std::move(binvec), true, symbols));
 	} catch (std::exception& e) {
-		printf(">>> Exception: %s\n", e.what());
+		fmt::print(stderr, ">>> Exception: {}\n", e.what());
 		throw;
 	}
 }
