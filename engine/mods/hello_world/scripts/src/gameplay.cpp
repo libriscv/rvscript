@@ -25,7 +25,7 @@ static void thread_function() {
 	microthread::direct([] { /* ... */ });
 }
 static void group_handler() {
-	api::groupcall<1, 0> ();
+	groupcall<1, 0> ();
 }
 
 /* This is the function that gets called at the start */
@@ -34,45 +34,45 @@ PUBLIC(void start())
 {
 	/* This function is implemented in api_impl.h, and it makes a
 	   system call into the engine, which then writes to the terminal. */
-	api::print("Hello world!\n");
+	print("Hello world!\n");
 
 #ifdef __EXCEPTIONS
 	try {
 		throw "";
 	} catch (...) {
-		api::print("Exception caught!\n");
+		print("Exception caught!\n");
 	}
 #endif
 
 	/* This function makes thousands of calls into this machine,
 	   while preserving registers, and then prints some statistics. */
-	api::measure("VM function call overhead", empty_function);
-	api::measure("Thread creation overhead", thread_function);
-	api::measure("Function group handler", group_handler);
+	measure("VM function call overhead", empty_function);
+	measure("Thread creation overhead", thread_function);
+	measure("Function group handler", group_handler);
 
 	/* This function tells the engine to find the "gameplay2" machine,
 	   and then make a call into it with the provided function and arguments.
 	   NOTE: We have to used the shared area to pass anything that is not
 	   passed through normal registers. See events.hpp for an example. */
 	long r = FARCALL("gameplay2", "some_function", 1234);
-	api::print("Back again in the start() function! Return value: ", r, "\n");
+	print("Back again in the start() function! Return value: ", r, "\n");
 
 	/* Create events that will run each physics tick.
 	   We will be waiting immediately, so that we don't run the
 	   event code now, but instead when each tick happens. */
-	api::each_tick([] {
+	each_tick([] {
 		while (true) {
-			api::wait_next_tick();
+			wait_next_tick();
 			static int i = 0;
-			api::print("Tick ", i++, "!\n");
+			print("Tick ", i++, "!\n");
 		}
 	});
 	int physics_value = 44;
-	api::each_tick([physics_value] {
+	each_tick([physics_value] {
 		int v = physics_value;
 		while (true) {
-			api::wait_next_tick();
-			api::print("I have a ", v++, "!\n");
+			wait_next_tick();
+			print("I have a ", v++, "!\n");
 		}
 	});
 
@@ -81,18 +81,18 @@ PUBLIC(void start())
 	   passed, and then resume. At the end we make a remote function call
 	   to a long-running process that sits in an event loop waiting for work. */
 	microthread::direct([] (std::string mt) {
-		api::print("Hello ", mt, " World!\n");
-		api::sleep(1.0);
-		api::print("Hello Belated Microthread World! 1 second passed.\n");
+		print("Hello ", mt, " World!\n");
+		sleep(1.0);
+		print("Hello Belated Microthread World! 1 second passed.\n");
 		/* REMOTE_EXEC is implemented in events.hpp */
 		REMOTE_EXEC("events", [] {
 			/* This works because gameplay and events are running
 			   the same binary, so they share read-only memory,
 			   such as strings, constant structs and functions. */
-			api::print("I am being run on another machine!\n");
+			print("I am being run on another machine!\n");
 		});
 	}, "Microthread"s);
-	api::print("Back again in the start() function!\n");
+	print("Back again in the start() function!\n");
 }
 
 /* We can only call this function remotely if it's added to "gameplay.symbols",
@@ -102,7 +102,7 @@ PUBLIC(void start())
 extern "C"
 long some_function(int value)
 {
-	api::print("Hello Remote World! value = ", value, "!\n");
+	print("Hello Remote World! value = ", value, "!\n");
 	return value;
 }
 
@@ -117,7 +117,7 @@ extern "C"
 void cpp_function(const char* a, const C& c, const char* b)
 {
 	/* Hello C++ World */
-	api::print(a, " ", c.to_string(), " ", b, "\n");
+	print(a, " ", c.to_string(), " ", b, "\n");
 }
 
 /* Example game object logic */
@@ -128,7 +128,7 @@ struct GameObject {
 
 PUBLIC(void myobject_death(GameObject& object))
 {
-	api::print("Object '", object.name, "' is dying!\n");
+	print("Object '", object.name, "' is dying!\n");
 	/* SFX: Ugh... */
 	object.alive = false;
 }

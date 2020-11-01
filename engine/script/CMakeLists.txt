@@ -8,5 +8,5 @@ set(SOURCES
 )
 
 add_library(script STATIC ${SOURCES})
-target_link_libraries(script PUBLIC machine riscv)
+target_link_libraries(script PUBLIC machine fmt riscv)
 target_compile_definitions(script PUBLIC RISCV_ARCH=${ARCH})

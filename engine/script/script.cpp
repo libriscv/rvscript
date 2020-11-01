@@ -43,7 +43,7 @@ bool Script::reset()
 		m_groups.clear();
 
 	} catch (std::exception& e) {
-		printf(">>> Exception: %s\n", e.what());
+		fmt::print(">>> Exception: {}\n", e.what());
 		// TODO: shutdown engine?
 		exit(1);
 	}
@@ -91,18 +91,19 @@ bool Script::machine_initialize()
 		machine().simulate(MAX_INSTRUCTIONS);
 
 		if (UNLIKELY(machine().cpu.instruction_counter() >= MAX_INSTRUCTIONS)) {
-			printf(">>> Exception: Ran out of instructions\n");
+			fmt::print(stderr, ">>> Exception: Ran out of instructions\n");
 			return false;
 		}
 	} catch (riscv::MachineException& me) {
-		printf(">>> Machine exception %d: %s (data: 0x%lX)\n",
-				me.type(), me.what(), me.data());
+		fmt::print(stderr,
+			">>> Machine exception {}: {} (data: {:#x})\n",
+			me.type(), me.what(), me.data());
 #ifdef RISCV_DEBUG
 		m_machine->print_and_pause();
 #endif
 		return false;
 	} catch (std::exception& e) {
-		printf(">>> Exception: %s\n", e.what());
+		fmt::print(stderr, ">>> Exception: %s\n", e.what());
 		return false;
 	}
     return true;
@@ -120,7 +121,7 @@ void Script::machine_setup(machine_t& machine)
     setup_syscall_interface(machine);
 	machine.on_unhandled_syscall(
 		[] (int number) {
-			printf("Unhandled system call: %d\n", number);
+			fmt::print(stderr, "Unhandled system call: %d\n", number);
 		});
 
 	// we need to pass the .eh_frame location to a supc++ function,
@@ -133,38 +134,43 @@ void Script::handle_exception(gaddr_t address)
 		throw; // re-throw
 	}
 	catch (const riscv::MachineException& e) {
-		fprintf(stderr, "Script::call exception: %s (data: 0x%lX)\n", e.what(), e.data());
-		fprintf(stderr, ">>> Machine registers:\n[PC\t%08lX] %s\n",
+		fmt::print(stderr, "Script::call exception: {} (data: {:#x})\n",
+			e.what(), e.data());
+		fmt::print(stderr, ">>> Machine registers:\n[PC\t{:08x}] {}\n",
 			(long) machine().cpu.pc(),
-			machine().cpu.registers().to_string().c_str());
+			machine().cpu.registers().to_string());
 	}
 	catch (const riscv::MachineTimeoutException& e) {
 		this->handle_timeout(address);
 		return; // NOTE: might wanna stay
 	}
 	catch (const std::exception& e) {
-		fprintf(stderr, "Script::call exception: %s\n", e.what());
+		fmt::print(stderr, "Script::call exception: {}\n",
+			e.what());
 	}
-	printf("Program page: %s\n", machine().memory.get_page_info(machine().cpu.pc()).c_str());
-	printf("Stack page: %s\n", machine().memory.get_page_info(machine().cpu.reg(2)).c_str());
+	fmt::print(stderr, "Program page: {}\n",
+		machine().memory.get_page_info(machine().cpu.pc()));
+	fmt::print(stderr, "Stack page: {}\n",
+		machine().memory.get_page_info(machine().cpu.reg(2)));
 	// close all threads
 	auto* mt = (multithreading<MARCH>*) m_threads;
 	while (mt->get_thread()->tid != 0) {
 		auto* thread = mt->get_thread();
-		fprintf(stderr, "Script::call Closing running thread: %d\n", thread->tid);
+		fmt::print(stderr, "Script::call Closing running thread: {}\n",
+			thread->tid);
 		thread->exit();
 	}
 
 	auto callsite = machine().memory.lookup(address);
-	fprintf(stderr, "Function call: %s\n", callsite.name.c_str());
+	fmt::print(stderr, "Function call: {}\n", callsite.name);
 	this->print_backtrace(address);
 }
 void Script::handle_timeout(gaddr_t address)
 {
 	this->m_budget_overruns ++;
 	auto callsite = machine().memory.lookup(address);
-	fprintf(stderr, "Script::call hit max instructions for: %s"
-		" (Overruns: %d)\n", callsite.name.c_str(), m_budget_overruns);
+	fmt::print(stderr, "Script::call hit max instructions for: {}"
+		" (Overruns: {})\n", callsite.name, m_budget_overruns);
 	// check if we need to suspend a thread
 	auto* mt = (multithreading<MARCH>*) m_threads;
 	auto* thread = mt->get_thread();
@@ -183,11 +189,11 @@ void Script::print_backtrace(const gaddr_t addr)
 {
 	machine().memory.print_backtrace(
 		[] (const char* buffer, size_t len) {
-			printf("-> %.*s\n", (int)len, buffer);
+			fmt::print("-> {}\n", std::string_view(buffer ,len));
 		});
 	auto origin = machine().memory.lookup(addr);
-	printf("-> [-] 0x%08x + 0x%.3x: %s\n",
-			origin.address, origin.offset, origin.name.c_str());
+	fmt::print("-> [-] 0x{:016x} + 0x{:03x}: {}\n",
+			origin.address, origin.offset, origin.name);
 }
 
 void Script::hash_public_api_symbols(std::string_view contents)
@@ -208,8 +214,9 @@ void Script::hash_public_api_symbols_file(const std::string& file)
 
 	std::ifstream infile(file);
 	if (!infile) {
-		printf(">>> Could not find symbols file: %s, ignoring...\n",
-				file.c_str());
+		fmt::print(stderr,
+			">>> Could not find symbols file: {}, ignoring...\n",
+			file);
 		return;
 	}
 
@@ -335,7 +342,7 @@ long Script::measure(gaddr_t address)
 	long lowest = results[0] / TIMES;
 	long highest = results[results.size()-1] / TIMES;
 
-	printf("> median %ldns  \t\tlowest: %ldns     \thighest: %ldns\n",
+	fmt::print("> median {}ns  \t\tlowest: {}ns     \thighest: {}ns\n",
 			median, lowest, highest);
 	return median;
 }

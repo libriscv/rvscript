@@ -1,6 +1,7 @@
 #pragma once
 #include <cassert>
 #include <functional>
+#include <fmt/core.h>
 #include <libriscv/machine.hpp>
 #include <EASTL/unordered_map.h>
 #include "function_group.hpp"
@@ -120,8 +121,9 @@ inline long Script::call(const std::string& func, Args&&... args)
 {
 	const auto address = machine().address_of(func.c_str());
 	if (UNLIKELY(address == 0)) {
-		fprintf(stderr, "Script::call(): Could not find: '%s' in '%s'\n",
-			func.c_str(), name().c_str());
+		fmt::print(stderr,
+			"Script::call(): Could not find: '{}' in '{}'\n",
+			func, name());
 		return -1;
 	}
 	return call(address, std::forward<Args>(args)...);

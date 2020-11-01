@@ -1,6 +1,7 @@
 #include <script/script.hpp>
 #include <script/event.hpp>
 #include <script/util/crc32.hpp>
+#include <fmt/core.h>
 #include <unistd.h> /* usleep */
 
 #include "timers.hpp"
@@ -46,7 +47,7 @@ Script& get_script(uint32_t machine_hash, const char* name)
 		return it->second;
 	}
 	throw std::runtime_error(
-		"Unable to find machine with given hash: " + std::string(name));
+		"Unable to find machine: " + std::string(name));
 }
 #define SCRIPT(x) get_script(crc32(#x), #x)
 
@@ -91,12 +92,12 @@ int main()
 	   implementation in mods/hello_world/scripts/src/gameplay.cpp:28. */
 	gameplay1.call("start");
 
-	printf("...\n");
+	fmt::print("...\n");
 	/* Simulate some physics ticks */
 	for (int n = 0; n < 3; n++)
 		gameplay1.each_tick_event();
 
-	printf("...\n");
+	fmt::print("...\n");
 	/* Ordinarily a game engine has a physics loop that ticks regularly,
 	   but we don't in this example. Instead we will just sleep until
 	   the next available timer. And resume the event loop in between. */
@@ -118,7 +119,7 @@ int main()
 	auto& another_machine = SCRIPT(gameplay2);
 	another_machine.call("cpp_function", "Hello", C{}, "World");
 
-	printf("...\n");
+	fmt::print("...\n");
 
 	/* Call events of a shared game object */
 	struct GameObject {
@@ -140,25 +141,23 @@ int main()
 	/* Initialize object */
 	auto& obj = objects[0];
 	obj.alive = true;
-	snprintf(obj.name, sizeof(GameObject::name), "%s", "myobject");
+	fmt::format_to(obj.name, "{}", "myobject");
 	obj.onDeath = Event(another_machine, "myobject_death");
 
-	printf("Object is alive? %s\n", obj.alive ? "true" : "false");
-	assert(obj.alive == true);
-
 	/* Simulate object dying */
+	fmt::print("Calling '{}' in '{}'\n",
+		obj.onDeath.function(), obj.onDeath.script().name());
+	assert(obj.alive == true);
 	obj.onDeath.call(OBJECT_AREA + 0 * sizeof(GameObject));
-
-	printf("Object is alive? %s\n", obj.alive ? "true" : "false");
 	assert(obj.alive == false);
 
 	/* If nim is enabled, we can run the nim test */
 	if (another_machine.resolve_address("nim_test")) {
-		printf("...\n");
+		fmt::print("...\n");
 		another_machine.call("nim_test");
 	}
 
-	printf("...\n");
+	fmt::print("...\n");
 
 	/* Test dynamic functions */
 	const int GROUP = 1;
@@ -167,8 +166,8 @@ int main()
 		{1, [&] (auto& script) {
 			const auto& m = script.machine();
 			auto [i, str] = m.template sysargs<int, std::string> ();
-			printf("%s from a function group handler (also %d)\n",
-				str.c_str(), i);
+			fmt::print("{} from a function group handler (also {})\n",
+				str, i);
 			assert(gameplay1.current_group() == GROUP);
 			assert(gameplay1.current_group_index() == 1);
 			called |= 0x1;

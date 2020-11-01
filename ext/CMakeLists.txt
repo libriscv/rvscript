@@ -6,3 +6,5 @@ target_compile_definitions(riscv PUBLIC
 	RISCV_SYSCALLS_MAX=256
 	RISCV_SI_SYSCALLS=1
 )
+
+add_subdirectory(fmt)
