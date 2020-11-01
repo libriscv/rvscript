@@ -24,7 +24,9 @@ Script::Script(const machine_t& smach, const std::string& name)
 	}
 	this->reset();
 }
-Script::~Script() {}
+Script::~Script() {
+	m_groups.clear(); // make sure this is freed first
+}
 
 bool Script::reset()
 {
@@ -274,6 +276,9 @@ void Script::set_dynamic_functions(int gid, std::vector<std::pair<int, ghandler_
 	for (const auto& pair : vec) {
 		group.install(pair.first, std::move(pair.second));
 	}
+}
+void Script::delete_group(int gid) {
+	m_groups.erase(gid);
 }
 size_t Script::group_entries_max() const noexcept {
 	return FunctionGroup::GROUP_SIZE;

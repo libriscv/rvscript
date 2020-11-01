@@ -71,8 +71,7 @@ struct FunctionGroup
 private:
 	using datatype_t = std::array<uint32_t, GROUP_BYTES>;
 	datatype_t&  create_dataref(int gid, Script&);
-	int  request_number();
-	void free_number(int);
+	int request_syscall_number();
 
 	Script&     m_script;
 	datatype_t& m_data;

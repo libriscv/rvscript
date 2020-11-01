@@ -41,7 +41,7 @@ FunctionGroup::datatype_t& FunctionGroup::create_dataref(int gid, Script& s)
 FunctionGroup::FunctionGroup(int gid, Script& s)
 	: m_script(s), m_data(create_dataref(gid, s))
 {
-	m_sysno = request_number();
+	m_sysno = request_syscall_number();
 	// install our syscall wrapper which calls the real handler
 	// and then safely returns back to the guests caller
 	m_script.machine().install_syscall_handler(m_sysno,
@@ -55,8 +55,12 @@ FunctionGroup::FunctionGroup(int gid, Script& s)
 			return m.cpu.reg(riscv::RISCV::REG_RETVAL);
 		});
 }
-FunctionGroup::~FunctionGroup() {
-	free_number(this->m_sysno);
+FunctionGroup::~FunctionGroup()
+{
+	if (m_sysno != 0) {
+		m_script.m_free_sysno.push_back(m_sysno);
+		m_script.machine().install_syscall_handler(m_sysno, nullptr);
+	}
 }
 
 void FunctionGroup::install(unsigned idx, ghandler_t callback)
@@ -96,12 +100,7 @@ bool FunctionGroup::check(uint64_t bits) const
 	return true;
 }
 
-
-void FunctionGroup::free_number(int sysno)
-{
-	m_script.m_free_sysno.push_back(sysno);
-}
-int FunctionGroup::request_number()
+int FunctionGroup::request_syscall_number()
 {
 	assert(!m_script.m_free_sysno.empty());
 	int number = m_script.m_free_sysno.back();

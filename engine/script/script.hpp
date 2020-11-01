@@ -39,6 +39,7 @@ public:
 	// Can be invoked from the guest using the same group ID and index
 	void set_dynamic_function(int gid, int index, ghandler_t);
 	void set_dynamic_functions(int gid, std::vector<std::pair<int, ghandler_t>>);
+	void delete_group(int gid);
 	size_t group_entries_max() const noexcept;
 	// returns true if all set bit-indices have a corresponding handler
 	bool check_group(int gid, uint64_t bits) const;

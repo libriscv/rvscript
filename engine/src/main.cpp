@@ -191,6 +191,8 @@ int main()
 	gameplay1.call("test_function_groups");
 	// All the functions should have been called
 	if (called != 0xF) exit(1);
+	// Remove the group, just because we can
+	gameplay1.delete_group(GROUP);
 
 	return 0;
 }
