@@ -28,11 +28,15 @@ inline long measure(const char* testname, T testfunc)
 }
 
 extern "C" long farcall_helper(uint32_t a, uint32_t b, ...);
+extern "C" long direct_farcall_helper(uint32_t m, uintptr_t a, ...);
 
 template <typename Func>
 struct FarCall {
 	const uint32_t mhash;
 	const uint32_t fhash;
+
+	constexpr FarCall(const char* m, const char* f)
+		: mhash(crc32(m)), fhash(crc32(f)) {}
 	constexpr FarCall(uint32_t m, uint32_t f) : mhash(m), fhash(f) {}
 
 	template <typename... Args>
@@ -43,6 +47,22 @@ struct FarCall {
 };
 #define FARCALL(mach, func, type) \
 	FarCall<type> (crc32(mach), crc32(func))
+
+template <typename Func>
+struct ExecuteRemotely {
+	const uint32_t mhash;
+	const Func func;
+
+	constexpr ExecuteRemotely(const char* m, Func f) : mhash(crc32(m)), func(f) {}
+	constexpr ExecuteRemotely(uint32_t m, Func f) : mhash(m), func(f) {}
+
+	template <typename... Args>
+	auto operator() (Args&&... args) const {
+		static_assert( std::is_invocable_v<Func, Args...> );
+		const auto faddr = (uintptr_t) func;
+		return direct_farcall_helper(mhash, faddr, std::forward<Args>(args)...);
+	}
+};
 
 template <typename T>
 inline long interrupt(uint32_t mhash, uint32_t fhash, T argument)

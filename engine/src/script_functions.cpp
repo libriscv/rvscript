@@ -60,12 +60,30 @@ APICALL(api_measure)
 	machine.set_result(time_ns);
 }
 
+inline void do_farcall(machine_t& machine, Script& dest, gaddr_t addr)
+{
+	// copy argument registers (1 less integer register)
+	const auto& current = machine.cpu.registers();
+	auto& regs = dest.machine().cpu.registers();
+	for (int i = 0; i < 6; i++) {
+		regs.get(10 + i) = current.get(12 + i);
+	}
+	for (int i = 0; i < 8; i++) {
+		regs.getfl(10 + i) = current.getfl(10 + i);
+	}
+	// we short-circuit the ret pseudo-instruction:
+	// when we return to the source machine, we are already back at caller
+	machine.cpu.jump(current.get(riscv::RISCV::REG_RA) - 4);
+	// vmcall with no arguments to avoid clobbering registers
+	machine.set_result(dest.call(addr));
+}
+
 APICALL(api_farcall)
 {
 	const auto [mhash, fhash] =
 		machine.template sysargs <uint32_t, uint32_t> ();
 	auto* script = get_script(mhash);
-	if (script == nullptr) {
+	if (UNLIKELY(script == nullptr)) {
 		machine.set_result(-1);
 		return;
 	}
@@ -73,26 +91,25 @@ APICALL(api_farcall)
 	const auto addr = script->api_function_from_hash(fhash);
 	if (LIKELY(addr != 0))
 	{
-		// copy argument registers (1 less integer register)
-		const auto& current = machine.cpu.registers();
-		auto& regs = script->machine().cpu.registers();
-		for (int i = 0; i < 6; i++) {
-			regs.get(10 + i) = current.get(12 + i);
-		}
-		for (int i = 0; i < 8; i++) {
-			regs.getfl(10 + i) = current.getfl(10 + i);
-		}
-		// we short-circuit the ret pseudo-instruction:
-		// when we return to the source machine, we are already back at caller
-		machine.cpu.jump(current.get(riscv::RISCV::REG_RA) - 4);
-		// vmcall with no arguments to avoid clobbering registers
-		machine.set_result(script->call(addr));
+		do_farcall(machine, *script, addr);
 		return;
 	}
 	fmt::print(stderr,
 		"Unable to find public API function from hash: {:#08x}\n",
 		fhash); /** NOTE: we can turn this back into a string using reverse dictionary **/
 	machine.set_result(-1);
+}
+
+APICALL(api_farcall_direct)
+{
+	const auto [mhash, faddr] =
+		machine.template sysargs <uint32_t, gaddr_t> ();
+	auto* script = get_script(mhash);
+	if (UNLIKELY(script == nullptr)) {
+		machine.set_result(-1);
+		return;
+	}
+	do_farcall(machine, *script, faddr);
 }
 
 APICALL(api_interrupt)
@@ -196,6 +213,7 @@ void Script::setup_syscall_interface(machine_t& machine)
 		{ECALL_WRITE,       api_write},
 		{ECALL_MEASURE,     api_measure},
 		{ECALL_FARCALL,     api_farcall},
+		{ECALL_FARCALL_DIRECT, api_farcall_direct},
 		{ECALL_INTERRUPT,   api_interrupt},
 		{ECALL_MACHINE_HASH, api_machine_hash},
 		{ECALL_EACH_FRAME,  api_each_frame},

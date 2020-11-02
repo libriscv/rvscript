@@ -3,6 +3,7 @@
 using namespace api;
 using namespace std::string_literals;
 extern void NimMain();
+PUBLIC(long some_function(int value));
 
 int main()
 {
@@ -27,8 +28,22 @@ static void thread_function() {
 static void group_handler() {
 	groupcall<1, 0> ();
 }
-static void farcall_testcall() {
-	constexpr auto fc = FARCALL("gameplay2", "public_donothing", void());
+PUBLIC(void public_donothing()) {
+	/* nothing */
+}
+static void direct_farcall_testcall() {
+	/* A direct farcall takes a function as argument, and can only
+	   be used when calling into a remote machine that is running
+	   the same executable as this machine. If it's using a different
+	   executable you can use a regular FARCALL instead. */
+	constexpr ExecuteRemotely fc("gameplay2", public_donothing);
+	fc();
+}
+static void farcall_lookup_testcall() {
+	/* A regular farcall will have to lookup the function in the remote
+	   machine. We also need to specify the function type as a
+	   template argument, to help with type safety. */
+	constexpr FarCall<void()> fc("gameplay2", "public_donothing");
 	fc();
 }
 
@@ -53,13 +68,15 @@ PUBLIC(void start())
 	measure("VM function call overhead", empty_function);
 	measure("Thread creation overhead", thread_function);
 	measure("Function group handler", group_handler);
-	measure("Farcall", farcall_testcall);
+	measure("Farcall lookup", farcall_lookup_testcall);
+	measure("Farcall direct", direct_farcall_testcall);
 
-	/* This function tells the engine to find the "gameplay2" machine,
-	   and then make a call into it with the provided function and arguments.
+	/* This function creates a callable object that when called, tells
+	   the engine to find the "gameplay2" machine, and then make a call
+	   into it with the provided function and arguments.
 	   NOTE: We have to used the shared area to pass anything that is not
 	   passed through normal registers. See events.hpp for an example. */
-	constexpr auto somefunc = FARCALL("gameplay2", "some_function", int(int));
+	constexpr ExecuteRemotely somefunc("gameplay2", some_function);
 	int r = somefunc(1234);
 	print("Back again in the start() function! Return value: ", r, "\n");
 
@@ -105,7 +122,7 @@ PUBLIC(void start())
    because the symbol files are used in the build system to preserve certain
    functions that would ordinarily get optimized out. It's name also has to
    unmangled, otherwise we can't find it in the ELF string tables. */
-PUBLIC(long some_function(int value))
+long some_function(int value)
 {
 	print("Hello Remote World! value = ", value, "!\n");
 	return value;
@@ -151,9 +168,4 @@ PUBLIC(void test_function_groups())
 	groupcall<1, 33, void()> ();
 	groupcall<1, 63, void()> ();
 	//groupcall<1, 64, void()> (); // out of bounds
-}
-
-PUBLIC(void public_donothing())
-{
-	/* empty */
 }
