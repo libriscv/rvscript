@@ -39,6 +39,7 @@ add_executable(engine
     src/main.cpp
     src/script_functions.cpp
     src/timers.cpp
+    src/timers_setup.cpp
 )
 
 target_include_directories(engine PUBLIC .)

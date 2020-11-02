@@ -2,10 +2,6 @@
 #include <script/event.hpp>
 #include <script/util/crc32.hpp>
 #include <fmt/core.h>
-#include <unistd.h> /* usleep */
-
-#include "timers.hpp"
-Timers timers; // put this in a level structure
 
 #include <script/machine/blackbox.hpp>
 static Blackbox<Script::MARCH> blackbox;
@@ -51,37 +47,6 @@ Script& get_script(uint32_t machine_hash, const char* name)
 }
 #define SCRIPT(x) get_script(crc32(#x), #x)
 
-/** Timers **/
-void setup_timer_system(Script& script, Timers& timers)
-{
-	const int GROUP_TIMERS = 2;
-	using gaddr_t = Script::gaddr_t;
-
-	script.set_dynamic_functions(GROUP_TIMERS, {
-		{0, [&] (Script& script) {
-			// Stop timer
-			const auto [timer_id] = script.machine().sysargs<int> ();
-			timers.stop(timer_id);
-		}},
-		{1, [&] (Script& script) {
-			// Periodic timer
-			auto& machine = script.machine();
-			const auto [time, peri, addr, data, size] =
-				machine.sysargs<float, float, gaddr_t, uint32_t, uint32_t> ();
-			std::array<uint8_t, 32> capture;
-			assert(size <= sizeof(capture) && "Must fit inside temp buffer");
-			machine.memory.memcpy_out(capture.data(), data, size);
-
-			int id = timers.periodic(time, peri,
-				[addr = (gaddr_t) addr, capture, &script] (int id) {
-					std::copy(capture.begin(), capture.end(), Script::hidden_area().data());
-					script.call(addr, (int) id, (gaddr_t) Script::HIDDEN_AREA);
-		        });
-			machine.set_result(id);
-		}},
-	});
-}
-
 int main()
 {
 #ifndef EMBEDDED_MODE
@@ -104,7 +69,10 @@ int main()
 	   using this name (hashed). These machines will be fully intialized. */
 	for (int n = 0; n < 100; n++) {
 		auto& script = create_script("gameplay" + std::to_string(n), "gameplay");
-		setup_timer_system(script, timers);
+		// Dynamically extend the functionality available
+		// See: timers_setup.cpp
+		extern void setup_timer_system(Script&);
+		setup_timer_system(script);
 	}
 
 	/* The event_loop function can be resumed later, and can execute work
@@ -134,15 +102,14 @@ int main()
 	/* Ordinarily a game engine has a physics loop that ticks regularly,
 	   but we don't in this example. Instead we will just sleep until
 	   the next available timer. And resume the event loop in between. */
-	while (timers.active() > 0) {
-		timers.handle_events();
-		usleep(timers.next() * 1e6);
+	extern void timers_loop(std::function<void()>);
+	timers_loop([&] {
 		/* This guy should run each engine tick instead. We are passing
 		   the maximum number of instructions that we allow it to use.
 		   This can work well as a substitute for time spent, provided
 		   each complex system call increments the counter sufficiently. */
 		events.resume(5'000);
-	}
+	});
 
 	/* Pass some non-trivial parameters to a VM function call.
 	   Also call gameplay2 instead of gameplay1. */
