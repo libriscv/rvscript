@@ -99,8 +99,7 @@ PUBLIC(void start())
    because the symbol files are used in the build system to preserve certain
    functions that would ordinarily get optimized out. It's name also has to
    unmangled, otherwise we can't find it in the ELF string tables. */
-extern "C"
-long some_function(int value)
+PUBLIC(long some_function(int value))
 {
 	print("Hello Remote World! value = ", value, "!\n");
 	return value;
@@ -113,8 +112,7 @@ struct C {
 private:
 	char c;
 };
-extern "C"
-void cpp_function(const char* a, const C& c, const char* b)
+PUBLIC(void cpp_function(const char* a, const C& c, const char* b))
 {
 	/* Hello C++ World */
 	print(a, " ", c.to_string(), " ", b, "\n");
