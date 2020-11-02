@@ -27,6 +27,10 @@ static void thread_function() {
 static void group_handler() {
 	groupcall<1, 0> ();
 }
+static void farcall_testcall() {
+	constexpr auto fc = FARCALL("gameplay2", "public_donothing", void());
+	fc();
+}
 
 /* This is the function that gets called at the start */
 /* See engine/src/main.cpp:69 */
@@ -49,12 +53,14 @@ PUBLIC(void start())
 	measure("VM function call overhead", empty_function);
 	measure("Thread creation overhead", thread_function);
 	measure("Function group handler", group_handler);
+	measure("Farcall", farcall_testcall);
 
 	/* This function tells the engine to find the "gameplay2" machine,
 	   and then make a call into it with the provided function and arguments.
 	   NOTE: We have to used the shared area to pass anything that is not
 	   passed through normal registers. See events.hpp for an example. */
-	long r = FARCALL("gameplay2", "some_function", 1234);
+	constexpr auto somefunc = FARCALL("gameplay2", "some_function", int(int));
+	int r = somefunc(1234);
 	print("Back again in the start() function! Return value: ", r, "\n");
 
 	/* Create events that will run each physics tick.
@@ -145,4 +151,9 @@ PUBLIC(void test_function_groups())
 	groupcall<1, 33, void()> ();
 	groupcall<1, 63, void()> ();
 	//groupcall<1, 64, void()> (); // out of bounds
+}
+
+PUBLIC(void public_donothing())
+{
+	/* empty */
 }

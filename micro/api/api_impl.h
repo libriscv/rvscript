@@ -29,13 +29,20 @@ inline long measure(const char* testname, T testfunc)
 
 extern "C" long farcall_helper(uint32_t a, uint32_t b, ...);
 
-template <typename Ret = long, typename... Args>
-inline Ret farcall(uint32_t mhash, uint32_t fhash, Args&&... args)
-{
-	return (Ret) farcall_helper(mhash, fhash, std::forward<Args>(args)...);
-}
-#define FARCALL(mach, function, ...) \
-		api::farcall(crc32(mach), crc32(function), ## __VA_ARGS__)
+template <typename Func>
+struct FarCall {
+	const uint32_t mhash;
+	const uint32_t fhash;
+	constexpr FarCall(uint32_t m, uint32_t f) : mhash(m), fhash(f) {}
+
+	template <typename... Args>
+	auto operator() (Args&&... args) const {
+		static_assert( std::is_invocable_v<Func, Args...> );
+		return farcall_helper(mhash, fhash, std::forward<Args>(args)...);
+	}
+};
+#define FARCALL(mach, func, type) \
+	FarCall<type> (crc32(mach), crc32(func))
 
 template <typename T>
 inline long interrupt(uint32_t mhash, uint32_t fhash, T argument)
