@@ -302,6 +302,30 @@ size_t Script::current_group_index() const noexcept {
 	return FunctionGroup::calculate_group_index(machine().cpu.pc());
 }
 
+void Script::set_dynamic_function(const std::string& name, ghandler_t handler)
+{
+	const uint32_t hash = crc32(name.c_str(), name.size());
+	auto it = m_dynamic_functions.find(hash);
+	if (it != m_dynamic_functions.end()) {
+		fmt::print("Dynamic function with hash {:#08x} already exists\n",
+			hash);
+		throw std::runtime_error("set_dynamic_function failed: Hash collision");
+	}
+	m_dynamic_functions.emplace(hash, handler);
+}
+
+void Script::dynamic_call(uint32_t hash)
+{
+	auto it = m_dynamic_functions.find(hash);
+	if (it != m_dynamic_functions.end()) {
+		it->second(*this);
+	} else {
+		fmt::print("Unable to find dynamic function with hash: {:#08x}\n",
+			hash);
+		throw std::runtime_error("Unable to find dynamic function");
+	}
+}
+
 void Script::enable_debugging()
 {
 #ifdef RISCV_DEBUG

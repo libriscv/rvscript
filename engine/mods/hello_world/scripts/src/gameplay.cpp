@@ -7,7 +7,7 @@ struct SomeStruct {
 	const char* string;
 	int value;
 };
-PUBLIC(long some_function(int value, SomeStruct&));
+static long some_function(int value, SomeStruct&);
 
 int main()
 {
@@ -31,6 +31,10 @@ static void thread_function() {
 }
 static void group_handler() {
 	groupcall<1, 0> ();
+}
+static void dyncall_handler() {
+	constexpr Call<void()> empty("empty");
+	empty();
 }
 PUBLIC(void public_donothing()) {
 	/* nothing */
@@ -72,6 +76,7 @@ PUBLIC(void start())
 	measure("VM function call overhead", empty_function);
 	measure("Thread creation overhead", thread_function);
 	measure("Function group handler", group_handler);
+	measure("Dynamic call handler", dyncall_handler);
 	measure("Farcall lookup", farcall_lookup_testcall);
 	measure("Farcall direct", direct_farcall_testcall);
 
@@ -178,4 +183,10 @@ PUBLIC(void test_function_groups())
 	groupcall<1, 33, void()> ();
 	groupcall<1, 63, void()> ();
 	//groupcall<1, 64, void()> (); // out of bounds
+}
+
+PUBLIC(void test_dynamic_calls())
+{
+	Call<void()> dyncall("testing");
+	dyncall();
 }

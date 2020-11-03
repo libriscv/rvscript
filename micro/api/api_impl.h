@@ -27,6 +27,7 @@ inline long measure(const char* testname, T testfunc)
 	return syscall(ECALL_MEASURE, (long) testname, (long) static_cast<void(*)()>(testfunc));
 }
 
+extern "C" void (*dyncall_helper) ();
 extern "C" void (*farcall_helper) ();
 extern "C" void (*direct_farcall_helper) ();
 
@@ -65,6 +66,23 @@ struct ExecuteRemotely {
 
 		auto* fch = reinterpret_cast<FCH*> (&direct_farcall_helper);
 		return fch(mhash, func, args...);
+	}
+};
+
+template <typename Func>
+struct Call {
+	const uint32_t hash;
+
+	constexpr Call(const char* f) : hash(crc32(f)) {}
+
+	template <typename... Args>
+	auto operator() (Args&&... args) const {
+		static_assert( std::is_invocable_v<Func, Args...> );
+		using Ret = std::result_of<Func>;
+		using FCH = Ret(uint32_t, Args... args);
+
+		auto* fch = reinterpret_cast<FCH*> (&dyncall_helper);
+		return fch(hash, args...);
 	}
 };
 

@@ -85,6 +85,11 @@ int main()
 	auto& gameplay1 = SCRIPT(gameplay1);
 	/* Create an empty group function for benchmarking */
 	gameplay1.set_dynamic_function(1, 0, [] (auto&) {});
+	/* Create an dynamic function for benchmarking */
+	gameplay1.set_dynamic_function("empty", [] (auto&) {});
+	for (int i = 0; i < 100; i++) {
+		gameplay1.set_dynamic_function("empty" + std::to_string(i), [] (auto&) {});
+	}
 #ifdef RISCV_DEBUG
 	gameplay1.enable_debugging();
 #endif

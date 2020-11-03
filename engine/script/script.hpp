@@ -35,6 +35,11 @@ public:
 	}
 	void each_tick_event();
 
+	// Install a callback function using a string name
+	// Can be invoked from the guest using the same string name
+	void set_dynamic_function(const std::string& name, ghandler_t);
+	void dynamic_call(uint32_t hash);
+
 	// Install a callback function for a given group ID and index
 	// Can be invoked from the guest using the same group ID and index
 	void set_dynamic_function(int gid, int index, ghandler_t);
@@ -99,6 +104,8 @@ private:
 	// groups of functions that dynamically extend engine functionality
 	eastl::unordered_map<int, FunctionGroup> m_groups;
 	auto& get_group(int);
+	// map of functions that extend engine using string hashes
+	eastl::unordered_map<uint32_t, ghandler_t> m_dynamic_functions;
 	// list of free (unused) system call numbers
 	eastl::fixed_vector<int, RISCV_SYSCALLS_MAX, false> m_free_sysno;
 	friend struct FunctionGroup;
