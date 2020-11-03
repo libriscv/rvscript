@@ -184,12 +184,6 @@ APICALL(api_each_frame)
 	machine.set_result(0);
 }
 
-APICALL(api_check_group)
-{
-	auto [gid, bits] = machine.template sysargs <int, uint64_t> ();
-	machine.set_result(script(machine).check_group(gid, bits));
-}
-
 APICALL(api_game_exit)
 {
 	fmt::print("Game::exit() called from script!\n");
@@ -256,7 +250,6 @@ void Script::setup_syscall_interface(machine_t& machine)
 		{ECALL_INTERRUPT,   api_interrupt},
 		{ECALL_MACHINE_HASH, api_machine_hash},
 		{ECALL_EACH_FRAME,  api_each_frame},
-		{ECALL_CHECK_GROUP, api_check_group},
 
 		{ECALL_GAME_EXIT,   api_game_exit},
 

@@ -83,8 +83,6 @@ int main()
 
 	/* Get one of our gameplay machines */
 	auto& gameplay1 = SCRIPT(gameplay1);
-	/* Create an empty group function for benchmarking */
-	gameplay1.set_dynamic_function(1, 0, [] (auto&) {});
 	/* Create an dynamic function for benchmarking */
 	gameplay1.set_dynamic_function("empty", [] (auto&) {});
 	for (int i = 0; i < 100; i++) {
@@ -165,39 +163,16 @@ int main()
 	fmt::print("...\n");
 
 	/* Test dynamic functions */
-	const int GROUP = 1;
 	int called = 0x0;
-	gameplay1.set_dynamic_functions(GROUP, {
-		{1, [&] (auto& script) {
-			const auto& m = script.machine();
-			auto [i, str] = m.template sysargs<int, std::string> ();
-			fmt::print("{} from a function group handler (also {})\n",
-				str, i);
-			assert(gameplay1.current_group() == GROUP);
-			assert(gameplay1.current_group_index() == 1);
-			called |= 0x1;
-		}},
-		{2, [&] (auto&) {
-			assert(gameplay1.current_group() == GROUP);
-			assert(gameplay1.current_group_index() == 2);
-			called |= 0x2;
-		}},
-		{33, [&] (auto&) {
-			assert(gameplay1.current_group() == GROUP);
-			assert(gameplay1.current_group_index() == 33);
-			called |= 0x4;
-		}},
-		{63, [&] (auto&) {
-			assert(gameplay1.current_group() == GROUP);
-			assert(gameplay1.current_group_index() == 63);
-			called |= 0x8;
-		}}
-	});
-	gameplay1.call("test_function_groups");
+	gameplay1.set_dynamic_function("testing",
+		[&] (auto&) {
+			called = 0xF;
+		});
+	// Duplicate hash:
+	//gameplay1.set_dynamic_function("empty", [] (auto&) {});
+	gameplay1.call("test_dynamic_functions");
 	// All the functions should have been called
 	if (called != 0xF) exit(1);
-	// Remove the group, just because we can
-	gameplay1.delete_group(GROUP);
 
 	return 0;
 }

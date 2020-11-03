@@ -1,7 +1,7 @@
 exit
 start
 cpp_function
-test_function_groups
+test_dynamic_functions
 public_donothing
 
 event_loop

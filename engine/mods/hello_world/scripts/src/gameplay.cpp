@@ -29,9 +29,6 @@ static void empty_function() {
 static void thread_function() {
 	microthread::direct([] { /* ... */ });
 }
-static void group_handler() {
-	groupcall<1, 0> ();
-}
 static void dyncall_handler() {
 	constexpr Call<void()> empty("empty");
 	empty();
@@ -75,7 +72,6 @@ PUBLIC(void start())
 	   while preserving registers, and then prints some statistics. */
 	measure("VM function call overhead", empty_function);
 	measure("Thread creation overhead", thread_function);
-	measure("Function group handler", group_handler);
 	measure("Dynamic call handler", dyncall_handler);
 	measure("Farcall lookup", farcall_lookup_testcall);
 	measure("Farcall direct", direct_farcall_testcall);
@@ -169,23 +165,7 @@ PUBLIC(void myobject_death(GameObject& object))
 	object.alive = false;
 }
 
-static GroupCall<1, 1, void(int, const char*)> myfunction;
-
-PUBLIC(void test_function_groups())
-{
-	// Verify that the given indices have handlers
-	EXPECT(check_group(1, {1, 2, 33, 63}));
-
-	myfunction(1234, "Hello");
-
-	groupcall<1, 2, void()> ();
-	//groupcall<1, 3, void()> (); // illegal
-	groupcall<1, 33, void()> ();
-	groupcall<1, 63, void()> ();
-	//groupcall<1, 64, void()> (); // out of bounds
-}
-
-PUBLIC(void test_dynamic_calls())
+PUBLIC(void test_dynamic_functions())
 {
 	Call<void()> dyncall("testing");
 	dyncall();

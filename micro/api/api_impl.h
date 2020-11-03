@@ -42,7 +42,7 @@ struct FarCall {
 	template <typename... Args>
 	auto operator() (Args&&... args) const {
 		static_assert( std::is_invocable_v<Func, Args...> );
-		using Ret = std::result_of<Func>;
+		using Ret = typename std::invoke_result<Func, Args...>::type;
 		using FCH = Ret(uint32_t, uint32_t, Args... args);
 
 		auto* fch = reinterpret_cast<FCH*> (&farcall_helper);
@@ -61,7 +61,7 @@ struct ExecuteRemotely {
 	template <typename... Args>
 	auto operator() (Args&&... args) const {
 		static_assert( std::is_invocable_v<Func, Args...> );
-		using Ret = decltype(func(args...));
+		using Ret = typename std::invoke_result<Func, Args...>::type;
 		using FCH = Ret(uint32_t, Func, Args... args);
 
 		auto* fch = reinterpret_cast<FCH*> (&direct_farcall_helper);
@@ -78,8 +78,9 @@ struct Call {
 	template <typename... Args>
 	auto operator() (Args&&... args) const {
 		static_assert( std::is_invocable_v<Func, Args...> );
-		using Ret = std::result_of<Func>;
-		using FCH = Ret(uint32_t, Args... args);
+		//using Ret = decltype(((Func*) 0) (args...));
+		using Ret = typename std::invoke_result<Func, Args...>::type;
+		using FCH = Ret(...);
 
 		auto* fch = reinterpret_cast<FCH*> (&dyncall_helper);
 		return fch(hash, args...);
@@ -125,41 +126,6 @@ inline void each_tick(const T& func, Args&&... args)
 	microthread::oneshot(func, std::forward<Args> (args)...);
 }
 
-template <int G, int I, typename F>
-struct GroupCall {
-	static constexpr size_t GROUP_SIZE = 64;
-	static_assert(I >= 0 && I < GROUP_SIZE, "Index must be inside the group");
-	static constexpr uintptr_t addr = FUNCTION_GROUP_AREA + ((G * GROUP_SIZE) | I) * 8;
-	static_assert(addr >= FUNCTION_GROUP_AREA, "Address must be in the memory range");
-
-	static constexpr auto group() { return G; }
-	static constexpr auto index() { return I; }
-
-	template <typename... Args>
-	auto operator() (Args&&... args) const {
-		static_assert( std::is_invocable_v<F, Args...> );
-		const auto& func = *(F*) addr;
-		return func(std::forward<Args>(args)...);
-	}
-};
-
-template <int G, int I, typename F = void(), typename... Args>
-inline auto groupcall(Args&&... args) {
-	return GroupCall<G, I, F> {} (std::forward<Args>(args)...);
-}
-
-inline bool check_group(int gid, std::initializer_list<int> indices)
-{
-	uint64_t bits = 0x0;
-	for (const int idx : indices) {
-		bits |= 1 << idx;
-	}
-	if constexpr(sizeof(void*) == 8)
-		return syscall(ECALL_CHECK_GROUP, gid, bits);
-	else // in 32-bit we pass the 64-bit integer in 2 registers
-		return syscall(ECALL_CHECK_GROUP, gid, bits >> 32, bits);
-}
-
 inline void Game::exit()
 {
 	(void) syscall(ECALL_GAME_EXIT);
@@ -168,9 +134,9 @@ inline void Game::exit()
 using timer_callback = void (*) (int, void*);
 inline Timer timer_periodic(float time, float period, timer_callback callback, void* data, size_t size)
 {
-	static GroupCall<2, 1, int(float, float, timer_callback, void*, size_t)> periodic_timer;
+	constexpr Call<int(float, float, timer_callback, void*, size_t)> dyncall {"timer_periodic"};
 
-	return {periodic_timer(time, period, callback, data, size)};
+	return {dyncall(time, period, callback, data, size)};
 }
 inline Timer timer_periodic(float period, timer_callback callback, void* data, size_t size)
 {
@@ -200,7 +166,7 @@ inline Timer Timer::oneshot(float time, Function<void(Timer)> callback)
 }
 
 inline void Timer::stop() const {
-	static GroupCall<2, 0, void(int)> stop_timer;
+	constexpr Call<void(int)> stop_timer {"timer_stop"};
 	stop_timer(this->id);
 }
 

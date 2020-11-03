@@ -24,9 +24,7 @@ Script::Script(const machine_t& smach, const std::string& name)
 	}
 	this->reset();
 }
-Script::~Script() {
-	m_groups.clear(); // make sure this is freed first
-}
+Script::~Script() {}
 
 bool Script::reset()
 {
@@ -37,12 +35,6 @@ bool Script::reset()
 		};
 		m_machine.reset(new machine_t(
 			m_source_machine.memory.binary(), options));
-
-		// unfortunately, we need to clear all the groups here
-		// as a reset will remove all pages in guest memory,
-		// which invalidates all groups. this will also give
-		// all the used system call numbers back.
-		m_groups.clear();
 
 	} catch (std::exception& e) {
 		fmt::print(">>> Exception: {}\n", e.what());
@@ -265,43 +257,6 @@ void Script::each_tick_event()
 	assert(mt->get_thread()->tid == 0 && "Avoid clobbering regs");
 }
 
-auto& Script::get_group(int gid)
-{
-	auto it = m_groups.find(gid);
-	if (it == m_groups.end())
-		it = m_groups.try_emplace(gid, gid, *this).first;
-	return it->second;
-}
-void Script::set_dynamic_function(int gid, int index, ghandler_t handler)
-{
-	get_group(gid).install(index, std::move(handler));
-}
-void Script::set_dynamic_functions(int gid, std::vector<std::pair<int, ghandler_t>> vec)
-{
-	auto& group = get_group(gid);
-	for (const auto& pair : vec) {
-		group.install(pair.first, std::move(pair.second));
-	}
-}
-void Script::delete_group(int gid) {
-	m_groups.erase(gid);
-}
-size_t Script::group_entries_max() const noexcept {
-	return FunctionGroup::GROUP_SIZE;
-}
-bool Script::check_group(int gid, uint64_t bits) const {
-	auto it = m_groups.find(gid);
-	if (it != m_groups.end())
-		return it->second.check(bits);
-	return false;
-}
-size_t Script::current_group() const noexcept {
-	return FunctionGroup::calculate_group(machine().cpu.pc());
-}
-size_t Script::current_group_index() const noexcept {
-	return FunctionGroup::calculate_group_index(machine().cpu.pc());
-}
-
 void Script::set_dynamic_function(const std::string& name, ghandler_t handler)
 {
 	const uint32_t hash = crc32(name.c_str(), name.size());
@@ -311,7 +266,13 @@ void Script::set_dynamic_function(const std::string& name, ghandler_t handler)
 			hash);
 		throw std::runtime_error("set_dynamic_function failed: Hash collision");
 	}
-	m_dynamic_functions.emplace(hash, handler);
+	m_dynamic_functions.emplace(hash, std::move(handler));
+}
+void Script::set_dynamic_functions(std::vector<std::pair<std::string, ghandler_t>> vec)
+{
+	for (const auto& pair : vec) {
+		set_dynamic_function(pair.first, std::move(pair.second));
+	}
 }
 
 void Script::dynamic_call(uint32_t hash)

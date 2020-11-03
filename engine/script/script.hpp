@@ -4,7 +4,6 @@
 #include <fmt/core.h>
 #include <libriscv/machine.hpp>
 #include <EASTL/unordered_map.h>
-#include "function_group.hpp"
 
 class Script {
 public:
@@ -38,19 +37,8 @@ public:
 	// Install a callback function using a string name
 	// Can be invoked from the guest using the same string name
 	void set_dynamic_function(const std::string& name, ghandler_t);
+	void set_dynamic_functions(std::vector<std::pair<std::string, ghandler_t>>);
 	void dynamic_call(uint32_t hash);
-
-	// Install a callback function for a given group ID and index
-	// Can be invoked from the guest using the same group ID and index
-	void set_dynamic_function(int gid, int index, ghandler_t);
-	void set_dynamic_functions(int gid, std::vector<std::pair<int, ghandler_t>>);
-	void delete_group(int gid);
-	size_t group_entries_max() const noexcept;
-	// returns true if all set bit-indices have a corresponding handler
-	bool check_group(int gid, uint64_t bits) const;
-	// When a handler is being called, retrieve group/index
-	size_t current_group() const noexcept;
-	size_t current_group_index() const noexcept;
 
 	auto& machine() { return *m_machine; }
 	const auto& machine() const { return *m_machine; }
@@ -101,9 +89,6 @@ private:
 	int         m_budget_overruns = 0;
 	// hash to public API direct function map
 	eastl::unordered_map<uint32_t, gaddr_t> m_public_api;
-	// groups of functions that dynamically extend engine functionality
-	eastl::unordered_map<int, FunctionGroup> m_groups;
-	auto& get_group(int);
 	// map of functions that extend engine using string hashes
 	eastl::unordered_map<uint32_t, ghandler_t> m_dynamic_functions;
 	// list of free (unused) system call numbers

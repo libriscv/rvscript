@@ -30,16 +30,24 @@ engine$ ./engine
 >>> [events] says: Entering event loop...
 >>> [gameplay1] says: Hello world!
 >>> [gameplay1] says: Exception caught!
-> median 2ns  		lowest: 2ns     	highest: 3ns
+> median 2ns  		lowest: 2ns     	highest: 2ns
 >>> Measurement "VM function call overhead" median: 2 nanos
 
-> median 79ns  		lowest: 79ns     	highest: 121ns
+> median 79ns  		lowest: 77ns     	highest: 124ns
 >>> Measurement "Thread creation overhead" median: 79 nanos
 
-> median 20ns  		lowest: 19ns     	highest: 43ns
->>> Measurement "Function group handler" median: 20 nanos
+> median 16ns  		lowest: 16ns     	highest: 38ns
+>>> Measurement "Dynamic call handler" median: 16 nanos
+
+> median 45ns  		lowest: 45ns     	highest: 75ns
+>>> Measurement "Farcall lookup" median: 45 nanos
+
+> median 36ns  		lowest: 36ns     	highest: 59ns
+>>> Measurement "Farcall direct" median: 36 nanos
 
 >>> [gameplay2] says: Hello Remote World! value = 1234!
+>>> [gameplay2] says: Some struct string: Hello 123!
+>>> [gameplay2] says: Some struct value: 42
 >>> [gameplay1] says: Back again in the start() function! Return value: 1234
 >>> [gameplay1] says: Hello Microthread World!
 >>> [gameplay1] says: Back again in the start() function!
@@ -55,15 +63,13 @@ engine$ ./engine
 >>> [events] says: I am being run on another machine!
 >>> [gameplay2] says: Hello C++ World
 ...
-Object is alive? true
+Calling 'myobject_death' in 'gameplay2'
 >>> [gameplay2] says: Object 'myobject' is dying!
-Object is alive? false
 ...
 >>> [gameplay2] says: Hello from Nim!
 >>> [gameplay2] says: John is 45 years old
 >>> [gameplay2] says: Kate is 30 years old
 ...
-Hello from a function group handler (also 1234)
 ```
 
 This particular output is with C++ RTTI and exceptions, as well as the Nim example, enabled.
