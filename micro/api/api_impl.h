@@ -27,8 +27,8 @@ inline long measure(const char* testname, T testfunc)
 	return syscall(ECALL_MEASURE, (long) testname, (long) static_cast<void(*)()>(testfunc));
 }
 
-extern "C" long farcall_helper(uint32_t a, uint32_t b, ...);
-extern "C" long direct_farcall_helper(uint32_t m, uintptr_t a, ...);
+extern "C" void (*farcall_helper) ();
+extern "C" void (*direct_farcall_helper) ();
 
 template <typename Func>
 struct FarCall {
@@ -37,16 +37,17 @@ struct FarCall {
 
 	constexpr FarCall(const char* m, const char* f)
 		: mhash(crc32(m)), fhash(crc32(f)) {}
-	constexpr FarCall(uint32_t m, uint32_t f) : mhash(m), fhash(f) {}
 
 	template <typename... Args>
 	auto operator() (Args&&... args) const {
 		static_assert( std::is_invocable_v<Func, Args...> );
-		return farcall_helper(mhash, fhash, std::forward<Args>(args)...);
+		using Ret = std::result_of<Func>;
+		using FCH = Ret(uint32_t, uint32_t, Args... args);
+
+		auto* fch = reinterpret_cast<FCH*> (&farcall_helper);
+		return fch(mhash, fhash, args...);
 	}
 };
-#define FARCALL(mach, func, type) \
-	FarCall<type> (crc32(mach), crc32(func))
 
 template <typename Func>
 struct ExecuteRemotely {
@@ -59,8 +60,11 @@ struct ExecuteRemotely {
 	template <typename... Args>
 	auto operator() (Args&&... args) const {
 		static_assert( std::is_invocable_v<Func, Args...> );
-		const auto faddr = (uintptr_t) func;
-		return direct_farcall_helper(mhash, faddr, std::forward<Args>(args)...);
+		using Ret = decltype(func(args...));
+		using FCH = Ret(uint32_t, Func, Args... args);
+
+		auto* fch = reinterpret_cast<FCH*> (&direct_farcall_helper);
+		return fch(mhash, func, args...);
 	}
 };
 

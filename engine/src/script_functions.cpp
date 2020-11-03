@@ -71,6 +71,30 @@ inline void do_farcall(machine_t& machine, Script& dest, gaddr_t addr)
 	for (int i = 0; i < 8; i++) {
 		regs.getfl(10 + i) = current.getfl(10 + i);
 	}
+
+	// scan registers to determine if we need to mirror the stack
+	bool mirror_stack = false;
+	const gaddr_t STACK_BEG = machine.memory.stack_initial();
+	const gaddr_t STACK_TOP = current.get(2) & ~(gaddr_t) 0xFFF;
+
+	if (&machine != &dest.machine())
+	{
+		for (int i = 10; i < 16; i++) {
+			if (regs.get(i) >= STACK_TOP && regs.get(i) < STACK_BEG) {
+				mirror_stack = true;
+				break;
+			}
+		}
+	}
+	if (mirror_stack)
+	{
+		// mount the stack of the calling machine as shared memory
+		for (gaddr_t src = STACK_TOP; src < STACK_BEG; src += 0x1000)
+		{
+			const auto& page = machine.memory.get_page(src);
+			dest.machine().memory.install_shared_page(src >> 12, page);
+		}
+	}
 	// we short-circuit the ret pseudo-instruction:
 	// when we return to the source machine, we are already back at caller
 	machine.cpu.jump(current.get(riscv::RISCV::REG_RA) - 4);

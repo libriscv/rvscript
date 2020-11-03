@@ -60,7 +60,13 @@ void Script::add_shared_memory()
 {
 	const int shared_pageno = shared_memory_location() >> riscv::Page::SHIFT;
 	const int heap_pageno   = 0x40000000 >> riscv::Page::SHIFT;
-	const int stack_pageno  = heap_pageno - 2;
+
+	static int counter = 0;
+	const int stack_pageno  = heap_pageno - 2 - counter;
+	// Separate each stack base address by 16 pages, for each machine.
+	// This will make it simple to mirror stacks when calling remotely.
+	counter += 16;
+
 	auto& mem = machine().memory;
 	mem.set_stack_initial((gaddr_t) stack_pageno << riscv::Page::SHIFT);
 	// Install our shared guard-page around the shared-

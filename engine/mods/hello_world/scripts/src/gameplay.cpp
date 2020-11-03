@@ -3,7 +3,11 @@
 using namespace api;
 using namespace std::string_literals;
 extern void NimMain();
-PUBLIC(long some_function(int value));
+struct SomeStruct {
+	const char* string;
+	int value;
+};
+PUBLIC(long some_function(int value, SomeStruct&));
 
 int main()
 {
@@ -77,7 +81,11 @@ PUBLIC(void start())
 	   NOTE: We have to used the shared area to pass anything that is not
 	   passed through normal registers. See events.hpp for an example. */
 	constexpr ExecuteRemotely somefunc("gameplay2", some_function);
-	int r = somefunc(1234);
+	SomeStruct some {
+		.string = "Hello 123!",
+		.value  = 42
+	};
+	int r = somefunc(1234, some);
 	print("Back again in the start() function! Return value: ", r, "\n");
 
 	/* Create events that will run each physics tick.
@@ -122,9 +130,11 @@ PUBLIC(void start())
    because the symbol files are used in the build system to preserve certain
    functions that would ordinarily get optimized out. It's name also has to
    unmangled, otherwise we can't find it in the ELF string tables. */
-long some_function(int value)
+long some_function(int value, SomeStruct& some)
 {
 	print("Hello Remote World! value = ", value, "!\n");
+	print("Some struct string: ", some.string, "\n");
+	print("Some struct value: ", some.value, "\n");
 	return value;
 }
 
