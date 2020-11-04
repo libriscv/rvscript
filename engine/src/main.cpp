@@ -166,13 +166,21 @@ int main()
 	int called = 0x0;
 	gameplay1.set_dynamic_function("testing",
 		[&] (auto&) {
-			called = 0xF;
+			called |= 0x1;
 		});
-	// Duplicate hash:
-	//gameplay1.set_dynamic_function("empty", [] (auto&) {});
+	gameplay1.set_dynamic_function("testing123",
+		[&] (auto&) {
+			called |= 0xE;
+		});
 	gameplay1.call("test_dynamic_functions");
 	// All the functions should have been called
 	if (called != 0xF) exit(1);
+	// Duplicate hash:
+	//gameplay1.set_dynamic_function("empty", [] (auto&) {});
+	// This will replace the function:
+	gameplay1.reset_dynamic_function("empty", [] (auto&) {});
+	// This will remove the function:
+	gameplay1.reset_dynamic_function("empty");
 
 	return 0;
 }

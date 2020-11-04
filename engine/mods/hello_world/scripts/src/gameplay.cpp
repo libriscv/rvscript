@@ -30,7 +30,7 @@ static void thread_function() {
 	microthread::direct([] { /* ... */ });
 }
 static void dyncall_handler() {
-	constexpr Call<void()> empty("empty");
+	Call<void()> empty("empty");
 	empty();
 }
 PUBLIC(void public_donothing()) {
@@ -41,14 +41,14 @@ static void direct_farcall_testcall() {
 	   be used when calling into a remote machine that is running
 	   the same executable as this machine. If it's using a different
 	   executable you can use a regular FARCALL instead. */
-	constexpr ExecuteRemotely fc("gameplay2", public_donothing);
+	ExecuteRemotely fc("gameplay2", public_donothing);
 	fc();
 }
 static void farcall_lookup_testcall() {
 	/* A regular farcall will have to lookup the function in the remote
 	   machine. We also need to specify the function type as a
 	   template argument, to help with type safety. */
-	constexpr FarCall<void()> fc("gameplay2", "public_donothing");
+	FarCall<void()> fc("gameplay2", "public_donothing");
 	fc();
 }
 
@@ -81,7 +81,7 @@ PUBLIC(void start())
 	   into it with the provided function and arguments.
 	   NOTE: We have to used the shared area to pass anything that is not
 	   passed through normal registers. See events.hpp for an example. */
-	constexpr ExecuteRemotely somefunc("gameplay2", some_function);
+	ExecuteRemotely somefunc("gameplay2", some_function);
 	SomeStruct some {
 		.string = "Hello 123!",
 		.value  = 42
@@ -167,6 +167,6 @@ PUBLIC(void myobject_death(GameObject& object))
 
 PUBLIC(void test_dynamic_functions())
 {
-	Call<void()> dyncall("testing");
-	dyncall();
+	DYNCALL("testing", void());
+	DYNCALL("testing123", void());
 }

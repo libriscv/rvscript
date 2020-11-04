@@ -268,6 +268,14 @@ void Script::set_dynamic_function(const std::string& name, ghandler_t handler)
 	}
 	m_dynamic_functions.emplace(hash, std::move(handler));
 }
+void Script::reset_dynamic_function(const std::string& name, ghandler_t handler)
+{
+	const uint32_t hash = crc32(name.c_str(), name.size());
+	m_dynamic_functions.erase(hash);
+	if (handler != nullptr) {
+		set_dynamic_function(name, std::move(handler));
+	}
+}
 void Script::set_dynamic_functions(std::vector<std::pair<std::string, ghandler_t>> vec)
 {
 	for (const auto& pair : vec) {
