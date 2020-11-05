@@ -76,16 +76,19 @@ PUBLIC(void start())
 	measure("Farcall lookup", farcall_lookup_testcall);
 	measure("Farcall direct", direct_farcall_testcall);
 
-	/* This function creates a callable object that when called, tells
+	/* This incantation creates a callable object that when called, tells
 	   the engine to find the "gameplay2" machine, and then make a call
-	   into it with the provided function and arguments.
-	   NOTE: We have to used the shared area to pass anything that is not
-	   passed through normal registers. See events.hpp for an example. */
+	   into it with the provided function and arguments. */
 	ExecuteRemotely somefunc("gameplay2", some_function);
+	/* The engine will detect if we are passing a reference to the stack,
+	   and then mount this stack into the remote machine. That allows for
+	   passing stack data as arguments to remote machines, with no copying. */
 	SomeStruct some {
 		.string = "Hello 123!",
 		.value  = 42
 	};
+	/* This is the actual remote function call. It has to match the
+	   definition of some_function, or you get a compile error. */
 	int r = somefunc(1234, some);
 	print("Back again in the start() function! Return value: ", r, "\n");
 
@@ -108,7 +111,7 @@ PUBLIC(void start())
 		}
 	});
 
-	/* This creates a new threads with no arguments and immediately starts
+	/* This creates a new thread with no arguments and immediately starts
 	   executing it. The sleep() will block the thread until some time has
 	   passed, and then resume. At the end we make a remote function call
 	   to a long-running process that sits in an event loop waiting for work. */
@@ -116,8 +119,8 @@ PUBLIC(void start())
 		print("Hello ", mt, " World!\n");
 		sleep(1.0);
 		print("Hello Belated Microthread World! 1 second passed.\n");
-		/* REMOTE_EXEC is implemented in events.hpp */
-		REMOTE_EXEC("events", [] {
+		/* add_remote_work is implemented in events.hpp */
+		add_remote_work([] {
 			/* This works because gameplay and events are running
 			   the same binary, so they share read-only memory,
 			   such as strings, constant structs and functions. */

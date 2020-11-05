@@ -3,12 +3,12 @@
 
 PUBLIC(bool add_work(const Events::Work*));
 
-inline void execute_remotely(uint32_t mhash, Function<void()> func)
+inline void add_remote_work(Function<void()> func)
 {
 	SharedMemoryArea shm;
-	// copy whole function to shared memory area
+	// copy whole function to a shared memory area
 	auto* work = shm.push(std::move(func));
 	// send work to another machine
-	api::interrupt(mhash, crc32("add_work"), work);
+	using AddWorkFunc = bool(const Events::Work*);
+	api::interrupt<AddWorkFunc>(crc32("events"), crc32("add_work"), work);
 }
-#define REMOTE_EXEC(mach, ...) execute_remotely(crc32(mach), __VA_ARGS__)

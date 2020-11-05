@@ -28,3 +28,11 @@ asm(".global direct_farcall_helper\n"
 "	li a7, 106\n"
 "	ecall\n" // Note how there is no ret here
 ""); // The system call handler must jump back to caller
+
+static_assert(ECALL_INTERRUPT == 107,
+	"The interrupt syscall number is hard-coded in assembly");
+asm(".global interrupt_helper\n"
+"interrupt_helper:\n"
+"	li a7, 107\n"
+"	ecall\n" // Note how there is no ret here
+""); // The system call handler must jump back to caller

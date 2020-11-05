@@ -30,6 +30,7 @@ inline long measure(const char* testname, T testfunc)
 extern "C" void (*dyncall_helper) ();
 extern "C" void (*farcall_helper) ();
 extern "C" void (*direct_farcall_helper) ();
+extern "C" void (*interrupt_helper) ();
 
 template <typename Func>
 struct FarCall {
@@ -89,11 +90,15 @@ struct Call {
 };
 #define DYNCALL(name, type, ...) Call<type> (crc32(name)) (__VA_ARGS__)
 
-template <typename T>
-inline long interrupt(uint32_t mhash, uint32_t fhash, T argument)
+template <typename Func, typename... Args>
+inline long interrupt(uint32_t mhash, uint32_t fhash, Args... args)
 {
-	asm ("" ::: "memory"); // avoid dead-store optimzation
-	return syscall(ECALL_INTERRUPT, mhash, fhash, (long) argument);
+	static_assert( std::is_invocable_v<Func, Args...> );
+	using Ret = typename std::invoke_result<Func, Args...>::type;
+	using FP = Ret(*)(uint32_t, uint32_t, Args...);
+
+	auto fptr = reinterpret_cast<FP> (&interrupt_helper);
+	return fptr(mhash, fhash, args...);
 }
 inline long interrupt(uint32_t mhash, uint32_t fhash)
 {

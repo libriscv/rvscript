@@ -74,6 +74,7 @@ APICALL(api_dyncall)
 	machine.cpu.jump(regs.get(riscv::RISCV::REG_RA) - 4);
 }
 
+template <bool Preempt = false>
 inline void do_farcall(machine_t& machine, Script& dest, gaddr_t addr)
 {
 	// copy argument registers (1 less integer register)
@@ -109,11 +110,14 @@ inline void do_farcall(machine_t& machine, Script& dest, gaddr_t addr)
 			dest.machine().memory.install_shared_page(src >> 12, page);
 		}
 	}
-	// we short-circuit the ret pseudo-instruction:
-	// when we return to the source machine, we are already back at caller
-	machine.cpu.jump(current.get(riscv::RISCV::REG_RA) - 4);
 	// vmcall with no arguments to avoid clobbering registers
-	machine.set_result(dest.call(addr));
+	if constexpr (!Preempt) {
+		machine.set_result(dest.call(addr));
+	} else {
+		machine.set_result(dest.preempt(addr));
+	}
+	// we short-circuit the ret pseudo-instruction:
+	machine.cpu.jump(machine.cpu.reg(riscv::RISCV::REG_RA) - 4);
 }
 
 APICALL(api_farcall)
@@ -129,7 +133,7 @@ APICALL(api_farcall)
 	const auto addr = script->api_function_from_hash(fhash);
 	if (LIKELY(addr != 0))
 	{
-		do_farcall(machine, *script, addr);
+		do_farcall<false>(machine, *script, addr);
 		return;
 	}
 	fmt::print(stderr,
@@ -147,23 +151,22 @@ APICALL(api_farcall_direct)
 		machine.set_result(-1);
 		return;
 	}
-	do_farcall(machine, *script, faddr);
+	do_farcall<false>(machine, *script, faddr);
 }
 
 APICALL(api_interrupt)
 {
-	const auto [mhash, fhash, data] =
-		machine.template sysargs <uint32_t, uint32_t, gaddr_t> ();
+	const auto [mhash, fhash] =
+		machine.template sysargs <uint32_t, uint32_t> ();
 	auto* script = get_script(mhash);
 	if (script == nullptr) {
 		machine.set_result(-1);
 		return;
 	}
 	// vmcall with no arguments to avoid clobbering registers
-	const auto addr = script->api_function_from_hash(fhash);
-	if (LIKELY(addr != 0)) {
-		// interrupt the machine
-		machine.set_result(script->preempt(addr, (gaddr_t) data));
+	const auto faddr = script->api_function_from_hash(fhash);
+	if (LIKELY(faddr != 0)) {
+		do_farcall<true> (machine, *script, faddr);
 		return;
 	}
 	fmt::print(stderr,
