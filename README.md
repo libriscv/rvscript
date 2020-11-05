@@ -16,6 +16,8 @@ Note that I update the gist now and then as I make improvements. The key benchma
 
 The overhead of a system call is around 5ns last time I measured it, so keep that in mind. The threshold for benefiting from using a dedicated system call is very low, but for simple things like reading the position of an entity you could be using shared memory. Read-only to the machine.
 
+For generally extending the API there is dynamic calls, which have an overhead of around 14ns. Dynamic calls require looking up a hash value in a hash map, and is backed by a std::function with capture storage.
+
 
 ## Demonstration
 
@@ -91,7 +93,7 @@ Running the engine is only half the equation as you will also want to be able to
 
 ## Getting a RISC-V compiler
 
-There are several ways to do this. However for now one requirement is to install the riscv-gnu-toolchains GCC 10.1.0 for RISC-V. Install it like this:
+There are several ways to do this. However for now one requirement is to install the riscv-gnu-toolchains GCC 10 for RISC-V. Install it like this:
 
 ```
 git clone https://github.com/riscv/riscv-gnu-toolchain.git
@@ -186,6 +188,74 @@ I have written in detail about this subject here:
 
 Part 3 is a good introduction that will among other things answer the 'why'.
 
+## Creating an API
+
+The general API to adding new functionality inside the VM is to add more system calls, or use dynamic calls. System calls can only capture a single pointer, require hard-coding a number (the system call number), and is invoked from inline assembly inside the guest. Performance, but clearly not very conducive to auto-generated APIs or preventing binding bugs.
+
+Dynamic calls are string names that when invoked will call a std::function on the host side. An example:
+
+```
+myscript.set_dynamic_function("lazy", [] (auto&) {
+		fmt::print("I'm not doing much, tbh.\n");
+	});
+```
+Will assign the function to the string "lazy". To call this function from inside the VM simply create an object, like so:
+
+```
+Call<void()> lazy("lazy");
+```
+This will instantiate the object `lazy` which is a callable with the given signature from the template argument. This gives us static type checking. Calling the function is completely natural:
+
+```
+lazy();
+```
+
+A slightly more complex example, where we take an integer as argument, and return an integer as the result:
+```
+myscript.set_dynamic_function("object_id",
+	[] (auto& script) {
+		const auto [id] = script.machine().template sysargs <int> ();
+		fmt::print("Object ID: {}\n", id);
+
+		script.machine().set_result(1234);
+	});
+```
+
+Or, let's take a struct by reference or pointer:
+```
+myscript.set_dynamic_function("struct_by_ref",
+	[] (auto& script) {
+		struct Something {
+			int a, b, c, d;
+		};
+		const auto [s] = script.machine().template sysargs <Something> ();
+		fmt::print("Struct A: {}\n", s.a);
+	});
+```
+
+Also, let's take a `char* buffer, size_t length` pair as argument:
+```
+myscript.set_dynamic_function("struct_by_ref",
+	[] (auto& script) {
+		// A Buffer is a list of pointers to fragmented virtual memory,
+		// which cannot be guaranteed to be sequential.
+		const auto [buffer] = script.machine().template sysargs <riscv::Buffer> ();
+
+		// But we can check if it is, as a fast-path:
+		if (buffer.is_sequential()) {
+			// NOTE: The buffer is read-only
+			handle_buffer(buffer.data(), buffer.size());
+		}
+		else {
+			handle_buffer(buffer.to_string().c_str(), buffer.size());
+			// NOTE: you can also copy to a sequential destination
+			//buffer.copy_to(dest, dest_size);
+		}
+	});
+```
+
+
+
 ## Common Issues
 
 - The emulator is jumping to a misaligned instruction, or faulting on some other thing but I know for a fact that the assembly is fine.
@@ -212,5 +282,3 @@ Part 3 is a good introduction that will among other things answer the 'why'.
 	- So far I haven't noticed any performance degradation from this, although I did notice when I enabled C++ exceptions. Don't use GC-sections as a band-aid - I've never seen it improve performance.
 - I have real-time requirements.
 	- As long as pausing the script to continue later is an option, you will not have any trouble. Just don't pause the script while it's in a thread and then accidentally vmcall into it from somewhere else. This will clobber all registers and you can't resume the machine later. You can use preempt provided that it returns to the same thread again (although you are able to yield back to a thread manually). There are many options where things will be OK. In my engine all long-running tasks are running on separate machines, alone.
-- I need to share more than 2GB memory with my machines.
-	- One thing to keep in mind is that the immediate instructions in RISC-V have a certain range that if exceeded requires you to rebuild everything with a separate, less efficient machine model. Not recommended. Instead, you should just be spamming more machines. They cost around 4-5k memory each and you can share anything you want with each machine, even the binary pages. This is already done as an example in this repository.
