@@ -169,12 +169,16 @@ int main()
 			called |= 0x1;
 		});
 	gameplay1.set_dynamic_function("testing123",
-		[&] (auto&) {
-			called |= 0xE;
+		[&] (auto& s) {
+			const auto [arg1, arg2, arg3] =
+				s.machine().template sysargs <int, int, int> ();
+			if (arg1 == 5 && arg2 == 6 && arg3 == 7) {
+				called |= 0x2;
+			}
 		});
 	gameplay1.call("test_dynamic_functions");
 	// All the functions should have been called
-	if (called != 0xF) exit(1);
+	if (called != 0x3) exit(1);
 	// Duplicate hash:
 	//gameplay1.set_dynamic_function("empty", [] (auto&) {});
 	// This will replace the function:

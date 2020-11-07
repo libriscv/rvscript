@@ -19,12 +19,6 @@ int main()
 
 /* These are used for benchmarking */
 static void empty_function() {
-	/* The ebreak-unreachable combo is a way to abruptly stop the machine, and
-	   we can also use it to make the compiler not emit function epilogues.
-	   You don't have to use this for anything other than making benchmark
-	   numbers pretty or if you have a very tight VM function call. */
-	asm("ebreak");
-	__builtin_unreachable();
 }
 static void thread_function() {
 	microthread::direct([] { /* ... */ });
@@ -163,6 +157,7 @@ struct GameObject {
 
 PUBLIC(void myobject_death(GameObject& object))
 {
+	EXPECT(object.alive);
 	print("Object '", object.name, "' is dying!\n");
 	/* SFX: Ugh... */
 	object.alive = false;
@@ -171,5 +166,5 @@ PUBLIC(void myobject_death(GameObject& object))
 PUBLIC(void test_dynamic_functions())
 {
 	DYNCALL("testing", void());
-	DYNCALL("testing123", void());
+	DYNCALL("testing123", void(int, int, int), 5, 6, 7);
 }
