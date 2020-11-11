@@ -36,9 +36,9 @@ public:
 
 	// Install a callback function using a string name
 	// Can be invoked from the guest using the same string name
-	void set_dynamic_function(const std::string& name, ghandler_t);
-	void set_dynamic_functions(std::vector<std::pair<std::string, ghandler_t>>);
-	void reset_dynamic_function(const std::string& name, ghandler_t = nullptr);
+	void set_dynamic_call(const std::string& name, ghandler_t);
+	void set_dynamic_calls(std::vector<std::pair<std::string, ghandler_t>>);
+	void reset_dynamic_call(const std::string& name, ghandler_t = nullptr);
 	void dynamic_call(uint32_t hash);
 
 	auto& machine() { return *m_machine; }

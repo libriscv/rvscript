@@ -44,7 +44,7 @@ struct FarCall {
 	auto operator() (Args&&... args) const {
 		static_assert( std::is_invocable_v<Func, Args...> );
 		using Ret = typename std::invoke_result<Func, Args...>::type;
-		using FCH = Ret(uint32_t, uint32_t, Args... args);
+		using FCH = Ret(*)(uint32_t, uint32_t, Args... args);
 
 		auto* fch = reinterpret_cast<FCH*> (&farcall_helper);
 		return fch(mhash, fhash, args...);

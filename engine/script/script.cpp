@@ -257,29 +257,29 @@ void Script::each_tick_event()
 	assert(mt->get_thread()->tid == 0 && "Avoid clobbering regs");
 }
 
-void Script::set_dynamic_function(const std::string& name, ghandler_t handler)
+void Script::set_dynamic_call(const std::string& name, ghandler_t handler)
 {
 	const uint32_t hash = crc32(name.c_str(), name.size());
 	auto it = m_dynamic_functions.find(hash);
 	if (it != m_dynamic_functions.end()) {
 		fmt::print("Dynamic function with hash {:#08x} already exists\n",
 			hash);
-		throw std::runtime_error("set_dynamic_function failed: Hash collision");
+		throw std::runtime_error("set_dynamic_call failed: Hash collision");
 	}
 	m_dynamic_functions.emplace(hash, std::move(handler));
 }
-void Script::reset_dynamic_function(const std::string& name, ghandler_t handler)
+void Script::reset_dynamic_call(const std::string& name, ghandler_t handler)
 {
 	const uint32_t hash = crc32(name.c_str(), name.size());
 	m_dynamic_functions.erase(hash);
 	if (handler != nullptr) {
-		set_dynamic_function(name, std::move(handler));
+		set_dynamic_call(name, std::move(handler));
 	}
 }
-void Script::set_dynamic_functions(std::vector<std::pair<std::string, ghandler_t>> vec)
+void Script::set_dynamic_calls(std::vector<std::pair<std::string, ghandler_t>> vec)
 {
 	for (const auto& pair : vec) {
-		set_dynamic_function(pair.first, std::move(pair.second));
+		set_dynamic_call(pair.first, std::move(pair.second));
 	}
 }
 

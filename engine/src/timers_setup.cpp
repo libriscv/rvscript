@@ -12,7 +12,7 @@ void setup_timer_system(Script& script)
 	// using named functions. They abstract away system calls
 	// and other low level things, and gives us a nice API
 	// with a std::function to work with.
-	script.set_dynamic_functions({
+	script.set_dynamic_calls({
 		{"timer_stop", [] (Script& script) {
 			// Stop timer
 			const auto [timer_id] = script.machine().sysargs<int> ();

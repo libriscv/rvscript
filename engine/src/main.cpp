@@ -84,9 +84,9 @@ int main()
 	/* Get one of our gameplay machines */
 	auto& gameplay1 = SCRIPT(gameplay1);
 	/* Create an dynamic function for benchmarking */
-	gameplay1.set_dynamic_function("empty", [] (auto&) {});
+	gameplay1.set_dynamic_call("empty", [] (auto&) {});
 	for (int i = 0; i < 100; i++) {
-		gameplay1.set_dynamic_function("empty" + std::to_string(i), [] (auto&) {});
+		gameplay1.set_dynamic_call("empty" + std::to_string(i), [] (auto&) {});
 	}
 #ifdef RISCV_DEBUG
 	gameplay1.enable_debugging();
@@ -164,11 +164,11 @@ int main()
 
 	/* Test dynamic functions */
 	int called = 0x0;
-	gameplay1.set_dynamic_function("testing",
+	gameplay1.set_dynamic_call("testing",
 		[&] (auto&) {
 			called |= 0x1;
 		});
-	gameplay1.set_dynamic_function("testing123",
+	gameplay1.set_dynamic_call("testing123",
 		[&] (auto& s) {
 			const auto [arg1, arg2, arg3] =
 				s.machine().template sysargs <int, int, int> ();
@@ -180,11 +180,11 @@ int main()
 	// All the functions should have been called
 	if (called != 0x3) exit(1);
 	// Duplicate hash:
-	//gameplay1.set_dynamic_function("empty", [] (auto&) {});
+	//gameplay1.set_dynamic_call("empty", [] (auto&) {});
 	// This will replace the function:
-	gameplay1.reset_dynamic_function("empty", [] (auto&) {});
+	gameplay1.reset_dynamic_call("empty", [] (auto&) {});
 	// This will remove the function:
-	gameplay1.reset_dynamic_function("empty");
+	gameplay1.reset_dynamic_call("empty");
 
 	return 0;
 }
