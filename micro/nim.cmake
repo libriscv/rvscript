@@ -1,5 +1,5 @@
 # Build functions for Nim language
-set(NIM_LIBS "$ENV{HOME}/nim-1.2.6/lib" CACHE STRING "Nim library folder")
+set(NIM_LIBS "$ENV{HOME}/nim-1.4.0/lib" CACHE STRING "Nim library folder")
 
 function(add_nim_sources NAME FILENAME)
 	set(NIMCACHE ${CMAKE_CURRENT_BINARY_DIR}/nimcache)

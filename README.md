@@ -170,7 +170,7 @@ Good luck.
 
 ## Nim language support
 
-There is Nim support with the HAVE_NIM boolean CMake option enabled. Once enabled, the `nim` program must be in PATH, and `NIM_LIBS` must point to the nim lib folder. For example `/home/user/nim-1.2.6/lib`. Nim support is very experimental, but general computation should be well supported.
+There is Nim support with the HAVE_NIM boolean CMake option enabled. Once enabled, the `nim` program must be in PATH, and `NIM_LIBS` must point to the nim lib folder. For example `/home/user/nim-1.4.0/lib`. Nim support is very experimental, but general computation should be well supported.
 
 Remember to use `.exportc` to make your Nim entry functions callable from the outside, and also add them to your symbols file. Last, you will need to call `NimMain()` from the `int main()` entry function. All of this is shown in the `gameplay.nim` example as well as `gameplay.cpp`. The example code gets run from `main.cpp` with `another_machine.call("nim_test");`.
 
@@ -195,7 +195,7 @@ The general API to adding new functionality inside the VM is to add more system 
 Dynamic calls are string names that when invoked will call a std::function on the host side. An example:
 
 ```
-myscript.set_dynamic_function("lazy", [] (auto&) {
+myscript.set_dynamic_call("lazy", [] (auto&) {
 		fmt::print("I'm not doing much, tbh.\n");
 	});
 ```
@@ -212,7 +212,7 @@ lazy();
 
 A slightly more complex example, where we take an integer as argument, and return an integer as the result:
 ```
-myscript.set_dynamic_function("object_id",
+myscript.set_dynamic_call("object_id",
 	[] (auto& script) {
 		const auto [id] = script.machine().template sysargs <int> ();
 		fmt::print("Object ID: {}\n", id);
@@ -223,7 +223,7 @@ myscript.set_dynamic_function("object_id",
 
 Or, let's take a struct by reference or pointer:
 ```
-myscript.set_dynamic_function("struct_by_ref",
+myscript.set_dynamic_call("struct_by_ref",
 	[] (auto& script) {
 		struct Something {
 			int a, b, c, d;
@@ -235,7 +235,7 @@ myscript.set_dynamic_function("struct_by_ref",
 
 Also, let's take a `char* buffer, size_t length` pair as argument:
 ```
-myscript.set_dynamic_function("struct_by_ref",
+myscript.set_dynamic_call("struct_by_ref",
 	[] (auto& script) {
 		// A Buffer is a list of pointers to fragmented virtual memory,
 		// which cannot be guaranteed to be sequential.
