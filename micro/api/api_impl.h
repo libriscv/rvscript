@@ -46,7 +46,7 @@ struct FarCall {
 		using Ret = typename std::invoke_result<Func, Args...>::type;
 		using FCH = Ret(*)(uint32_t, uint32_t, Args... args);
 
-		auto* fch = reinterpret_cast<FCH*> (&farcall_helper);
+		auto fch = reinterpret_cast<FCH> (&farcall_helper);
 		return fch(mhash, fhash, args...);
 	}
 };
