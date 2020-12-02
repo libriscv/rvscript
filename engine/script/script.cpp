@@ -19,9 +19,6 @@ riscv::Page Script::g_hidden_stack {{ .write = false }};
 Script::Script(const machine_t& smach, const std::string& name)
 	: m_source_machine(smach), m_name(name), m_hash(crc32(name.c_str()))
 {
-	for (int n = ECALL_LAST; n < RISCV_SYSCALLS_MAX; n++) {
-		m_free_sysno.push_back(n);
-	}
 	this->reset();
 }
 Script::~Script() {}

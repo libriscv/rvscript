@@ -92,9 +92,6 @@ private:
 	eastl::unordered_map<uint32_t, gaddr_t> m_public_api;
 	// map of functions that extend engine using string hashes
 	eastl::unordered_map<uint32_t, ghandler_t> m_dynamic_functions;
-	// list of free (unused) system call numbers
-	eastl::fixed_vector<int, RISCV_SYSCALLS_MAX, false> m_free_sysno;
-	friend struct FunctionGroup;
 };
 static_assert(RISCV_ARCH == 32 || RISCV_ARCH == 64, "Architecture must be 32- or 64-bit");
 
