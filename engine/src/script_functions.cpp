@@ -54,7 +54,7 @@ APICALL(api_measure)
 {
 	const auto [test, address] =
 		machine.template sysargs <std::string, gaddr_t> ();
-	auto time_ns = script(machine).measure(address);
+	auto time_ns = script(machine).vmbench(address);
 	fmt::print(">>> Measurement \"{}\" median: {} nanos\n\n",
 		test, time_ns);
 	machine.set_result(time_ns);

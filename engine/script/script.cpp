@@ -26,6 +26,7 @@ Script::~Script() {}
 bool Script::reset()
 {
 	try {
+		// Fork the source machine into m_machine */
 		riscv::MachineOptions<MARCH> options {
 			.memory_max = MAX_MEMORY,
 			.owning_machine = &this->m_source_machine
@@ -34,10 +35,12 @@ bool Script::reset()
 			m_source_machine.memory.binary(), options));
 
 	} catch (std::exception& e) {
-		fmt::print(">>> Exception: {}\n", e.what());
-		// TODO: shutdown engine?
-		exit(1);
+		fmt::print(">>> Exception during initialization: {}\n", e.what());
+		throw;
 	}
+	// setup system calls and traps
+	this->machine_setup();
+
 	if (this->machine_initialize()) {
 		this->m_crashed = false;
 		return true;
@@ -54,7 +57,7 @@ void Script::add_shared_memory()
 	const int stack_pageno  = heap_pageno - 2 - counter;
 	// Separate each stack base address by 16 pages, for each machine.
 	// This will make it simple to mirror stacks when calling remotely.
-	counter += 16;
+	counter = (counter + 16) % 256;
 
 	auto& mem = machine().memory;
 	mem.set_stack_initial((gaddr_t) stack_pageno << riscv::Page::SHIFT);
@@ -73,10 +76,6 @@ void Script::add_shared_memory()
 
 bool Script::machine_initialize()
 {
-	// setup system calls and traps
-	this->machine_setup(machine());
-	// install the shared memory area
-	this->add_shared_memory();
 	// clear some state belonging to previous initialization
 	this->m_tick_event = 0;
 	// run through the initialization
@@ -105,25 +104,27 @@ bool Script::machine_initialize()
 	}
     return true;
 }
-void Script::machine_setup(machine_t& machine)
+void Script::machine_setup()
 {
-	machine.set_userdata<Script>(this);
-	machine.memory.set_exit_address(machine.address_of("exit"));
-	if (UNLIKELY(machine.memory.exit_address() == 0))
+	machine().set_userdata<Script>(this);
+	machine().memory.set_exit_address(machine().address_of("exit"));
+	if (UNLIKELY(machine().memory.exit_address() == 0))
 		throw std::runtime_error("Exit function not visible/available in program");
 	// add system call interface
-	auto* arena = setup_native_heap_syscalls<MARCH>(machine, MAX_HEAP);
-	setup_native_memory_syscalls<MARCH>(machine, TRUSTED_CALLS);
-	this->m_threads = setup_native_threads<MARCH>(machine, arena);
-    setup_syscall_interface(machine);
-	machine.on_unhandled_syscall(
+	auto* arena = setup_native_heap_syscalls<MARCH>(machine(), MAX_HEAP);
+	setup_native_memory_syscalls<MARCH>(machine(), TRUSTED_CALLS);
+	this->m_threads = setup_native_threads<MARCH>(machine(), arena);
+    setup_syscall_interface(machine());
+	machine().on_unhandled_syscall(
 		[] (int number) {
 			fmt::print(stderr, "Unhandled system call: %d\n", number);
 		});
 
 	// we need to pass the .eh_frame location to a supc++ function,
 	// if C++ RTTI and Exceptions is enabled
-	machine.cpu.reg(11) = machine.memory.resolve_section(".eh_frame");
+	machine().cpu.reg(11) = machine().memory.resolve_section(".eh_frame");
+	// install the shared memory area
+	this->add_shared_memory();
 }
 void Script::handle_exception(gaddr_t address)
 {
@@ -328,20 +329,49 @@ inline long perform_test(Script::machine_t& machine, gaddr_t func)
 	return nanodiff(t0, t1);
 }
 
-long Script::measure(gaddr_t address)
+long Script::vmbench(gaddr_t address)
 {
 	static constexpr size_t TIMES = 2000;
 
 	std::vector<long> results;
-	for (int i = 0; i < 200; i++)
+	for (int i = 0; i < 60; i++)
 	{
 		perform_test<1>(*m_machine, address); // warmup
-		results.push_back( perform_test<TIMES>(*m_machine, address) );
+		results.push_back( perform_test<TIMES>(*m_machine, address) / TIMES );
 	}
 	std::sort(results.begin(), results.end());
-	long median = results[results.size() / 2] / TIMES;
-	long lowest = results[0] / TIMES;
-	long highest = results[results.size()-1] / TIMES;
+	const long median = results[results.size() / 2];
+	const long lowest = results[0];
+	const long highest = results[results.size()-1];
+
+	fmt::print("> median {}ns  \t\tlowest: {}ns     \thighest: {}ns\n",
+			median, lowest, highest);
+	return median;
+}
+
+long Script::benchmark(std::function<void()> callback)
+{
+	static constexpr size_t TIMES = 2000;
+
+	std::vector<long> results;
+	for (int i = 0; i < 30; i++)
+	{
+		callback();
+		asm("" : : : "memory");
+		auto t0 = time_now();
+		asm("" : : : "memory");
+		for (size_t j = 0; j < TIMES; j++) {
+			callback();
+		}
+		asm("" : : : "memory");
+		auto t1 = time_now();
+		asm("" : : : "memory");
+		results.push_back( nanodiff(t0, t1) / TIMES );
+	}
+	std::sort(results.begin(), results.end());
+	const long median = results[results.size() / 2];
+	const long lowest = results[0];
+	const long highest = results[results.size()-1];
 
 	fmt::print("> median {}ns  \t\tlowest: {}ns     \thighest: {}ns\n",
 			median, lowest, highest);

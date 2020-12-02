@@ -50,7 +50,8 @@ public:
 	bool crashed() const noexcept { return m_crashed; }
 	bool reset(); // true if the reset was successful
 	void print_backtrace(const gaddr_t addr);
-	long measure(gaddr_t address);
+	long vmbench(gaddr_t address);
+	static long benchmark(std::function<void()>);
 
 	void hash_public_api_symbols_file(const std::string& file);
 	void hash_public_api_symbols(std::string_view lines);
@@ -74,7 +75,7 @@ private:
 	void handle_timeout(gaddr_t);
 	bool install_binary(const std::string& file, bool shared = true);
 	bool machine_initialize();
-	void machine_setup(machine_t&);
+	void machine_setup();
 	void setup_syscall_interface(machine_t&);
 	static std::array<riscv::Page, 2> g_shared_area; // shared memory area
 	static riscv::Page g_hidden_stack; // page used by the internal APIs

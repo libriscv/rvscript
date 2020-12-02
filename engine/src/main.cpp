@@ -14,6 +14,8 @@ static std::map<uint32_t, Script> scripts;
 static Script& create_script(const std::string& name, const std::string& bbname)
 {
 	const auto& box = blackbox.get(bbname);
+	/* This will fork the original machine using copy-on-write
+	   and memory sharing mechanics to save memory. */
 	auto it = scripts.emplace(std::piecewise_construct,
 		std::forward_as_tuple(crc32(name.c_str())),
 		std::forward_as_tuple(box.machine, name));
@@ -185,6 +187,21 @@ int main()
 	gameplay1.reset_dynamic_call("empty", [] (auto&) {});
 	// This will remove the function:
 	gameplay1.reset_dynamic_call("empty");
+
+	// (Full) Fork benchmark
+	fmt::print("Benchmarking full fork:\n");
+	static const auto& box = blackbox.get("gameplay");
+	Script::benchmark(
+		[] {
+			Script {box.machine, ""};
+		});
+	// Reset benchmark
+	fmt::print("Benchmarking reset:\n");
+	Script uhh {box.machine, ""};
+	Script::benchmark(
+		[&uhh] {
+			uhh.reset();
+		});
 
 	return 0;
 }
