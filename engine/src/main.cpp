@@ -156,12 +156,6 @@ int main()
 	obj.onDeath.call(OBJECT_AREA + 0 * sizeof(GameObject));
 	assert(obj.alive == false);
 
-	/* If nim is enabled, we can run the nim test */
-	if (another_machine.resolve_address("nim_test")) {
-		fmt::print("...\n");
-		another_machine.call("nim_test");
-	}
-
 	fmt::print("...\n");
 
 	/* Test dynamic functions */
@@ -202,6 +196,21 @@ int main()
 		[&uhh] {
 			uhh.reset();
 		});
+
+	/* If nim is enabled, we can run the nim test */
+	#define NIMPATH  "../micronim/riscv64-unknown-elf"
+	const char* nimfile = NIMPATH "/hello_nim";
+	if (access(nimfile, F_OK) == 0)
+	{
+		blackbox.insert_binary("micronim",
+			nimfile,
+			NIMPATH "/src/gameplay.symbols");
+		auto& nim_machine = create_script("nim", "micronim");
+		if (nim_machine.resolve_address("hello_nim")) {
+			fmt::print("...\n");
+			nim_machine.call("hello_nim");
+		}
+	}
 
 	return 0;
 }

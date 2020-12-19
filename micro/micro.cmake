@@ -4,7 +4,6 @@ option(DEBUGGING   "Add debugging information" OFF)
 option(RTTI_EXCEPT "C++ RTTI and exceptions" OFF)
 set(VERSION_FILE   "symbols.map" CACHE STRING "Retained symbols file")
 option(STRIP_SYMBOLS "Remove all symbols except the public API" ON)
-option(HAVE_NIM    "Nim is installed" OFF)
 
 #
 # Build configuration
@@ -73,9 +72,6 @@ function (add_micro_binary NAME VERFILE)
 	add_executable(${NAME} ${ARGN})
 	target_link_libraries(${NAME} -static -Wl,--whole-archive libc -Wl,--no-whole-archive)
 	target_link_libraries(${NAME} frozen::frozen strf)
-	if (HAVE_NIM)
-		target_compile_definitions(${NAME} PUBLIC HAVE_NIM=1)
-	endif()
 	# place ELF into the sub-projects source folder
 	set_target_properties(${NAME}
 		PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -94,8 +90,3 @@ function (add_micro_binary NAME VERFILE)
 		endif()
 	endif()
 endfunction()
-
-if (HAVE_NIM)
-	# Nim backend
-	include(${CMAKE_CURRENT_LIST_DIR}/nim.cmake)
-endif()

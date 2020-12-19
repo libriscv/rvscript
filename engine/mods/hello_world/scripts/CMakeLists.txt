@@ -8,6 +8,3 @@ add_micro_binary(gameplay.elf "src/gameplay.symbols"
 	"src/gameplay.cpp"
 	"src/events.cpp"
 )
-if (HAVE_NIM)
-	add_nim_sources(gameplay.elf "src/gameplay.nim")
-endif()
