@@ -9,4 +9,4 @@ var j = %* {
 }
 
 proc hello_nim() =
-    echo "Hello Nim World!\n" & j.pretty()
+    print "Hello Nim World!\n" & j.pretty()
