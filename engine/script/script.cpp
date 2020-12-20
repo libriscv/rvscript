@@ -329,30 +329,21 @@ inline long perform_test(Script::machine_t& machine, gaddr_t func)
 	return nanodiff(t0, t1);
 }
 
-long Script::vmbench(gaddr_t address)
+long Script::vmbench(gaddr_t address, size_t ntimes)
 {
 	static constexpr size_t TIMES = 2000;
 
 	std::vector<long> results;
-	for (int i = 0; i < 60; i++)
+	for (size_t i = 0; i < ntimes; i++)
 	{
 		perform_test<1>(*m_machine, address); // warmup
 		results.push_back( perform_test<TIMES>(*m_machine, address) / TIMES );
 	}
-	std::sort(results.begin(), results.end());
-	const long median = results[results.size() / 2];
-	const long lowest = results[0];
-	const long highest = results[results.size()-1];
-
-	fmt::print("> median {}ns  \t\tlowest: {}ns     \thighest: {}ns\n",
-			median, lowest, highest);
-	return median;
+	return finish_benchmark(results);
 }
 
-long Script::benchmark(std::function<void()> callback)
+long Script::benchmark(std::function<void()> callback, size_t TIMES)
 {
-	static constexpr size_t TIMES = 2000;
-
 	std::vector<long> results;
 	for (int i = 0; i < 30; i++)
 	{
@@ -368,6 +359,11 @@ long Script::benchmark(std::function<void()> callback)
 		asm("" : : : "memory");
 		results.push_back( nanodiff(t0, t1) / TIMES );
 	}
+	return finish_benchmark(results);
+}
+
+long Script::finish_benchmark(std::vector<long>& results)
+{
 	std::sort(results.begin(), results.end());
 	const long median = results[results.size() / 2];
 	const long lowest = results[0];
@@ -377,6 +373,7 @@ long Script::benchmark(std::function<void()> callback)
 			median, lowest, highest);
 	return median;
 }
+
 
 timespec time_now()
 {

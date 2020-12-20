@@ -204,11 +204,15 @@ int main()
 	{
 		blackbox.insert_binary("micronim",
 			nimfile,
-			NIMPATH "/src/gameplay.symbols");
+			NIMPATH "/../src/default.symbols");
 		auto& nim_machine = create_script("nim", "micronim");
 		if (nim_machine.resolve_address("hello_nim")) {
 			fmt::print("...\n");
 			nim_machine.call("hello_nim");
+			nim_machine.stdout_enable(false);
+			const auto address = nim_machine.resolve_address("hello_nim");
+			nim_machine.vmbench(address);
+			nim_machine.stdout_enable(true);
 		}
 	}
 

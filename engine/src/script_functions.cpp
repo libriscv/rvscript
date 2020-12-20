@@ -37,14 +37,17 @@ APICALL(api_write)
 	const uint32_t len_g = std::min(1024u, (uint32_t) len);
 	machine.memory.memview(address, len_g,
 		[&machine] (const uint8_t* data, size_t len) {
+			auto& scr = script(machine);
+			if (scr.stdout_enabled() == false)
+				return;
 			if (data == nullptr) {
 				fmt::print(stderr,
 					">>> [{}] had an illegal write\n",
-					script(machine).name());
+					scr.name());
 				return;
 			}
 			fmt::print(">>> [{}] says: {}",
-				script(machine).name(),
+				scr.name(),
 				std::string_view((const char*) data, len));
 		});
 	machine.set_result(len_g);

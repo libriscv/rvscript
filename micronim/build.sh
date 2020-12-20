@@ -12,7 +12,7 @@ pushd $GCC_TRIPLE
 NIMCACHE=$PWD/nimcache
 mkdir -p $NIMCACHE
 
-nim c --nimcache:$NIMCACHE $NIMCPU --colors:on --os:any --gc:orc -d:useMalloc --noMain --app:lib --threads:off -c ${NIMFILE}
+nim c --nimcache:$NIMCACHE $NIMCPU --colors:on --os:any --gc:arc -d:useMalloc --noMain --app:lib -d:release -c ${NIMFILE}
 jq '.compile[] [0]' $NIMCACHE/*.json > buildfiles.txt
 
 cmake .. -G Ninja -DGCC_TRIPLE=$GCC_TRIPLE -DCMAKE_TOOLCHAIN_FILE=../../micro/toolchain.cmake

@@ -50,8 +50,10 @@ public:
 	bool crashed() const noexcept { return m_crashed; }
 	bool reset(); // true if the reset was successful
 	void print_backtrace(const gaddr_t addr);
-	long vmbench(gaddr_t address);
-	static long benchmark(std::function<void()>);
+	void stdout_enable(bool e) noexcept { m_stdout = e; }
+	bool stdout_enabled() const noexcept { return m_stdout; }
+	long vmbench(gaddr_t address, size_t ntimes = 30);
+	static long benchmark(std::function<void()>, size_t ntimes = 2000);
 
 	void hash_public_api_symbols_file(const std::string& file);
 	void hash_public_api_symbols(std::string_view lines);
@@ -77,6 +79,7 @@ private:
 	bool machine_initialize();
 	void machine_setup();
 	void setup_syscall_interface(machine_t&);
+	static long finish_benchmark(std::vector<long>&);
 	static std::array<riscv::Page, 2> g_shared_area; // shared memory area
 	static riscv::Page g_hidden_stack; // page used by the internal APIs
 
@@ -88,6 +91,7 @@ private:
 	std::string m_name;
 	uint32_t    m_hash;
 	bool        m_crashed = false;
+	bool        m_stdout = true;
 	int         m_budget_overruns = 0;
 	// hash to public API direct function map
 	eastl::unordered_map<uint32_t, gaddr_t> m_public_api;
