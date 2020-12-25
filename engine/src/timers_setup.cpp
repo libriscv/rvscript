@@ -22,7 +22,7 @@ void setup_timer_system(Script& script)
 			// Periodic timer
 			auto& machine = script.machine();
 			const auto [time, peri, addr, data, size] =
-				machine.sysargs<float, float, gaddr_t, gaddr_t, size_t> ();
+				machine.sysargs<float, float, gaddr_t, gaddr_t, gaddr_t> ();
 			std::array<uint8_t, 32> capture;
 			if (UNLIKELY(size > sizeof(capture))) {
 				throw std::runtime_error("Timer data must be 32-bytes or less");
