@@ -31,21 +31,20 @@ The output from the program should look like this after completion:
 engine$ ./engine
 >>> [events] says: Entering event loop...
 >>> [gameplay1] says: Hello world!
->>> [gameplay1] says: Exception caught!
-> median 2ns  		lowest: 2ns     	highest: 2ns
->>> Measurement "VM function call overhead" median: 2 nanos
+> median 4ns  		lowest: 4ns     	highest: 11ns
+>>> Measurement "VM function call overhead" median: 4 nanos
 
-> median 79ns  		lowest: 77ns     	highest: 124ns
->>> Measurement "Thread creation overhead" median: 79 nanos
+> median 64ns  		lowest: 64ns     	highest: 87ns
+>>> Measurement "Thread creation overhead" median: 64 nanos
 
-> median 16ns  		lowest: 16ns     	highest: 38ns
->>> Measurement "Dynamic call handler" median: 16 nanos
+> median 15ns  		lowest: 15ns     	highest: 22ns
+>>> Measurement "Dynamic call handler" median: 15 nanos
 
-> median 45ns  		lowest: 45ns     	highest: 75ns
->>> Measurement "Farcall lookup" median: 45 nanos
+> median 42ns  		lowest: 42ns     	highest: 73ns
+>>> Measurement "Farcall lookup" median: 42 nanos
 
-> median 36ns  		lowest: 36ns     	highest: 59ns
->>> Measurement "Farcall direct" median: 36 nanos
+> median 27ns  		lowest: 27ns     	highest: 33ns
+>>> Measurement "Farcall direct" median: 27 nanos
 
 >>> [gameplay2] says: Hello Remote World! value = 1234!
 >>> [gameplay2] says: Some struct string: Hello 123!
@@ -68,13 +67,13 @@ engine$ ./engine
 Calling 'myobject_death' in 'gameplay2'
 >>> [gameplay2] says: Object 'myobject' is dying!
 ...
->>> [gameplay2] says: Hello from Nim!
->>> [gameplay2] says: John is 45 years old
->>> [gameplay2] says: Kate is 30 years old
-...
+Benchmarking full fork:
+> median 1854ns  		lowest: 1823ns     	highest: 4021ns
+Benchmarking reset:
+> median 1999ns  		lowest: 1984ns     	highest: 2244ns
 ```
 
-This particular output is with C++ RTTI and exceptions, as well as the Nim example, enabled.
+This particular output is with C++ RTTI and exceptions enabled. The emulator was using experimental binary translation.
 
 
 ## Getting started
