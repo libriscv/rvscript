@@ -117,7 +117,7 @@ void Script::machine_setup()
     setup_syscall_interface(machine());
 	machine().on_unhandled_syscall(
 		[] (int number) {
-			fmt::print(stderr, "Unhandled system call: %d\n", number);
+			fmt::print(stderr, "Unhandled system call: {}\n", number);
 		});
 
 	// we need to pass the .eh_frame location to a supc++ function,
