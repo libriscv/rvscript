@@ -10,6 +10,7 @@ using gaddr_t = Script::gaddr_t;
 
 static const gaddr_t MAX_MEMORY    = 1024*1024 * 16;
 static const gaddr_t MAX_HEAP      = 1024*1024 * 8;
+static const gaddr_t HEAP_AREA     = 0x40000000;
 static const bool    TRUSTED_CALLS = true;
 // the shared area is read-write for the guest
 std::array<riscv::Page, 2> Script::g_shared_area;
@@ -51,7 +52,7 @@ bool Script::reset()
 void Script::add_shared_memory()
 {
 	const int shared_pageno = shared_memory_location() >> riscv::Page::SHIFT;
-	const int heap_pageno   = 0x40000000 >> riscv::Page::SHIFT;
+	const int heap_pageno   = HEAP_AREA >> riscv::Page::SHIFT;
 
 	static int counter = 0;
 	const int stack_pageno  = heap_pageno - 2 - counter;
@@ -99,7 +100,7 @@ bool Script::machine_initialize()
 #endif
 		return false;
 	} catch (std::exception& e) {
-		fmt::print(stderr, ">>> Exception: %s\n", e.what());
+		fmt::print(stderr, ">>> Exception: {}\n", e.what());
 		return false;
 	}
     return true;
@@ -111,7 +112,7 @@ void Script::machine_setup()
 	if (UNLIKELY(machine().memory.exit_address() == 0))
 		throw std::runtime_error("Exit function not visible/available in program");
 	// add system call interface
-	auto* arena = setup_native_heap_syscalls<MARCH>(machine(), MAX_HEAP);
+	auto* arena = setup_native_heap_syscalls<MARCH>(machine(), HEAP_AREA, MAX_HEAP);
 	setup_native_memory_syscalls<MARCH>(machine(), TRUSTED_CALLS);
 	this->m_threads = setup_native_threads<MARCH>(machine(), arena);
     setup_syscall_interface(machine());
