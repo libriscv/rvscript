@@ -67,7 +67,7 @@ public:
 	static auto&   hidden_area() noexcept { return g_hidden_stack; }
 
 	void add_shared_memory();
-	void enable_debugging();
+	void gdb_listen(uint16_t port = 2159);
 
 	Script(const machine_t&, const std::string& name);
 	~Script();

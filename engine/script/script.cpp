@@ -79,10 +79,6 @@ bool Script::machine_initialize()
 	// clear some state belonging to previous initialization
 	this->m_tick_event = 0;
 	// run through the initialization
-#ifdef RISCV_DEBUG
-	this->enable_debugging();
-	//machine().verbose_registers = true;
-#endif
 	try {
 		machine().simulate(MAX_INSTRUCTIONS);
 
@@ -291,13 +287,6 @@ void Script::dynamic_call(uint32_t hash)
 			hash);
 		throw std::runtime_error("Unable to find dynamic function");
 	}
-}
-
-void Script::enable_debugging()
-{
-#ifdef RISCV_DEBUG
-	machine().verbose_instructions = true;
-#endif
 }
 
 inline timespec time_now();

@@ -91,7 +91,10 @@ int main()
 		gameplay1.set_dynamic_call("empty" + std::to_string(i), [] (auto&) {});
 	}
 #ifdef RISCV_DEBUG
-	gameplay1.enable_debugging();
+	/* This will wait until GDB connects */
+	printf("Listening for remote GDB\n");
+	gameplay1.machine().setup_call(gameplay1.resolve_address("start"));
+	gameplay1.gdb_listen();
 #endif
 	/* This is the main start function, which would be something like the
 	   starting function for the current levels script. You can find the
