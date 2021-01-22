@@ -4,12 +4,8 @@ add_subdirectory(machine)
 
 set(SOURCES
 	script.cpp
+	script_debug.cpp
 )
-if (RISCV_DEBUG)
-	list(APPEND SOURCES
-		script_debug.cpp
-	)
-endif()
 
 add_library(script STATIC ${SOURCES})
 target_link_libraries(script PUBLIC machine fmt riscv)

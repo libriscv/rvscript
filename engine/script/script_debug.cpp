@@ -60,13 +60,14 @@ struct RSPClient
 {
 	int current_exception() const;
 
-	void reply_ack();
-	void reply_ok();
-
-	bool read();
+	bool process_one();
 	bool send(const char* str);
 	bool sendf(const char* fmt, ...);
+	void reply_ack();
+	void reply_ok();
 	void kill();
+
+	void set_verbose(bool v) { m_verbose = v; }
 
 	RSPClient(Script& s, int fd);
 	~RSPClient();
@@ -83,11 +84,13 @@ private:
 	void handle_executing();
 	void handle_multithread();
 	void handle_readmem();
+	void handle_writereg();
 	void handle_writemem();
 	void report_gprs();
-	void report_exception();
+	void report_status();
 	Script& m_script;
-	int sockfd;
+	int  sockfd;
+	bool m_verbose = false;
 	std::string buffer;
 	Script::gaddr_t m_bp = 0;
 };
@@ -134,10 +137,7 @@ RSP::~RSP()
 }
 
 RSPClient::RSPClient(Script& script, int fd)
-	: m_script{script}, sockfd(fd)
-{
-	while (this->read());
-}
+	: m_script{script}, sockfd(fd)  {}
 RSPClient::~RSPClient()
 {
 	close(this->sockfd);
@@ -179,7 +179,9 @@ bool RSPClient::sendf(const char* fmt, ...)
 	va_start(args, fmt);
 	int plen = forge_packet(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
-	//printf(">>> %.*s\n", plen, buffer);
+	if (UNLIKELY(m_verbose)) {
+		printf("TX >>> %.*s\n", plen, buffer);
+	}
 	int len = ::write(sockfd, buffer, plen);
 	if (len <= 0) {
 		return false;
@@ -195,7 +197,9 @@ bool RSPClient::send(const char* str)
 {
 	char buffer[PACKET_SIZE];
 	int plen = forge_packet(buffer, sizeof(buffer), str, strlen(str));
-	//printf(">>> %.*s\n", plen, buffer);
+	if (UNLIKELY(m_verbose)) {
+		printf("TX >>> %.*s\n", plen, buffer);
+	}
 	int len = ::write(sockfd, buffer, plen);
 	if (len <= 0) {
 		return false;
@@ -207,14 +211,16 @@ bool RSPClient::send(const char* str)
 	}
 	return (buffer[0] == '+');
 }
-bool RSPClient::read()
+bool RSPClient::process_one()
 {
 	char tmp[1024];
 	int len = ::read(this->sockfd, tmp, sizeof(tmp));
 	if (len <= 0) {
 		return false;
 	}
-	//printf("READ: %.*s\n", len, tmp);
+	if (UNLIKELY(m_verbose)) {
+		printf("RX <<< %.*s\n", len, tmp);
+	}
 	for (int i = 0; i < len; i++)
 	{
 		char c = tmp[i];
@@ -222,7 +228,8 @@ bool RSPClient::read()
 			this->buffer.clear();
 		}
 		else if (c == '#') {
-			this->process_data();
+			reply_ack();
+			process_data();
 			this->buffer.clear();
 			i += 2;
 		}
@@ -236,7 +243,6 @@ bool RSPClient::read()
 }
 void RSPClient::process_data()
 {
-	reply_ack();
 	switch (buffer[0]) {
 	case 'q':
 		handle_query();
@@ -260,6 +266,9 @@ void RSPClient::process_data()
 	case 'm':
 		handle_readmem();
 		break;
+	case 'P':
+		handle_writereg();
+		break;
 	case 'v':
 		handle_executing();
 		break;
@@ -271,7 +280,7 @@ void RSPClient::process_data()
 		handle_breakpoint();
 		break;
 	case '?':
-		report_exception();
+		report_status();
 		break;
 	default:
 		fprintf(stderr, "Unhandled packet: %c\n",
@@ -326,7 +335,10 @@ void RSPClient::handle_continue()
 {
 	auto& machine = m_script.machine();
 	try {
-		machine.stop(false);
+		if (m_bp == machine.cpu.pc()) {
+			send("S05");
+			return;
+		}
 		while (!machine.stopped()) {
 			machine.cpu.simulate();
 			machine.increment_counter(1);
@@ -337,18 +349,20 @@ void RSPClient::handle_continue()
 	} catch (...) {
 
 	}
-	send("S05");
+	report_status();
 }
 void RSPClient::handle_step()
 {
 	auto& machine = m_script.machine();
 	try {
-		machine.cpu.simulate();
-		machine.increment_counter(1);
+		if (!machine.stopped()) {
+			machine.cpu.simulate();
+			machine.increment_counter(1);
+		}
 	} catch (...) {
 
 	}
-	send("S05");
+	report_status();
 }
 void RSPClient::handle_breakpoint()
 {
@@ -366,7 +380,7 @@ void RSPClient::handle_executing()
 {
 	if (strncmp("vRun", buffer.data(), strlen("vRun")) == 0)
 	{
-		printf("Signal: Run now\n");
+		//printf("Signal: Run now\n");
 	}
 	else if (strncmp("vCont?", buffer.data(), strlen("vCont?")) == 0)
 	{
@@ -379,6 +393,10 @@ void RSPClient::handle_executing()
 	else if (strncmp("vCont;s", buffer.data(), strlen("vCont;s")) == 0)
 	{
 		this->handle_step();
+	}
+	else if (strncmp("vKill", buffer.data(), strlen("vKill")) == 0)
+	{
+		this->kill();
 	}
 	else if (strncmp("vMustReplyEmpty", buffer.data(), strlen("vMustReplyEmpty")) == 0)
 	{
@@ -400,6 +418,10 @@ void RSPClient::handle_readmem()
 	uint32_t len = 0;
 	sscanf(buffer.c_str(), "m%lx,%x", &addr, &len);
 	//printf("Addr: 0x%lX  Len: %u\n", addr, len);
+	if (len >= 500) {
+		send("E01");
+		return;
+	}
 
 	char data[1024];
 	char* d = data;
@@ -426,34 +448,55 @@ void RSPClient::handle_writemem()
 
 	m_script.machine().memory.write<uint32_t> (addr, val);
 }
-void RSPClient::report_exception()
+void RSPClient::report_status()
 {
-	sendf("S%02x", current_exception());
+	if (!m_script.machine().stopped())
+		sendf("S%02x", 5); /* Just send TRAP */
+	else
+		send("vStopped");
+}
+template <typename T>
+void putreg(char*& d, const char* end, const T& reg)
+{
+	for (auto j = 0u; j < sizeof(reg) && d < end; j++) {
+		*d++ = lut[(reg >> (j*8+4)) & 0xF];
+		*d++ = lut[(reg >> (j*8+0)) & 0xF];
+	}
+}
+
+void RSPClient::handle_writereg()
+{
+	uint64_t value = 0;
+	uint32_t idx = 0;
+	sscanf(buffer.c_str(), "P%x=%lx", &idx, &value);
+	value = __builtin_bswap64(value);
+
+	auto& machine = m_script.machine();
+	if (idx < 32) {
+		machine.cpu.reg(idx) = value;
+		send("OK");
+	} else if (idx == 32) {
+		machine.cpu.jump(value);
+		machine.stop(false);
+		send("OK");
+	} else {
+		send("E01");
+	}
 }
 
 void RSPClient::report_gprs()
 {
 	auto& regs = m_script.machine().cpu.registers();
-	char buffer[1024];
-	char* d = buffer;
+	char data[1024];
+	char* d = data;
 	/* GPRs */
 	for (int i = 0; i < 32; i++) {
-		auto reg = regs.get(i);
-		for (int j = 0; j < sizeof(reg); j++) {
-			*d++ = lut[(reg >> (j*8+4)) & 0xF];
-			*d++ = lut[(reg >> (j*8+0)) & 0xF];
-		}
+		putreg(d, &data[sizeof(data)], regs.get(i));
 	}
 	/* PC */
-	{
-		auto reg = regs.pc;
-		for (int j = 0; j < sizeof(reg); j++) {
-			*d++ = lut[(reg >> (j*8+4)) & 0xF];
-			*d++ = lut[(reg >> (j*8+0)) & 0xF];
-		}
-	}
+	putreg(d, &data[sizeof(data)], regs.pc);
 	*d++ = 0;
-	send(buffer);
+	send(data);
 }
 
 void RSPClient::reply_ack()
@@ -474,14 +517,28 @@ void RSPClient::kill()
 	close(sockfd);
 }
 
+void Script::gdb_remote_begin(const std::string& entry, uint16_t port)
+{
+	auto addr = resolve_address(entry);
+	if (addr != 0x0) {
+		machine().setup_call(addr);
+		machine().stop(false);
+		gdb_listen(port);
+		return;
+	}
+	throw std::runtime_error("Could not find entry function: " + entry);
+}
 void Script::gdb_listen(uint16_t port)
 {
-	//machine().verbose_instructions = true;
 	RSP server { *this, port };
 	RSPClient* client = nullptr;
 	try {
 		client = server.accept();
+		client->set_verbose(false);
+		while (client->process_one());
 	} catch (...) {
+		delete client;
+		throw;
 	}
 	delete client;
 }

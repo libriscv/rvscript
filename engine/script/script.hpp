@@ -67,6 +67,7 @@ public:
 	static auto&   hidden_area() noexcept { return g_hidden_stack; }
 
 	void add_shared_memory();
+	void gdb_remote_begin(const std::string& entry, uint16_t port = 2159);
 	void gdb_listen(uint16_t port = 2159);
 
 	Script(const machine_t&, const std::string& name);

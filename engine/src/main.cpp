@@ -5,6 +5,7 @@
 
 #include <script/machine/blackbox.hpp>
 static Blackbox<Script::MARCH> blackbox;
+#define REMOTE_GDB
 
 /* List of initialized machines ready to go. The Script class
    is a fully initialized machine with a hashed public API and
@@ -90,11 +91,10 @@ int main()
 	for (int i = 0; i < 100; i++) {
 		gameplay1.set_dynamic_call("empty" + std::to_string(i), [] (auto&) {});
 	}
-#ifdef RISCV_DEBUG
+#ifdef REMOTE_GDB
 	/* This will wait until GDB connects */
 	printf("Listening for remote GDB\n");
-	gameplay1.machine().setup_call(gameplay1.resolve_address("start"));
-	gameplay1.gdb_listen();
+	gameplay1.gdb_remote_begin("start");
 #endif
 	/* This is the main start function, which would be something like the
 	   starting function for the current levels script. You can find the
