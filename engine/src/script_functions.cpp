@@ -57,7 +57,9 @@ APICALL(api_measure)
 {
 	const auto [test, address] =
 		machine.template sysargs <std::string, gaddr_t> ();
+//	auto regs = machine.cpu.registers();
 	auto time_ns = script(machine).vmbench(address);
+//	machine.cpu.registers() = regs;
 	fmt::print(">>> Measurement \"{}\" median: {} nanos\n\n",
 		test, time_ns);
 	machine.set_result(time_ns);
@@ -74,7 +76,7 @@ APICALL(api_dyncall)
 	// call the handler
 	script(machine).dynamic_call(hash);
 	// we short-circuit the ret pseudo-instruction:
-	machine.cpu.jump(regs.get(riscv::RISCV::REG_RA) - 4);
+	//machine.cpu.jump(regs.get(riscv::RISCV::REG_RA) - 4);
 }
 
 template <bool Preempt = false>
@@ -90,37 +92,23 @@ inline void do_farcall(machine_t& machine, Script& dest, gaddr_t addr)
 		regs.getfl(10 + i) = current.getfl(10 + i);
 	}
 
-	// scan registers to determine if we need to mirror the stack
-	bool mirror_stack = false;
-	const gaddr_t STACK_BEG = machine.memory.stack_initial();
-	const gaddr_t STACK_TOP = current.get(2) & ~(gaddr_t) 0xFFF;
+	// Page-sharing mechanisms
+	dest.machine().memory.set_page_readf_handler(
+		[&m = machine.memory] (const auto&, size_t pageno) -> const auto& {
+			return m.get_pageno(pageno);
+		});
 
-	if (&machine != &dest.machine())
-	{
-		for (int i = 10; i < 16; i++) {
-			if (regs.get(i) >= STACK_TOP && regs.get(i) < STACK_BEG) {
-				mirror_stack = true;
-				break;
-			}
-		}
-	}
-	if (mirror_stack)
-	{
-		// mount the stack of the calling machine as shared memory
-		for (gaddr_t src = STACK_TOP; src < STACK_BEG; src += 0x1000)
-		{
-			const auto& page = machine.memory.get_page(src);
-			dest.machine().memory.install_shared_page(src >> 12, page);
-		}
-	}
 	// vmcall with no arguments to avoid clobbering registers
 	if constexpr (!Preempt) {
 		machine.set_result(dest.call(addr));
 	} else {
 		machine.set_result(dest.preempt(addr));
 	}
+
+	// Restore regular page faults on unreadable memory
+	dest.machine().memory.set_page_readf_handler(nullptr);
 	// we short-circuit the ret pseudo-instruction:
-	machine.cpu.jump(machine.cpu.reg(riscv::RISCV::REG_RA) - 4);
+	//machine.cpu.jump(machine.cpu.reg(riscv::RISCV::REG_RA) - 4);
 }
 
 APICALL(api_farcall)

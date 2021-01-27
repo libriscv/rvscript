@@ -14,6 +14,7 @@ public:
 	static constexpr uint64_t MAX_INSTRUCTIONS = 16'000'000;
 	static constexpr gaddr_t READONLY_AREA   = 0x20000;
 	static constexpr gaddr_t HIDDEN_AREA     = 0x10000;
+	static constexpr gaddr_t HEAP_BASE       = 0x40000000;
 
 	// Call any script function, with any parameters
 	template <typename... Args>
@@ -65,12 +66,15 @@ public:
 	static size_t  shared_memory_size() noexcept { return g_shared_area.size(); };
 	static gaddr_t shared_memory_location() noexcept { return 0x2000; };
 	static auto&   hidden_area() noexcept { return g_hidden_stack; }
+	gaddr_t        heap_area() const noexcept {
+		return m_is_debug ? 0x80000000 : 0x40000000;
+	}
 
 	void add_shared_memory();
 	void gdb_remote_begin(const std::string& entry, uint16_t port = 2159);
 	void gdb_listen(uint16_t port = 2159);
 
-	Script(const machine_t&, const std::string& name);
+	Script(const machine_t&, const std::string& name, bool = false);
 	~Script();
 
 private:
@@ -91,6 +95,7 @@ private:
 	int         m_tick_block_reason = 0;
 	std::string m_name;
 	uint32_t    m_hash;
+	bool        m_is_debug = false;
 	bool        m_crashed = false;
 	bool        m_stdout = true;
 	int         m_budget_overruns = 0;

@@ -10,15 +10,15 @@ using gaddr_t = Script::gaddr_t;
 
 static const gaddr_t MAX_MEMORY    = 1024*1024 * 16;
 static const gaddr_t MAX_HEAP      = 1024*1024 * 8;
-static const gaddr_t HEAP_AREA     = 0x40000000;
 static const bool    TRUSTED_CALLS = true;
 // the shared area is read-write for the guest
 std::array<riscv::Page, 2> Script::g_shared_area;
 // the hidden area is read-only for the guest
 riscv::Page Script::g_hidden_stack {{ .write = false }};
 
-Script::Script(const machine_t& smach, const std::string& name)
-	: m_source_machine(smach), m_name(name), m_hash(crc32(name.c_str()))
+Script::Script(const machine_t& smach, const std::string& name, bool debug)
+	: m_source_machine(smach), m_name(name),
+	  m_hash(crc32(name.c_str())), m_is_debug(debug)
 {
 	this->reset();
 }
@@ -30,7 +30,11 @@ bool Script::reset()
 		// Fork the source machine into m_machine */
 		riscv::MachineOptions<MARCH> options {
 			.memory_max = MAX_MEMORY,
-			.owning_machine = &this->m_source_machine
+			.owning_machine = &this->m_source_machine,
+#ifdef RISCV_BINARY_TRANSLATION
+			.translate_blocks_max = (m_is_debug ? 0u : 4000u),
+			.forward_jumps = false, // Too expensive
+#endif
 		};
 		m_machine.reset(new machine_t(
 			m_source_machine.memory.binary(), options));
@@ -52,7 +56,7 @@ bool Script::reset()
 void Script::add_shared_memory()
 {
 	const int shared_pageno = shared_memory_location() >> riscv::Page::SHIFT;
-	const int heap_pageno   = HEAP_AREA >> riscv::Page::SHIFT;
+	const int heap_pageno   = heap_area() >> riscv::Page::SHIFT;
 
 	static int counter = 0;
 	const int stack_pageno  = heap_pageno - 2 - counter;
@@ -108,7 +112,7 @@ void Script::machine_setup()
 	if (UNLIKELY(machine().memory.exit_address() == 0))
 		throw std::runtime_error("Exit function not visible/available in program");
 	// add system call interface
-	auto* arena = setup_native_heap_syscalls<MARCH>(machine(), HEAP_AREA, MAX_HEAP);
+	auto* arena = setup_native_heap_syscalls<MARCH>(machine(), heap_area(), MAX_HEAP);
 	setup_native_memory_syscalls<MARCH>(machine(), TRUSTED_CALLS);
 	this->m_threads = setup_native_threads<MARCH>(machine(), arena);
     setup_syscall_interface(machine());

@@ -19,7 +19,7 @@ void Script::gdb_listen(uint16_t port)
 	RSPClient<Script::MARCH>* client = nullptr;
 	try {
 		client = server.accept();
-		client->set_verbose(false);
+		//client->set_verbose(true);
 		while (client->process_one());
 	} catch (...) {
 		delete client;

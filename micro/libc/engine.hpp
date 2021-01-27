@@ -8,7 +8,6 @@
 #include <include/function.hpp>
 #include <include/tuplecall.hpp>
 #include <microthread.hpp>
-#include "shared_memory.h"
 constexpr double PI = 3.14159265358979323846;
 extern "C" void _exit(int) __attribute__((noreturn));
 #define PUBLIC(...) extern "C" __attribute__((used)) __VA_ARGS__

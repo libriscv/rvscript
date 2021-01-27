@@ -16,7 +16,7 @@ inline void expect_check(Expr expr, const char* strexpr,
 template <typename... Args>
 inline void print(Args&&... args)
 {
-	char buffer[500];
+	char buffer[1024];
 	auto res = strf::to(buffer) (std::forward<Args> (args)...);
 	psyscall(ECALL_WRITE, buffer, res.ptr - buffer);
 }
@@ -91,7 +91,7 @@ struct Call {
 #define DYNCALL(name, type, ...) Call<type> (crc32(name)) (__VA_ARGS__)
 
 template <typename Func, typename... Args>
-inline long interrupt(uint32_t mhash, uint32_t fhash, Args... args)
+inline auto interrupt(uint32_t mhash, uint32_t fhash, Args... args)
 {
 	static_assert( std::is_invocable_v<Func, Args...> );
 	using Ret = typename std::invoke_result<Func, Args...>::type;

@@ -38,6 +38,7 @@ add_subdirectory(script)
 add_executable(engine
     src/main.cpp
     src/script_functions.cpp
+    src/debugging.cpp
     src/timers.cpp
     src/timers_setup.cpp
 )

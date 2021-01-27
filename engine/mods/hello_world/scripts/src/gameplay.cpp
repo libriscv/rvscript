@@ -2,7 +2,6 @@
 #include "events.hpp"
 using namespace api;
 using namespace std::string_literals;
-extern void NimMain();
 struct SomeStruct {
 	const char* string;
 	int value;
@@ -12,16 +11,13 @@ static long some_function(int value, SomeStruct&);
 int main()
 {
 	/* This gets called before anything else, on each machine */
-#ifdef HAVE_NIM
-	NimMain();
-#endif
 }
 
 /* These are used for benchmarking */
 static void empty_function() {
 }
 static void thread_function() {
-	microthread::direct([] { /* ... */ });
+	microthread::oneshot([] { /* ... */ });
 }
 static void dyncall_handler() {
 	Call<void()> empty("empty");
@@ -86,6 +82,9 @@ PUBLIC(void start())
 	int r = somefunc(1234, some);
 	print("Back again in the start() function! Return value: ", r, "\n");
 
+	constexpr Call<void(uint16_t)> remote_gdb("remote_gdb");
+	//remote_gdb(2159);
+
 	/* Create events that will run each physics tick.
 	   We will be waiting immediately, so that we don't run the
 	   event code now, but instead when each tick happens. */
@@ -109,11 +108,16 @@ PUBLIC(void start())
 	   executing it. The sleep() will block the thread until some time has
 	   passed, and then resume. At the end we make a remote function call
 	   to a long-running process that sits in an event loop waiting for work. */
-	microthread::direct([] (std::string mt) {
+	microthread::oneshot([] (std::string mt) {
 		print("Hello ", mt, " World!\n");
 		sleep(1.0);
 		print("Hello Belated Microthread World! 1 second passed.\n");
-		/* add_remote_work is implemented in events.hpp */
+		/* add_remote_work is implemented in events.hpp
+		   NOTE: We cannot pass "anything" we want here,
+		   because the shared pagetables between remote machines
+		   are only in effect during a call, and not after.
+		   Remote work is something that is executed at a later time.
+		   But, we can still pass constant read-only data. */
 		add_remote_work([] {
 			/* This works because gameplay and events are running
 			   the same binary, so they share read-only memory,

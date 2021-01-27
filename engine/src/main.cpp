@@ -5,21 +5,20 @@
 
 #include <script/machine/blackbox.hpp>
 static Blackbox<Script::MARCH> blackbox;
-#define REMOTE_GDB
 
 /* List of initialized machines ready to go. The Script class
    is a fully initialized machine with a hashed public API and
    a lot of helper functions to simplify usage. */
 static std::map<uint32_t, Script> scripts;
 
-static Script& create_script(const std::string& name, const std::string& bbname)
+static Script& create_script(const std::string& name, const std::string& bbname, bool debug = false)
 {
 	const auto& box = blackbox.get(bbname);
 	/* This will fork the original machine using copy-on-write
 	   and memory sharing mechanics to save memory. */
 	auto it = scripts.emplace(std::piecewise_construct,
 		std::forward_as_tuple(crc32(name.c_str())),
-		std::forward_as_tuple(box.machine, name));
+		std::forward_as_tuple(box.machine, name, debug));
 	auto& script = it.first->second;
 	/* When embedding a program, the public API symbols are stored in memory */
 	if (!box.symbols.empty())
@@ -70,12 +69,17 @@ int main()
 
 	/* Naming the machines allows us to call into one machine from another
 	   using this name (hashed). These machines will be fully intialized. */
-	for (int n = 0; n < 100; n++) {
-		auto& script = create_script("gameplay" + std::to_string(n), "gameplay");
+	for (int n = 1; n <= 100; n++) {
+		// We can use gameplay100 for debugging
+		bool debug = (n == 100);
+		auto& script = create_script("gameplay" + std::to_string(n), "gameplay", debug);
 		// Dynamically extend the functionality available
 		// See: timers_setup.cpp
 		extern void setup_timer_system(Script&);
 		setup_timer_system(script);
+		// See: debugging.cpp
+		extern void setup_debugging_system(Script&);
+		setup_debugging_system(script);
 	}
 
 	/* The event_loop function can be resumed later, and can execute work
@@ -91,11 +95,16 @@ int main()
 	for (int i = 0; i < 100; i++) {
 		gameplay1.set_dynamic_call("empty" + std::to_string(i), [] (auto&) {});
 	}
-#ifdef REMOTE_GDB
-	/* This will wait until GDB connects */
-	printf("Listening for remote GDB\n");
-	gameplay1.gdb_remote_begin("start");
-#endif
+
+	if (getenv("DEBUG")) {
+		/* This will wait until GDB connects. Type
+		   target remote localhost:2159 in GDB to connect. */
+		printf("Listening for remote GDB\n");
+		auto& gameplay100 = SCRIPT(gameplay100);
+		gameplay100.set_dynamic_call("empty", [] (auto&) {});
+		gameplay100.gdb_remote_begin("start");
+   	}
+
 	/* This is the main start function, which would be something like the
 	   starting function for the current levels script. You can find the
 	   implementation in mods/hello_world/scripts/src/gameplay.cpp:28. */
