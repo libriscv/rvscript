@@ -217,10 +217,14 @@ int main()
 		blackbox.insert_binary("micronim",
 			nimfile,
 			NIMPATH "/../src/default.symbols");
-		auto& nim_machine = create_script("nim", "micronim");
+		auto& nim_machine = create_script("nim", "micronim", true);
 		if (nim_machine.resolve_address("hello_nim")) {
 			fmt::print("...\n");
+			extern void setup_debugging_system(Script&);
+			setup_debugging_system(nim_machine);
 			nim_machine.call("hello_nim");
+
+			nim_machine.reset_dynamic_call("remote_gdb", [] (auto&) {});
 			nim_machine.stdout_enable(false);
 			const auto address = nim_machine.resolve_address("hello_nim");
 			nim_machine.vmbench(address);

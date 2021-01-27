@@ -3,3 +3,4 @@
 
 extern void console_print(const char*, size_t);
 extern void exit(int) __attribute__((noreturn));
+extern void remote_breakpoint(int);

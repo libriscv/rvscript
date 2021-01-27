@@ -1,6 +1,16 @@
 #include "script.hpp"
 #include <libriscv/rsp_server.hpp>
 
+void Script::gdb_remote_finish()
+{
+	// resume until stopped
+	const uint64_t max = MAX_INSTRUCTIONS;
+	while (!machine().stopped() && machine().instruction_counter() < max) {
+		machine().cpu.simulate();
+		machine().increment_counter(1);
+	}
+}
+
 void Script::gdb_remote_begin(const std::string& entry, uint16_t port)
 {
 	auto addr = resolve_address(entry);
@@ -26,4 +36,5 @@ void Script::gdb_listen(uint16_t port)
 		throw;
 	}
 	delete client;
+	gdb_remote_finish();
 }

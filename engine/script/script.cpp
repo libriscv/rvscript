@@ -259,6 +259,7 @@ void Script::each_tick_event()
 void Script::set_dynamic_call(const std::string& name, ghandler_t handler)
 {
 	const uint32_t hash = crc32(name.c_str(), name.size());
+	//fmt::print("{}: {:x}\n", name, hash);
 	auto it = m_dynamic_functions.find(hash);
 	if (it != m_dynamic_functions.end()) {
 		fmt::print("Dynamic function with hash {:#08x} already exists\n",

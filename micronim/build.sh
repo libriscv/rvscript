@@ -12,9 +12,17 @@ pushd $GCC_TRIPLE
 NIMCACHE=$PWD/nimcache
 mkdir -p $NIMCACHE
 
-nim c --nimcache:$NIMCACHE $NIMCPU --colors:on --os:any --gc:arc -d:useMalloc --noMain --app:lib -d:release -c ${NIMFILE}
+if [[ -z "${DEBUG}" ]]; then
+	DMODE="-d:release"
+	CDEBUG="-DDEBUGGING=OFF"
+else
+	DMODE="--debugger:native"
+	CDEBUG="-DDEBUGGING=ON"
+fi
+
+nim c --nimcache:$NIMCACHE $NIMCPU --colors:on --os:any --gc:arc -d:useMalloc --noMain --app:lib $DMODE -c ${NIMFILE}
 jq '.compile[] [0]' $NIMCACHE/*.json > buildfiles.txt
 
-cmake .. -G Ninja -DGCC_TRIPLE=$GCC_TRIPLE -DCMAKE_TOOLCHAIN_FILE=../../micro/toolchain.cmake
+cmake .. -G Ninja -DGCC_TRIPLE=$GCC_TRIPLE $CDEBUG -DCMAKE_TOOLCHAIN_FILE=../../micro/toolchain.cmake
 ninja
 popd

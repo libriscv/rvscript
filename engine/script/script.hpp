@@ -84,6 +84,7 @@ private:
 	bool machine_initialize();
 	void machine_setup();
 	void setup_syscall_interface(machine_t&);
+	void gdb_remote_finish();
 	static long finish_benchmark(std::vector<long>&);
 	static std::array<riscv::Page, 2> g_shared_area; // shared memory area
 	static riscv::Page g_hidden_stack; // page used by the internal APIs

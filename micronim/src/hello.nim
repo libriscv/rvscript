@@ -9,4 +9,6 @@ var j = %* {
 }
 
 proc hello_nim() =
-    print "Hello Nim World!\n" & j.pretty()
+    print "Before debugging\n"
+    remote_breakpoint()
+    print "Hello Nim World!\n" & j.pretty() & "\n"
