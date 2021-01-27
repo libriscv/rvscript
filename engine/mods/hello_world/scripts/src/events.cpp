@@ -8,7 +8,7 @@ PUBLIC(void event_loop())
 	api::print("Entering event loop...\n");
 	while (true) {
 		for (auto& ev : events) ev.handle();
-		asm volatile("ebreak" ::: "memory");
+		halt();
 	}
 }
 

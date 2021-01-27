@@ -10,6 +10,8 @@
 #include <microthread.hpp>
 constexpr double PI = 3.14159265358979323846;
 extern "C" void _exit(int) __attribute__((noreturn));
+extern void trap();
+extern void halt();
 #define PUBLIC(...) extern "C" __attribute__((used)) __VA_ARGS__
 
 inline constexpr uint32_t operator "" _hash (const char* value, std::size_t len) {

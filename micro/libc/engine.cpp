@@ -2,7 +2,12 @@
 
 __attribute__((noinline)) void trap()
 {
-	asm("ebreak" ::: "memory");
+	__builtin_trap();
+}
+
+void halt()
+{
+	asm (".insn i SYSTEM, 0, x0, x0, 0x7ff");
 }
 
 static_assert(ECALL_DYNCALL == 104,

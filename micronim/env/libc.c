@@ -54,7 +54,7 @@ void _exit(int code)
 {
 	register long a0 __asm__("a0") = code;
 
-	__asm__("ebreak" : : "r"(a0));
+	__asm__(".insn i SYSTEM, 0, %0, x0, 0x7ff" :: "r"(a0));
 	__builtin_unreachable();
 }
 

@@ -7,5 +7,5 @@ cmake .. -DRISCV_EXT_A=ON -DRISCV_EXT_C=OFF
 make -j16
 popd
 
-export CFLAGS=-O2
+export CFLAGS="-O2 -ffast-math"
 time ./engine
