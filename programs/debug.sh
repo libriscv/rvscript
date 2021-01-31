@@ -6,6 +6,6 @@ export CXX=$GCC_TRIPLE-g++
 
 mkdir -p build
 pushd build
-cmake .. -DGCC_TRIPLE=$GCC_TRIPLE -DCMAKE_TOOLCHAIN_FILE=../micro/toolchain.cmake
+cmake .. -DGCC_TRIPLE=$GCC_TRIPLE -DCMAKE_BUILD_TYPE=Debug -DLTO=OFF -DCMAKE_TOOLCHAIN_FILE=../micro/toolchain.cmake
 make -j4
 popd

@@ -82,8 +82,7 @@ PUBLIC(void start())
 	int r = somefunc(1234, some);
 	print("Back again in the start() function! Return value: ", r, "\n");
 
-	constexpr Call<void(uint16_t)> remote_gdb("remote_gdb");
-	//remote_gdb(2159);
+	Game::breakpoint();
 
 	/* Create events that will run each physics tick.
 	   We will be waiting immediately, so that we don't run the

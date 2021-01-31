@@ -8,8 +8,8 @@
 	path = micro/ext/EASTL
 	url = https://github.com/fwsGonzo/EASTL.git
 [submodule "micro/ext/frozen"]
-	path = micro/ext/frozen
+	path = programs/micro/ext/frozen
 	url = https://github.com/serge-sans-paille/frozen.git
 [submodule "micro/ext/strf"]
-	path = micro/ext/strf
+	path = programs/micro/ext/strf
 	url = https://github.com/robhz786/strf.git

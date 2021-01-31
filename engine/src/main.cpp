@@ -1,6 +1,6 @@
 #include <script/script.hpp>
 #include <script/event.hpp>
-#include <script/util/crc32.hpp>
+#include <libriscv/util/crc32.hpp>
 #include <fmt/core.h>
 
 #include <script/machine/blackbox.hpp>
@@ -17,7 +17,7 @@ static Script& create_script(const std::string& name, const std::string& bbname,
 	/* This will fork the original machine using copy-on-write
 	   and memory sharing mechanics to save memory. */
 	auto it = scripts.emplace(std::piecewise_construct,
-		std::forward_as_tuple(crc32(name.c_str())),
+		std::forward_as_tuple(riscv::crc32(name.c_str())),
 		std::forward_as_tuple(box.machine, name, debug));
 	auto& script = it.first->second;
 	/* When embedding a program, the public API symbols are stored in memory */
@@ -47,10 +47,11 @@ Script& get_script(uint32_t machine_hash, const char* name)
 	throw std::runtime_error(
 		"Unable to find machine: " + std::string(name));
 }
-#define SCRIPT(x) get_script(crc32(#x), #x)
+#define SCRIPT(x) get_script(riscv::crc32(#x), #x)
 
 int main()
 {
+	const bool debug = getenv("DEBUG") != nullptr;
 #ifndef EMBEDDED_MODE
 	/* A single program that will be shared among all the machines, for convenience */
 	blackbox.insert_binary("gameplay",
@@ -70,8 +71,6 @@ int main()
 	/* Naming the machines allows us to call into one machine from another
 	   using this name (hashed). These machines will be fully intialized. */
 	for (int n = 1; n <= 100; n++) {
-		// We can use gameplay100 for debugging
-		bool debug = (n == 100);
 		auto& script = create_script("gameplay" + std::to_string(n), "gameplay", debug);
 		// Dynamically extend the functionality available
 		// See: timers_setup.cpp
@@ -95,15 +94,6 @@ int main()
 	for (int i = 0; i < 100; i++) {
 		gameplay1.set_dynamic_call("empty" + std::to_string(i), [] (auto&) {});
 	}
-
-	if (getenv("DEBUG")) {
-		/* This will wait until GDB connects. Type
-		   target remote localhost:2159 in GDB to connect. */
-		printf("Listening for remote GDB\n");
-		auto& gameplay100 = SCRIPT(gameplay100);
-		gameplay100.set_dynamic_call("empty", [] (auto&) {});
-		gameplay100.gdb_remote_begin("start");
-   	}
 
 	/* This is the main start function, which would be something like the
 	   starting function for the current levels script. You can find the
@@ -210,7 +200,7 @@ int main()
 		});
 
 	/* If nim is enabled, we can run the nim test */
-	#define NIMPATH  "../micronim/riscv64-unknown-elf"
+	#define NIMPATH  "../programs/micronim/riscv64-unknown-elf"
 	const char* nimfile = NIMPATH "/hello_nim";
 	if (access(nimfile, F_OK) == 0)
 	{
@@ -222,6 +212,8 @@ int main()
 			fmt::print("...\n");
 			extern void setup_debugging_system(Script&);
 			setup_debugging_system(nim_machine);
+			/* This call sets a breakpoint, which if you don't connect in
+			   time will be skipped over, and execution continues. */
 			nim_machine.call("hello_nim");
 
 			nim_machine.reset_dynamic_call("remote_gdb", [] (auto&) {});

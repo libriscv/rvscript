@@ -75,8 +75,6 @@ APICALL(api_dyncall)
 	}
 	// call the handler
 	script(machine).dynamic_call(hash);
-	// we short-circuit the ret pseudo-instruction:
-	//machine.cpu.jump(regs.get(riscv::RISCV::REG_RA) - 4);
 }
 
 template <bool Preempt = false>

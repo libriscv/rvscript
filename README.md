@@ -73,12 +73,12 @@ Benchmarking reset:
 > median 1999ns  		lowest: 1984ns     	highest: 2244ns
 ```
 
-This particular output is with C++ RTTI and exceptions enabled. The emulator was using experimental binary translation.
+This particular output is with C++ RTTI and exceptions disabled. The emulator was using experimental binary translation.
 
 
 ## Getting started
 
-Install cmake, git, clang-10 or 11 (trunk) for your system. Don't use GCC - it's slower on all benchmarks.
+Install cmake, git, clang-11 for your system. Don't use GCC - it's slower on all benchmarks.
 
 Run `setup.sh` to make sure that libriscv is initialized properly. Then go into the engine folder and run:
 
@@ -111,7 +111,7 @@ It's technically possible to build without any system files at all, but you will
 
 ## Building script files
 
-If you have installed the RISC-V compiler above, the rest should be simple enough. Just run `build.sh` in the root folder. It will create a new folder simply called `build` and build all the programs that are defined in `engine/mods/hello_world/scripts/CMakeLists.txt`:
+If you have installed the RISC-V compiler above, the rest should be simple enough. Just run `build.sh` in the programs folder. It will create a new folder simply called `build` and build all the programs that are defined in `engine/mods/hello_world/scripts/CMakeLists.txt`:
 
 ```
 add_micro_binary(gameplay.elf "src/gameplay.symbols"
@@ -135,9 +135,11 @@ You can share symbol file with any other binaries, and if you don't have a parti
 
 There is a lot of helper functionality built to make it easy to drop in new programs. See `engine/src/main.cpp` for some example code.
 
+The debug.sh script will produce programs that you can remotely connect to with GDB. Run `DEBUG=1 ./build.sh` in the engine folder to enable remote debugging with GDB. The engine will listen for a remote debugger on each breakpoint dyncall in the code.
+
 ## Building with C++ RTTI and exceptions
 
-The root `CMakeLists.txt` is used to build programs. Go into the root `build` folder for programs. Enable the RTTI_EXCEPT CMake option using ccmake or edit the build.sh shell script. You can also edit `build.sh` and add `-DRTTI_EXCEPT=ON` to the arguments passed to cmake. Run `build.sh` in the root to build any changes.
+The programs `CMakeLists.txt` is used to build programs. Go into the build folder in `programs/build`. Enable the RTTI_EXCEPT CMake option using ccmake or you can also edit `build.sh` and add `-DRTTI_EXCEPT=ON` to the arguments passed to CMake. Run `build.sh` in to build any changes.
 
 Exceptions and RTTI will bloat the binary by at least 170k according to my measurements. Additionally, you will have to increase the maximum allotted number of instructions to a call by at least 600k instructions, as the first exception thrown will have to run through a massive amount of code. However, any code that does not throw exceptions as part of normal operation will be fine. It could also be fine to just give up when an exception is thrown, although I recommend re-initializing the machine (around 10-20 micros on my hardware).
 
@@ -150,7 +152,7 @@ Follow this to install WSL2 on Windows 10: https://docs.microsoft.com/en-us/wind
 
 There is nothing different that you have to do on WSL2. Install dependencies for GCC, then clone and install the RISC-V toolchain like above. It will just work.
 
-Install clang-10 if you want a separate compiler that can build RISC-V binaries. Note that you must build the RISC-V toolchain regardless as we need all the system headers that C++ uses.
+Install clang-11 if you want a separate compiler that can build RISC-V binaries. Note that you must build the RISC-V toolchain regardless as we need all the system headers that C++ uses.
 
 You must be on the latest Windows insider version for this at the time of writing.
 
@@ -201,9 +203,9 @@ myscript.set_dynamic_call("lazy", [] (auto&) {
 Will assign the function to the string "lazy". To call this function from inside the VM simply create an object, like so:
 
 ```
-Call<void()> lazy("lazy");
+constexpr Call<void()> lazy("lazy");
 ```
-This will instantiate the object `lazy` which is a callable with the given signature from the template argument. This gives us static type checking. Calling the function is completely natural:
+This will instantiate the object `lazy` which is a callable with the given signature from the template argument. This gives us static type-checking. Calling the function is completely natural:
 
 ```
 lazy();
@@ -281,3 +283,5 @@ myscript.set_dynamic_call("struct_by_ref",
 	- So far I haven't noticed any performance degradation from this, although I did notice when I enabled C++ exceptions. Don't use GC-sections as a band-aid - I've never seen it improve performance.
 - I have real-time requirements.
 	- As long as pausing the script to continue later is an option, you will not have any trouble. Just don't pause the script while it's in a thread and then accidentally vmcall into it from somewhere else. This will clobber all registers and you can't resume the machine later. You can use preempt provided that it returns to the same thread again (although you are able to yield back to a thread manually). There are many options where things will be OK. In my engine all long-running tasks are running on separate machines, alone.
+- The CRC32 doesn't work without constexpr in RISC-V code.
+	- That's right. RISC-V sometimes does arithmetic right shifts (supposedly only on signed operations), and it's not obvious to anyone when that can trigger bugs for code that works on other platforms. That means right shifts have to be carefully crafted to avoid problems with dragging the sign down. It's just better to do CRC at compile-time anyway, when possible.

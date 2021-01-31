@@ -88,7 +88,7 @@ struct Call {
 		return fch(hash, args...);
 	}
 };
-#define DYNCALL(name, type, ...) Call<type> (crc32(name)) (__VA_ARGS__)
+#define DYNCALL(name, type, ...) {constexpr Call<type> call(crc32(name)); call(__VA_ARGS__);}
 
 template <typename Func, typename... Args>
 inline auto interrupt(uint32_t mhash, uint32_t fhash, Args... args)
@@ -136,6 +136,11 @@ inline void each_tick(const T& func, Args&&... args)
 inline void Game::exit()
 {
 	(void) syscall(ECALL_GAME_EXIT);
+}
+inline void Game::breakpoint()
+{
+	constexpr Call<void(uint16_t)> sys_breakpoint("remote_gdb");
+	sys_breakpoint(0);
 }
 
 using timer_callback = void (*) (int, void*);

@@ -29,8 +29,11 @@ void Script::gdb_listen(uint16_t port)
 	RSPClient<Script::MARCH>* client = nullptr;
 	try {
 		client = server.accept();
-		//client->set_verbose(true);
-		while (client->process_one());
+		if (client != nullptr) {
+			printf("GDB connected\n");
+			//client->set_verbose(true);
+			while (client->process_one());
+		}
 	} catch (...) {
 		delete client;
 		throw;

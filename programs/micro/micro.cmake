@@ -1,6 +1,5 @@
 option(LTO         "Link-time optimizations" ON)
 option(GCSECTIONS  "Garbage collect empty sections" OFF)
-option(DEBUGGING   "Add debugging information" OFF)
 option(RTTI_EXCEPT "C++ RTTI and exceptions" OFF)
 set(VERSION_FILE   "symbols.map" CACHE STRING "Retained symbols file")
 option(STRIP_SYMBOLS "Remove all symbols except the public API" ON)
@@ -8,7 +7,7 @@ option(STRIP_SYMBOLS "Remove all symbols except the public API" ON)
 #
 # Build configuration
 #
-set (ENGINE_PATH "${CMAKE_SOURCE_DIR}/engine")
+set (ENGINE_PATH "${CMAKE_SOURCE_DIR}/../engine")
 set (APIPATH "${ENGINE_PATH}/api")
 set (UTILPATH "${ENGINE_PATH}/src/util")
 
@@ -20,8 +19,9 @@ endif()
 set(WARNINGS  "-Wall -Wextra")
 set(COMMON    "-fno-math-errno -fno-threadsafe-statics")
 set(COMMON    "-O3 -fno-stack-protector ${COMMON}")
-if (DEBUGGING)
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 	set (COMMON "${COMMON} -ggdb3 -O0")
+	set(DEBUGGING TRUE)
 endif()
 set(CMAKE_CXX_FLAGS "${WARNINGS} ${RISCV_ABI} -std=c++17 ${COMMON}")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Ttext 0x120000")
@@ -45,7 +45,7 @@ set(USE_NEWLIB ON)
 
 # enforce correct global include order for our tiny libc
 include_directories(libc)
-set (BBLIBCPATH "${CMAKE_SOURCE_DIR}/ext/libriscv/binaries/barebones/libc")
+set (BBLIBCPATH "${CMAKE_SOURCE_DIR}/../ext/libriscv/binaries/barebones/libc")
 include_directories(${BBLIBCPATH})
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/ext  ext)

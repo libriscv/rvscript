@@ -1,7 +1,7 @@
 #include "script.hpp"
 using gaddr_t = Script::gaddr_t;
 
-#include "util/crc32.hpp"
+#include <libriscv/util/crc32.hpp>
 #include <fstream> // Windows doesn't implement C getline()
 #include <sstream>
 #include <include/syscall_helpers.hpp>
@@ -15,6 +15,7 @@ static const bool    TRUSTED_CALLS = true;
 std::array<riscv::Page, 2> Script::g_shared_area;
 // the hidden area is read-only for the guest
 riscv::Page Script::g_hidden_stack {{ .write = false }};
+using riscv::crc32;
 
 Script::Script(const machine_t& smach, const std::string& name, bool debug)
 	: m_source_machine(smach), m_name(name),
