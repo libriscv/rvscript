@@ -4,7 +4,6 @@ add_subdirectory(machine)
 
 set(SOURCES
 	script.cpp
-	script_debug.cpp
 )
 
 add_library(script STATIC ${SOURCES})

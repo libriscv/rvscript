@@ -8,17 +8,12 @@ using gaddr_t = Script::gaddr_t;
 #include <include/threads.hpp>
 #include "machine/include_api.hpp"
 
-static const gaddr_t MAX_MEMORY    = 1024*1024 * 16;
-static const gaddr_t MAX_HEAP      = 1024*1024 * 8;
-static const bool    TRUSTED_CALLS = true;
 // the shared area is read-write for the guest
 std::array<riscv::Page, 2> Script::g_shared_area;
-// the hidden area is read-only for the guest
-riscv::Page Script::g_hidden_stack {{ .write = false }};
 using riscv::crc32;
 
-Script::Script(const machine_t& smach, const std::string& name, bool debug)
-	: m_source_machine(smach), m_name(name),
+Script::Script(const machine_t& smach, void* userptr, const std::string& name, bool debug)
+	: m_source_machine(smach), m_userptr(userptr), m_name(name),
 	  m_hash(crc32(name.c_str())), m_is_debug(debug)
 {
 	this->reset();
@@ -76,8 +71,6 @@ void Script::add_shared_memory()
 	mem.install_shared_page(shared_pageno+g_shared_area.size(), guard_page);
 	// this separates heap and stack
 	mem.install_shared_page(stack_pageno,    guard_page);
-	// install a hidden area that the internal APIs use
-	mem.install_shared_page(HIDDEN_AREA >> riscv::Page::SHIFT, g_hidden_stack);
 }
 
 bool Script::machine_initialize()
@@ -114,7 +107,8 @@ void Script::machine_setup()
 		throw std::runtime_error("Exit function not visible/available in program");
 	// add system call interface
 	auto* arena = setup_native_heap_syscalls<MARCH>(machine(), heap_area(), MAX_HEAP);
-	setup_native_memory_syscalls<MARCH>(machine(), TRUSTED_CALLS);
+	this->m_arena = arena;
+	setup_native_memory_syscalls<MARCH>(machine(), true);
 	this->m_threads = setup_native_threads<MARCH>(machine(), arena);
     setup_syscall_interface(machine());
 	machine().on_unhandled_syscall(
@@ -295,6 +289,14 @@ void Script::dynamic_call(uint32_t hash)
 		throw std::runtime_error("Unable to find dynamic function");
 	}
 }
+
+gaddr_t Script::guest_alloc(gaddr_t bytes) {
+	return arena_malloc((sas_alloc::Arena*) m_arena, bytes);
+}
+void    Script::guest_free(gaddr_t addr) {
+	arena_free((sas_alloc::Arena*) m_arena, addr);
+}
+
 
 inline timespec time_now();
 inline long nanodiff(timespec start_time, timespec end_time);

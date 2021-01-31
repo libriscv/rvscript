@@ -18,7 +18,7 @@ static Script& create_script(const std::string& name, const std::string& bbname,
 	   and memory sharing mechanics to save memory. */
 	auto it = scripts.emplace(std::piecewise_construct,
 		std::forward_as_tuple(riscv::crc32(name.c_str())),
-		std::forward_as_tuple(box.machine, name, debug));
+		std::forward_as_tuple(box.machine, nullptr, name, debug));
 	auto& script = it.first->second;
 	/* When embedding a program, the public API symbols are stored in memory */
 	if (!box.symbols.empty())
@@ -189,17 +189,17 @@ int main()
 	static const auto& box = blackbox.get("gameplay");
 	Script::benchmark(
 		[] {
-			Script {box.machine, ""};
+			Script {box.machine, nullptr, ""};
 		});
 	// Reset benchmark
 	fmt::print("Benchmarking reset:\n");
-	Script uhh {box.machine, ""};
+	Script uhh {box.machine, nullptr, ""};
 	Script::benchmark(
 		[&uhh] {
 			uhh.reset();
 		});
 
-	/* If nim is enabled, we can run the nim test */
+	/* If the nim program was built, we can run hello_nim */
 	#define NIMPATH  "../programs/micronim/riscv64-unknown-elf"
 	const char* nimfile = NIMPATH "/hello_nim";
 	if (access(nimfile, F_OK) == 0)
@@ -207,7 +207,7 @@ int main()
 		blackbox.insert_binary("micronim",
 			nimfile,
 			NIMPATH "/../src/default.symbols");
-		auto& nim_machine = create_script("nim", "micronim", true);
+		auto& nim_machine = create_script("nim", "micronim", debug);
 		if (nim_machine.resolve_address("hello_nim")) {
 			fmt::print("...\n");
 			extern void setup_debugging_system(Script&);

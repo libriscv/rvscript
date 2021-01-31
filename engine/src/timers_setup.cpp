@@ -31,8 +31,10 @@ void setup_timer_system(Script& script)
 
 			int id = timers.periodic(time, peri,
 				[addr = (gaddr_t) addr, capture, &script] (int id) {
-					std::copy(capture.begin(), capture.end(), Script::hidden_area().data());
-					script.call(addr, (int) id, (gaddr_t) Script::HIDDEN_AREA);
+					gaddr_t dst = script.guest_alloc(capture.size());
+					script.machine().copy_to_guest(dst, capture.data(), capture.size());
+					script.call(addr, (int) id, (gaddr_t) dst);
+					script.guest_free(dst);
 		        });
 			machine.set_result(id);
 		}},

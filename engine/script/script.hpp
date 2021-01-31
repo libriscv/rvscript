@@ -11,9 +11,10 @@ public:
 	using gaddr_t = riscv::address_type<MARCH>;
 	using machine_t = riscv::Machine<MARCH>;
 	using ghandler_t = std::function<void(Script&)>;
+	static constexpr gaddr_t MAX_MEMORY    = 1024*1024 * 16;
+	static constexpr gaddr_t MAX_HEAP      = 1024*1024 * 8;
 	static constexpr uint64_t MAX_INSTRUCTIONS = 16'000'000;
 	static constexpr gaddr_t READONLY_AREA   = 0x20000;
-	static constexpr gaddr_t HIDDEN_AREA     = 0x10000;
 	static constexpr gaddr_t HEAP_BASE       = 0x40000000;
 
 	// Call any script function, with any parameters
@@ -28,6 +29,11 @@ public:
 
 	// Run for a bit, then stop
 	inline void resume(uint64_t instruction_count);
+
+	template <typename T>
+	T* userptr() noexcept { return (T*) m_userptr; }
+	template <typename T>
+	const T* userptr() const noexcept { return (const T*) m_userptr; }
 
 	void set_tick_event(gaddr_t addr, int reason) {
 		this->m_tick_event = addr;
@@ -48,6 +54,7 @@ public:
 	const auto& name() const noexcept { return m_name; }
 	uint32_t    hash() const noexcept { return m_hash; }
 
+	bool is_debug() const noexcept { return m_is_debug; }
 	bool crashed() const noexcept { return m_crashed; }
 	bool reset(); // true if the reset was successful
 	void print_backtrace(const gaddr_t addr);
@@ -62,19 +69,18 @@ public:
 	gaddr_t resolve_address(const std::string& name) const;
 	gaddr_t api_function_from_hash(uint32_t);
 
+	void add_shared_memory();
 	static auto&   shared_memory_page() noexcept { return g_shared_area; }
 	static size_t  shared_memory_size() noexcept { return g_shared_area.size(); };
 	static gaddr_t shared_memory_location() noexcept { return 0x2000; };
-	static auto&   hidden_area() noexcept { return g_hidden_stack; }
 	gaddr_t        heap_area() const noexcept {
 		return m_is_debug ? 0x80000000 : 0x40000000;
 	}
 
-	void add_shared_memory();
-	void gdb_remote_begin(const std::string& entry, uint16_t port = 2159);
-	void gdb_listen(uint16_t port = 2159);
+	gaddr_t guest_alloc(gaddr_t bytes);
+	void    guest_free(gaddr_t addr);
 
-	Script(const machine_t&, const std::string& name, bool = false);
+	Script(const machine_t&, void* userptr, const std::string& name, bool = false);
 	~Script();
 
 private:
@@ -87,10 +93,11 @@ private:
 	void gdb_remote_finish();
 	static long finish_benchmark(std::vector<long>&);
 	static std::array<riscv::Page, 2> g_shared_area; // shared memory area
-	static riscv::Page g_hidden_stack; // page used by the internal APIs
 
 	std::unique_ptr<machine_t> m_machine = nullptr;
 	const machine_t& m_source_machine;
+	void*       m_userptr;
+	void*       m_arena;
 	void*       m_threads;
 	gaddr_t     m_tick_event = 0;
 	int         m_tick_block_reason = 0;
