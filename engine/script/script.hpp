@@ -1,5 +1,4 @@
 #pragma once
-#include <cassert>
 #include <functional>
 #include <fmt/core.h>
 #include <libriscv/machine.hpp>

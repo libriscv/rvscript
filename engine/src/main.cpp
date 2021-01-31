@@ -91,9 +91,6 @@ int main()
 	auto& gameplay1 = SCRIPT(gameplay1);
 	/* Create an dynamic function for benchmarking */
 	gameplay1.set_dynamic_call("empty", [] (auto&) {});
-	for (int i = 0; i < 100; i++) {
-		gameplay1.set_dynamic_call("empty" + std::to_string(i), [] (auto&) {});
-	}
 
 	/* This is the main start function, which would be something like the
 	   starting function for the current levels script. You can find the
@@ -139,7 +136,7 @@ int main()
 	GameObject objects[200]; // Page worth of objects
 
 	/* Insert objects into memory, and as this is just example
-	   code we won't try to align anything to page sizes.
+	   code. We won't try to align anything to page sizes.
 	   This allows zero-copy sharing of game state. */
 	static constexpr Script::gaddr_t OBJECT_AREA = 0xC000000;
 	another_machine.machine().memory.insert_non_owned_memory(
