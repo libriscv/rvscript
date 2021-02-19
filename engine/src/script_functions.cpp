@@ -63,8 +63,13 @@ APICALL(api_dyncall)
 	for (int i = 0; i < 6; i++) {
 		regs.get(10 + i) = regs.get(11 + i);
 	}
+	auto pc = regs.pc;
 	// call the handler
 	script(machine).dynamic_call(hash);
+	// skip return if PC did not change
+	if (regs.pc == pc) {
+		machine.cpu.jump(regs.get(riscv::RISCV::REG_RA) - 4);
+	}
 }
 
 template <bool Preempt = false>
