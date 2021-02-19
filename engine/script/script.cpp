@@ -102,7 +102,6 @@ bool Script::machine_initialize()
 void Script::machine_setup()
 {
 	machine().set_userdata<Script>(this);
-	machine().memory.set_exit_address(machine().address_of("exit"));
 	if (UNLIKELY(machine().memory.exit_address() == 0))
 		throw std::runtime_error("Exit function not visible/available in program");
 	// add system call interface

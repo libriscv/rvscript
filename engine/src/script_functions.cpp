@@ -1,21 +1,13 @@
 #include "script_functions.hpp"
 #include <script/machine/include_api.hpp>
 #include <fmt/core.h>
-#include "timers.hpp"
 static_assert(ECALL_LAST - GAME_API_BASE <= 100, "Room for system calls");
 
 #define APICALL(func) static void func(machine_t& machine [[maybe_unused]])
 
 inline Script& script(machine_t& m) { return *m.get_userdata<Script> (); }
 
-APICALL(api_self_test)
-{
-	auto [i32, i64_1, i64_2, str] =
-		machine.template sysargs <int, uint64_t, uint64_t, std::string> ();
-	assert(i32 == 44 && "Self-test 32-bit integer");
-	assert(i64_1 == 0x5678000012340000 && "Self-test 64-bit integer (1)");
-	assert(i64_2 == 0x8800440022001100 && "Self-test 64-bit integer (2)");
-	assert(str == "This is a test" && "Self-test string");
+APICALL(api_self_test) {
 	machine.set_result(0);
 }
 
@@ -35,9 +27,9 @@ APICALL(api_write)
 {
 	auto [address, len] = machine.sysargs<gaddr_t, uint32_t> ();
 	const uint32_t len_g = std::min(1024u, (uint32_t) len);
-	machine.memory.memview(address, len_g,
-		[&machine] (const uint8_t* data, size_t len) {
-			auto& scr = script(machine);
+	auto& scr = script(machine);
+	machine.memory.foreach(address, len_g,
+		[&scr] (auto&, auto, const uint8_t* data, size_t len) {
 			if (scr.stdout_enabled() == false)
 				return;
 			if (data == nullptr) {
@@ -57,9 +49,7 @@ APICALL(api_measure)
 {
 	const auto [test, address] =
 		machine.template sysargs <std::string, gaddr_t> ();
-//	auto regs = machine.cpu.registers();
 	auto time_ns = script(machine).vmbench(address);
-//	machine.cpu.registers() = regs;
 	fmt::print(">>> Measurement \"{}\" median: {} nanos\n\n",
 		test, time_ns);
 	machine.set_result(time_ns);
@@ -106,7 +96,7 @@ inline void do_farcall(machine_t& machine, Script& dest, gaddr_t addr)
 	// Restore regular page faults on unreadable memory
 	dest.machine().memory.set_page_readf_handler(nullptr);
 	// we short-circuit the ret pseudo-instruction:
-	//machine.cpu.jump(machine.cpu.reg(riscv::RISCV::REG_RA) - 4);
+	machine.cpu.jump(machine.cpu.reg(riscv::RISCV::REG_RA) - 4);
 }
 
 APICALL(api_farcall)
