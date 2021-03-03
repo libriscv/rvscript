@@ -2,7 +2,6 @@
 #include <functional>
 #include <fmt/core.h>
 #include <libriscv/machine.hpp>
-#include <EASTL/unordered_map.h>
 
 class Script {
 public:
@@ -107,9 +106,9 @@ private:
 	bool        m_stdout = true;
 	int         m_budget_overruns = 0;
 	// hash to public API direct function map
-	eastl::unordered_map<uint32_t, gaddr_t> m_public_api;
+	std::unordered_map<uint32_t, gaddr_t> m_public_api;
 	// map of functions that extend engine using string hashes
-	eastl::unordered_map<uint32_t, ghandler_t> m_dynamic_functions;
+	std::unordered_map<uint32_t, ghandler_t> m_dynamic_functions;
 };
 static_assert(RISCV_ARCH == 32 || RISCV_ARCH == 64, "Architecture must be 32- or 64-bit");
 

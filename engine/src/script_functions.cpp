@@ -1,5 +1,6 @@
 #include "script_functions.hpp"
 #include <script/machine/include_api.hpp>
+#include <cmath>
 #include <fmt/core.h>
 static_assert(ECALL_LAST - GAME_API_BASE <= 100, "Room for system calls");
 
