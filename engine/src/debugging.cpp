@@ -14,21 +14,13 @@ static void gdb_remote_finish(Script& script)
 }
 static void gdb_listen(Script& script, uint16_t port)
 {
-	using namespace riscv;
-	RSP<Script::MARCH> server { script.machine(), port };
-	RSPClient<Script::MARCH>* client = nullptr;
-	try {
-		client = server.accept();
-		if (client != nullptr) {
-			printf("GDB connected\n");
-			//client->set_verbose(true);
-			while (client->process_one());
-		}
-	} catch (...) {
-		delete client;
-		throw;
+	riscv::RSP<Script::MARCH> server { script.machine(), port };
+	auto client = server.accept();
+	if (client != nullptr) {
+		printf("GDB connected\n");
+		//client->set_verbose(true);
+		while (client->process_one());
 	}
-	delete client;
 	gdb_remote_finish(script);
 }
 
