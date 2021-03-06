@@ -1,6 +1,6 @@
 option(LTO         "Link-time optimizations" ON)
 option(GCSECTIONS  "Garbage collect empty sections" OFF)
-option(RTTI_EXCEPT "C++ RTTI and exceptions" OFF)
+option(RTTI_EXCEPT "C++ RTTI and exceptions" ON)
 set(VERSION_FILE   "symbols.map" CACHE STRING "Retained symbols file")
 option(STRIP_SYMBOLS "Remove all symbols except the public API" ON)
 
