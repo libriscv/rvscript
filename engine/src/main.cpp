@@ -1,60 +1,13 @@
-#include <script/script.hpp>
+#include "manage_scripts.hpp"
 #include <script/event.hpp>
-#include <libriscv/util/crc32.hpp>
 #include <fmt/core.h>
-
-#include <script/machine/blackbox.hpp>
-static Blackbox<Script::MARCH> blackbox;
-
-/* List of initialized machines ready to go. The Script class
-   is a fully initialized machine with a hashed public API and
-   a lot of helper functions to simplify usage. */
-static std::map<uint32_t, Script> scripts;
-
-static Script& create_script(const std::string& name, const std::string& bbname, bool debug = false)
-{
-	const auto& box = blackbox.get(bbname);
-	/* This will fork the original machine using copy-on-write
-	   and memory sharing mechanics to save memory. */
-	auto it = scripts.emplace(std::piecewise_construct,
-		std::forward_as_tuple(riscv::crc32(name.c_str())),
-		std::forward_as_tuple(box.machine, nullptr, name, debug));
-	auto& script = it.first->second;
-	/* When embedding a program, the public API symbols are stored in memory */
-	if (!box.symbols.empty())
-		script.hash_public_api_symbols(box.symbols);
-	else
-		script.hash_public_api_symbols_file(box.sympath);
-	return script;
-}
-/* Retrieve machines based on name (hashed), used by system calls.
-   With this all our APIs use the same source for machines. */
-Script* get_script(uint32_t machine_hash)
-{
-	auto it = scripts.find(machine_hash);
-	if (it != scripts.end()) {
-		return &it->second;
-	}
-	return nullptr;
-}
-/* Retrieve machines based on hash and name, throws on failure */
-Script& get_script(uint32_t machine_hash, const char* name)
-{
-	auto it = scripts.find(machine_hash);
-	if (it != scripts.end()) {
-		return it->second;
-	}
-	throw std::runtime_error(
-		"Unable to find machine: " + std::string(name));
-}
-#define SCRIPT(x) get_script(riscv::crc32(#x), #x)
 
 int main()
 {
 	const bool debug = getenv("DEBUG") != nullptr;
 #ifndef EMBEDDED_MODE
 	/* A single program that will be shared among all the machines, for convenience */
-	blackbox.insert_binary("gameplay",
+	Scripts::load_binary("gameplay",
 		"mods/hello_world/scripts/gameplay.elf",
 		"mods/hello_world/scripts/src/gameplay.symbols");
 #else
@@ -71,7 +24,8 @@ int main()
 	/* Naming the machines allows us to call into one machine from another
 	   using this name (hashed). These machines will be fully intialized. */
 	for (int n = 1; n <= 100; n++) {
-		auto& script = create_script("gameplay" + std::to_string(n), "gameplay", debug);
+		auto& script = Scripts::create(
+			"gameplay" + std::to_string(n), "gameplay", debug);
 		// Dynamically extend the functionality available
 		// See: timers_setup.cpp
 		extern void setup_timer_system(Script&);
@@ -83,7 +37,7 @@ int main()
 
 	/* The event_loop function can be resumed later, and can execute work
 	   that has been preemptively handed to it from other machines. */
-	auto& events = create_script("events", "gameplay");
+	auto& events = Scripts::create("events", "gameplay");
 	/* A VM function call. The function must be public (listed in the symbols file). */
 	events.call("event_loop");
 
@@ -183,14 +137,13 @@ int main()
 
 	// (Full) Fork benchmark
 	fmt::print("Benchmarking full fork:\n");
-	static const auto& box = blackbox.get("gameplay");
 	Script::benchmark(
-		[] {
-			Script {box.machine, nullptr, ""};
+		[&gameplay1] {
+			Script {gameplay1.machine(), nullptr, ""};
 		});
 	// Reset benchmark
 	fmt::print("Benchmarking reset:\n");
-	Script uhh {box.machine, nullptr, ""};
+	Script uhh {gameplay1.machine(), nullptr, ""};
 	Script::benchmark(
 		[&uhh] {
 			uhh.reset();
@@ -202,6 +155,7 @@ int main()
 	return 0;
 }
 
+#include <unistd.h>
 void do_nim_testing(bool debug)
 {
 	/* If the nim program was built, we can run hello_nim */
@@ -209,10 +163,10 @@ void do_nim_testing(bool debug)
 	const char* nimfile = NIMPATH "/hello_nim";
 	if (access(nimfile, F_OK) == 0)
 	{
-		blackbox.insert_binary("micronim",
+		Scripts::load_binary("micronim",
 			nimfile,
 			NIMPATH "/../src/default.symbols");
-		auto& nim_machine = create_script("nim", "micronim", debug);
+		auto& nim_machine = Scripts::create("nim", "micronim", debug);
 		if (nim_machine.address_of("hello_nim")) {
 			fmt::print("...\n");
 			extern void setup_debugging_system(Script&);

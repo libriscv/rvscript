@@ -109,7 +109,7 @@ APICALL(api_farcall)
 {
 	const auto [mhash, fhash] =
 		machine.template sysargs <uint32_t, uint32_t> ();
-	auto* script = get_script(mhash);
+	auto* script = Scripts::get(mhash);
 	if (UNLIKELY(script == nullptr)) {
 		machine.set_result(-1);
 		return;
@@ -131,7 +131,7 @@ APICALL(api_farcall_direct)
 {
 	const auto [mhash, faddr] =
 		machine.template sysargs <uint32_t, gaddr_t> ();
-	auto* script = get_script(mhash);
+	auto* script = Scripts::get(mhash);
 	if (UNLIKELY(script == nullptr)) {
 		machine.set_result(-1);
 		return;
@@ -143,7 +143,7 @@ APICALL(api_interrupt)
 {
 	const auto [mhash, fhash] =
 		machine.template sysargs <uint32_t, uint32_t> ();
-	auto* script = get_script(mhash);
+	auto* script = Scripts::get(mhash);
 	if (script == nullptr) {
 		machine.set_result(-1);
 		return;

@@ -31,25 +31,27 @@ The output from the program should look like this after completion:
 engine$ ./engine
 >>> [events] says: Entering event loop...
 >>> [gameplay1] says: Hello world!
-> median 4ns  		lowest: 4ns     	highest: 11ns
->>> Measurement "VM function call overhead" median: 4 nanos
+>>> [gameplay1] says: Exception caught!
+> median 5ns  		lowest: 5ns     	highest: 6ns
+>>> Measurement "VM function call overhead" median: 5 nanos
 
-> median 64ns  		lowest: 64ns     	highest: 87ns
->>> Measurement "Thread creation overhead" median: 64 nanos
+> median 201ns  		lowest: 198ns     	highest: 213ns
+>>> Measurement "Thread creation overhead" median: 201 nanos
 
-> median 15ns  		lowest: 15ns     	highest: 22ns
->>> Measurement "Dynamic call handler" median: 15 nanos
+> median 18ns  		lowest: 18ns     	highest: 18ns
+>>> Measurement "Dynamic call handler" median: 18 nanos
 
-> median 42ns  		lowest: 42ns     	highest: 73ns
->>> Measurement "Farcall lookup" median: 42 nanos
+> median 49ns  		lowest: 44ns     	highest: 57ns
+>>> Measurement "Farcall lookup" median: 49 nanos
 
-> median 27ns  		lowest: 27ns     	highest: 33ns
->>> Measurement "Farcall direct" median: 27 nanos
+> median 38ns  		lowest: 38ns     	highest: 39ns
+>>> Measurement "Farcall direct" median: 38 nanos
 
 >>> [gameplay2] says: Hello Remote World! value = 1234!
 >>> [gameplay2] says: Some struct string: Hello 123!
 >>> [gameplay2] says: Some struct value: 42
 >>> [gameplay1] says: Back again in the start() function! Return value: 1234
+Skipped over breakpoint in gameplay1:0x12066C. Break here with DEBUG=1.
 >>> [gameplay1] says: Hello Microthread World!
 >>> [gameplay1] says: Back again in the start() function!
 ...
@@ -68,12 +70,12 @@ Calling 'myobject_death' in 'gameplay2'
 >>> [gameplay2] says: Object 'myobject' is dying!
 ...
 Benchmarking full fork:
-> median 1854ns  		lowest: 1823ns     	highest: 4021ns
+> median 1541ns  		lowest: 1526ns     	highest: 4353ns
 Benchmarking reset:
-> median 1999ns  		lowest: 1984ns     	highest: 2244ns
+> median 1452ns  		lowest: 1430ns     	highest: 1599ns
 ```
 
-This particular output is with C++ RTTI and exceptions disabled. The emulator was using experimental binary translation.
+This particular output is with C++ RTTI and exceptions enabled.
 
 
 ## Getting started

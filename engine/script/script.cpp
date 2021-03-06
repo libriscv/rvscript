@@ -28,7 +28,6 @@ bool Script::reset()
 			.memory_max = MAX_MEMORY,
 #ifdef RISCV_BINARY_TRANSLATION
 			.translate_blocks_max = (m_is_debug ? 0u : 4000u),
-			.forward_jumps = false, // Too expensive
 #endif
 		};
 		m_machine.reset(new machine_t(m_source_machine, options));
