@@ -11,9 +11,8 @@ public:
 	using ghandler_t = std::function<void(Script&)>;
 	static constexpr gaddr_t MAX_MEMORY    = 1024*1024 * 16;
 	static constexpr gaddr_t MAX_HEAP      = 1024*1024 * 8;
+	static constexpr gaddr_t HEAP_BASE     = 0x40000000;
 	static constexpr uint64_t MAX_INSTRUCTIONS = 16'000'000;
-	static constexpr gaddr_t READONLY_AREA   = 0x20000;
-	static constexpr gaddr_t HEAP_BASE       = 0x40000000;
 
 	// Call any script function, with any parameters
 	template <typename... Args>
@@ -64,7 +63,7 @@ public:
 	void hash_public_api_symbols_file(const std::string& file);
 	void hash_public_api_symbols(std::string_view lines);
 	std::string symbol_name(gaddr_t address) const;
-	gaddr_t resolve_address(const std::string& name) const;
+	gaddr_t address_of(const std::string& name) const;
 	gaddr_t api_function_from_hash(uint32_t);
 
 	void add_shared_memory();

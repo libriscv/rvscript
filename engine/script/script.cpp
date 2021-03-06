@@ -26,14 +26,12 @@ bool Script::reset()
 		// Fork the source machine into m_machine */
 		riscv::MachineOptions<MARCH> options {
 			.memory_max = MAX_MEMORY,
-			.owning_machine = &this->m_source_machine,
 #ifdef RISCV_BINARY_TRANSLATION
 			.translate_blocks_max = (m_is_debug ? 0u : 4000u),
 			.forward_jumps = false, // Too expensive
 #endif
 		};
-		m_machine.reset(new machine_t(
-			m_source_machine.memory.binary(), options));
+		m_machine.reset(new machine_t(m_source_machine, options));
 
 	} catch (std::exception& e) {
 		fmt::print(">>> Exception during initialization: {}\n", e.what());
@@ -219,7 +217,7 @@ void Script::hash_public_api_symbols_file(const std::string& file)
 	this->hash_public_api_symbols(str);
 }
 
-gaddr_t Script::resolve_address(const std::string& name) const {
+gaddr_t Script::address_of(const std::string& name) const {
 	return machine().address_of(name.c_str());
 }
 std::string Script::symbol_name(gaddr_t address) const

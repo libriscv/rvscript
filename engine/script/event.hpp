@@ -29,7 +29,7 @@ private:
 };
 
 inline Event::Event(Script& script, const std::string& func)
-	: m_script(&script), m_addr(script.resolve_address(func))  {}
+	: m_script(&script), m_addr(script.address_of(func))  {}
 
 template <typename... Args>
 inline long Event::call(Args&&... args)

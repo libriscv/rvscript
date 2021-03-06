@@ -196,6 +196,14 @@ int main()
 			uhh.reset();
 		});
 
+	void do_nim_testing(bool debug);
+	do_nim_testing(debug);
+
+	return 0;
+}
+
+void do_nim_testing(bool debug)
+{
 	/* If the nim program was built, we can run hello_nim */
 	#define NIMPATH  "../programs/micronim/riscv64-unknown-elf"
 	const char* nimfile = NIMPATH "/hello_nim";
@@ -205,7 +213,7 @@ int main()
 			nimfile,
 			NIMPATH "/../src/default.symbols");
 		auto& nim_machine = create_script("nim", "micronim", debug);
-		if (nim_machine.resolve_address("hello_nim")) {
+		if (nim_machine.address_of("hello_nim")) {
 			fmt::print("...\n");
 			extern void setup_debugging_system(Script&);
 			setup_debugging_system(nim_machine);
@@ -215,11 +223,9 @@ int main()
 
 			nim_machine.reset_dynamic_call("remote_gdb", [] (auto&) {});
 			nim_machine.stdout_enable(false);
-			const auto address = nim_machine.resolve_address("hello_nim");
+			const auto address = nim_machine.address_of("hello_nim");
 			nim_machine.vmbench(address);
 			nim_machine.stdout_enable(true);
 		}
 	}
-
-	return 0;
 }
