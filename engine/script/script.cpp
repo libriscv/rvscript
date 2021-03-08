@@ -277,7 +277,7 @@ void Script::set_dynamic_calls(std::vector<std::pair<std::string, ghandler_t>> v
 void Script::dynamic_call(uint32_t hash)
 {
 	auto it = m_dynamic_functions.find(hash);
-	if (it != m_dynamic_functions.end()) {
+	if (LIKELY(it != m_dynamic_functions.end())) {
 		it->second(*this);
 	} else {
 		fmt::print("Unable to find dynamic function with hash: {:#08x}\n",
