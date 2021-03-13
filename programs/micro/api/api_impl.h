@@ -27,7 +27,6 @@ inline long measure(const char* testname, T testfunc)
 	return syscall(ECALL_MEASURE, (long) testname, (long) static_cast<void(*)()>(testfunc));
 }
 
-extern "C" void (*dyncall_helper) ();
 extern "C" void (*farcall_helper) ();
 extern "C" void (*direct_farcall_helper) ();
 extern "C" void (*interrupt_helper) ();
@@ -69,26 +68,6 @@ struct ExecuteRemotely {
 		return fch(mhash, func, args...);
 	}
 };
-
-template <typename Func>
-struct Call {
-	const uint32_t hash;
-
-	constexpr Call(const char* f) : hash(crc32(f)) {}
-	constexpr Call(uint32_t h) : hash(h) {}
-
-	template <typename... Args>
-	auto operator() (Args... args) const {
-		static_assert( std::is_invocable_v<Func, Args...> );
-		//using Ret = decltype(((Func*) 0) (args...));
-		using Ret = typename std::invoke_result<Func, Args...>::type;
-		using FCH = Ret(*)(uint32_t, Args...);
-
-		auto fch = reinterpret_cast<FCH> (&dyncall_helper);
-		return fch(hash, args...);
-	}
-};
-#define DYNCALL(name, type, ...) {constexpr Call<type> call(crc32(name)); call(__VA_ARGS__);}
 
 template <typename Func, typename... Args>
 inline auto interrupt(uint32_t mhash, uint32_t fhash, Args... args)
@@ -139,16 +118,13 @@ inline void Game::exit()
 }
 inline void Game::breakpoint()
 {
-	constexpr Call<void(uint16_t)> sys_breakpoint("remote_gdb");
 	sys_breakpoint(0);
 }
 
 using timer_callback = void (*) (int, void*);
 inline Timer timer_periodic(float time, float period, timer_callback callback, void* data, size_t size)
 {
-	constexpr Call<int(float, float, timer_callback, void*, size_t)> dyncall {"timer_periodic"};
-
-	return {dyncall(time, period, callback, data, size)};
+	return {sys_timer_periodic(time, period, callback, data, size)};
 }
 inline Timer timer_periodic(float period, timer_callback callback, void* data, size_t size)
 {
@@ -157,7 +133,7 @@ inline Timer timer_periodic(float period, timer_callback callback, void* data, s
 inline Timer Timer::periodic(float time, float period, Function<void(Timer)> callback)
 {
 	return timer_periodic(time, period,
-		(timer_callback) [] (int id, void* data) {
+		[] (int id, void* data) {
 			(*(decltype(&callback)) data) ({id});
 		}, &callback, sizeof(callback));
 }
@@ -167,19 +143,18 @@ inline Timer Timer::periodic(float period, Function<void(Timer)> callback)
 }
 inline Timer timer_oneshot(float time, timer_callback callback, void* data, size_t size)
 {
-	return timer_periodic(time, 0.0f, std::move(callback), data, size);
+	return timer_periodic(time, 0.0f, callback, data, size);
 }
 inline Timer Timer::oneshot(float time, Function<void(Timer)> callback)
 {
 	return timer_oneshot(time,
-		(timer_callback) [] (int id, void* data) {
+		[] (int id, void* data) {
 			(*(decltype(&callback)) data) ({id});
 		}, &callback, sizeof(callback));
 }
 
 inline void Timer::stop() const {
-	constexpr Call<void(int)> stop_timer {"timer_stop"};
-	stop_timer(this->id);
+	sys_timer_stop(this->id);
 }
 
 inline long sleep(float seconds) {

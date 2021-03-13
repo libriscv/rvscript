@@ -27,7 +27,7 @@ static void gdb_listen(Script& script, uint16_t port)
 void setup_debugging_system(Script& script)
 {
 	script.set_dynamic_call(
-	"remote_gdb", [] (Script& script) {
+	"Debug::breakpoint", [] (Script& script) {
 		auto& machine = script.machine();
 		if (script.is_debug()) {
 			// We have to pre-emptively skip over the breakpoint instruction

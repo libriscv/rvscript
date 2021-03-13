@@ -13,12 +13,12 @@ void setup_timer_system(Script& script)
 	// and other low level things, and gives us a nice API
 	// with a std::function to work with.
 	script.set_dynamic_calls({
-		{"timer_stop", [] (Script& script) {
+		{"Timer::stop", [] (Script& script) {
 			// Stop timer
 			const auto [timer_id] = script.machine().sysargs<int> ();
 			timers.stop(timer_id);
 		}},
-		{"timer_periodic", [] (Script& script) {
+		{"Timer::periodic", [] (Script& script) {
 			// Periodic timer
 			auto& machine = script.machine();
 			const auto [time, peri, addr, data, size] =

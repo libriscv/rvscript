@@ -5,6 +5,7 @@
 #pragma once
 #ifdef __riscv
 #include <engine.hpp>
+#include <dyncall_api.h>
 #endif
 #include "api_structs.h"
 

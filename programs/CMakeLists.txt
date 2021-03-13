@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.1.0)
 project(modbuilder CXX)
 
+add_subdirectory(dyncalls)
 include(micro/micro.cmake)
 
 #

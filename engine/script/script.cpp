@@ -178,8 +178,8 @@ void Script::handle_timeout(gaddr_t address)
 void Script::print_backtrace(const gaddr_t addr)
 {
 	machine().memory.print_backtrace(
-		[] (const char* buffer, size_t len) {
-			fmt::print("-> {}\n", std::string_view(buffer ,len));
+		[] (std::string_view line) {
+			fmt::print("-> {}\n", line);
 		});
 	auto origin = machine().memory.lookup(addr);
 	fmt::print("-> [-] 0x{:016x} + 0x{:03x}: {}\n",

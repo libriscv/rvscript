@@ -67,9 +67,16 @@ function (add_verfile NAME VERFILE)
 	endforeach()
 endfunction()
 
-
 function (add_micro_binary NAME VERFILE)
-	add_executable(${NAME} ${ARGN})
+	# work-around for CMake not knowing the files are generated
+	set(DYNCALL_API
+		${CMAKE_BINARY_DIR}/dyncalls/dyncall_api.cpp
+		${CMAKE_BINARY_DIR}/dyncalls/dyncall_api.h)
+	set_source_files_properties(${DYNCALL_API} PROPERTIES GENERATED TRUE)
+	# the micro binary
+	add_executable(${NAME} ${ARGN} ${DYNCALL_API})
+	target_include_directories(${NAME} PUBLIC ${CMAKE_BINARY_DIR}/dyncalls)
+	add_dependencies(${NAME} generate_dyncalls)
 	target_link_libraries(${NAME} -static -Wl,--whole-archive libc -Wl,--no-whole-archive)
 	target_link_libraries(${NAME} frozen::frozen strf)
 	# place ELF into the sub-projects source folder

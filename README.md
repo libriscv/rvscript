@@ -202,15 +202,15 @@ myscript.set_dynamic_call("lazy", [] (auto&) {
 		fmt::print("I'm not doing much, tbh.\n");
 	});
 ```
-Will assign the function to the string "lazy". To call this function from inside the VM simply create an object, like so:
+Will assign the function to the string "lazy". To call this function from inside the VM we have to amend dyncalls.json in the programs/dyncalls folder, like so:
 
 ```
-constexpr Call<void()> lazy("lazy");
+"lazy":      "void sys_lazy ()"
 ```
-This will instantiate the object `lazy` which is a callable with the given signature from the template argument. This gives us static type-checking. Calling the function is completely natural:
+The build system will see the JSON changed and rebuild some API files (see `programs/dyncalls/generate.py`), and it will expose the callable function `sys_lazy`:
 
 ```
-lazy();
+sys_lazy();
 ```
 
 A slightly more complex example, where we take an integer as argument, and return an integer as the result:
@@ -285,5 +285,3 @@ myscript.set_dynamic_call("struct_by_ref",
 	- So far I haven't noticed any performance degradation from this, although I did notice when I enabled C++ exceptions. Don't use GC-sections as a band-aid - I've never seen it improve performance.
 - I have real-time requirements.
 	- As long as pausing the script to continue later is an option, you will not have any trouble. Just don't pause the script while it's in a thread and then accidentally vmcall into it from somewhere else. This will clobber all registers and you can't resume the machine later. You can use preempt provided that it returns to the same thread again (although you are able to yield back to a thread manually). There are many options where things will be OK. In my engine all long-running tasks are running on separate machines, alone.
-- The CRC32 doesn't work without constexpr in RISC-V code.
-	- That's right. RISC-V sometimes does arithmetic right shifts (supposedly only on signed operations), and it's not obvious to anyone when that can trigger bugs for code that works on other platforms. That means right shifts have to be carefully crafted to avoid problems with dragging the sign down. It's just better to do CRC at compile-time anyway, when possible.

@@ -217,14 +217,9 @@ void Script::setup_syscall_interface(machine_t& machine)
 		{ECALL_MEASURE,     api_measure},
 		{ECALL_DYNCALL,
 			[this] (auto& machine) {
-				auto [hash] = machine.template sysargs <uint32_t> ();
 				auto& regs = machine.cpu.registers();
-				// move down 6 integer registers
-				for (int i = 0; i < 6; i++) {
-					regs.get(10 + i) = regs.get(11 + i);
-				}
-				// call the handler
-				this->dynamic_call(hash);
+				// call the handler with register t0 as hash
+				this->dynamic_call(regs.get(riscv::RISCV::REG_T0));
 				// skip return since PC is only allowed to change
 				// for normal system calls
 				machine.cpu.jump(regs.get(riscv::RISCV::REG_RA) - 4);

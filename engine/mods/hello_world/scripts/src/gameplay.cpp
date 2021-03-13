@@ -20,8 +20,7 @@ static void thread_function() {
 	microthread::oneshot([] { /* ... */ });
 }
 static void dyncall_handler() {
-	Call<void()> empty("empty");
-	empty();
+	sys_empty();
 }
 PUBLIC(void public_donothing()) {
 	/* nothing */
@@ -168,6 +167,7 @@ PUBLIC(void myobject_death(GameObject& object))
 
 PUBLIC(void test_dynamic_functions())
 {
-	DYNCALL("testing", void());
-	DYNCALL("testing123", void(int, int, int), 5, 6, 7);
+	// See: dyncalls.json
+	sys_testing();
+	sys_testing123(5, 6, 7);
 }
