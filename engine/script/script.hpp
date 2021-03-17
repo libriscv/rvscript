@@ -107,7 +107,7 @@ private:
 	// hash to public API direct function map
 	std::unordered_map<uint32_t, gaddr_t> m_public_api;
 	// map of functions that extend engine using string hashes
-	std::unordered_map<uint32_t, ghandler_t> m_dynamic_functions;
+	std::map<uint32_t, ghandler_t> m_dynamic_functions;
 };
 static_assert(RISCV_ARCH == 32 || RISCV_ARCH == 64, "Architecture must be 32- or 64-bit");
 
