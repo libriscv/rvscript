@@ -21,6 +21,10 @@ int main()
 		&_binary_gameplay_symbols_start, &_binary_gameplay_symbols_end);
 #endif
 
+	Scripts::load_binary("test",
+		"mods/hello_world/scripts/gameplay.elf",
+		"mods/hello_world/scripts/src/gameplay.symbols");
+
 	/* Naming the machines allows us to call into one machine from another
 	   using this name (hashed). These machines will be fully intialized. */
 	for (int n = 1; n <= 100; n++) {

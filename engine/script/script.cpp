@@ -305,7 +305,7 @@ inline long perform_test(Script::machine_t& machine, gaddr_t func)
 	// this is a very hacky way of avoiding blowing up the stack
 	// because vmcall() resets the stack pointer on each call
 	auto old_stack = machine.memory.stack_initial();
-	machine.memory.set_stack_initial(machine.cpu.reg(riscv::RISCV::REG_SP) & ~0xF);
+	machine.memory.set_stack_initial(machine.cpu.reg(riscv::REG_SP) & ~0xF);
 	asm("" : : : "memory");
 	auto t0 = time_now();
 	asm("" : : : "memory");
