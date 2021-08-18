@@ -32,19 +32,19 @@ engine$ ./engine
 >>> [events] says: Entering event loop...
 >>> [gameplay1] says: Hello world!
 >>> [gameplay1] says: Exception caught!
-> median 5ns  		lowest: 5ns     	highest: 6ns
+> median 5ns  		lowest: 5ns     	highest: 5ns
 >>> Measurement "VM function call overhead" median: 5 nanos
 
-> median 201ns  		lowest: 198ns     	highest: 213ns
->>> Measurement "Thread creation overhead" median: 201 nanos
+> median 173ns  		lowest: 170ns     	highest: 186ns
+>>> Measurement "Thread creation overhead" median: 173 nanos
 
-> median 18ns  		lowest: 18ns     	highest: 18ns
->>> Measurement "Dynamic call handler" median: 18 nanos
+> median 17ns  		lowest: 17ns     	highest: 20ns
+>>> Measurement "Dynamic call handler" median: 17 nanos
 
-> median 49ns  		lowest: 44ns     	highest: 57ns
->>> Measurement "Farcall lookup" median: 49 nanos
+> median 39ns  		lowest: 39ns     	highest: 40ns
+>>> Measurement "Farcall lookup" median: 39 nanos
 
-> median 38ns  		lowest: 38ns     	highest: 39ns
+> median 38ns  		lowest: 38ns     	highest: 43ns
 >>> Measurement "Farcall direct" median: 38 nanos
 
 >>> [gameplay2] says: Hello Remote World! value = 1234!
