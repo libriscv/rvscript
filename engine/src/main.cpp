@@ -21,6 +21,7 @@ int main()
 		&_binary_gameplay_symbols_start, &_binary_gameplay_symbols_end);
 #endif
 
+	Script::setup_syscall_interface();
 	Scripts::load_binary("test",
 		"mods/hello_world/scripts/gameplay.elf",
 		"mods/hello_world/scripts/src/gameplay.symbols");

@@ -1,11 +1,11 @@
 #include "script.hpp"
 using gaddr_t = Script::gaddr_t;
 
+#include <libriscv/native_heap.hpp>
+#include <libriscv/threads.hpp>
 #include <libriscv/util/crc32.hpp>
 #include <fstream> // Windows doesn't implement C getline()
 #include <sstream>
-#include <include/syscall_helpers.hpp>
-#include <include/threads.hpp>
 #include "machine/include_api.hpp"
 
 // the shared area is read-write for the guest
@@ -102,15 +102,13 @@ void Script::machine_setup()
 	if (UNLIKELY(machine().memory.exit_address() == 0))
 		throw std::runtime_error("Exit function not visible/available in program");
 	// add system call interface
-	auto* arena = setup_native_heap_syscalls<MARCH>(machine(), heap_area(), MAX_HEAP);
-	this->m_arena = arena;
-	setup_native_memory_syscalls<MARCH>(machine(), true);
-	this->m_threads = setup_native_threads<MARCH>(machine(), arena);
-    setup_syscall_interface(machine());
-	machine().on_unhandled_syscall(
-		[] (int number) {
+	machine().setup_native_heap(HEAP_SYSCALLS_BASE, heap_area(), MAX_HEAP);
+	machine().setup_native_memory(MEMORY_SYSCALLS_BASE, true);
+	machine().setup_native_threads(THREADS_SYSCALL_BASE);
+	machine().on_unhandled_syscall =
+		[] (machine_t&, int number) {
 			fmt::print(stderr, "Unhandled system call: {}\n", number);
-		});
+		};
 
 	// we need to pass the .eh_frame location to a supc++ function,
 	// if C++ RTTI and Exceptions is enabled
@@ -143,9 +141,9 @@ void Script::handle_exception(gaddr_t address)
 	fmt::print(stderr, "Stack page: {}\n",
 		machine().memory.get_page_info(machine().cpu.reg(2)));
 	// close all threads
-	auto* mt = (multithreading<MARCH>*) m_threads;
-	while (mt->get_thread()->tid != 0) {
-		auto* thread = mt->get_thread();
+	auto& mt = machine().threads();
+	while (mt.get_thread()->tid != 0) {
+		auto* thread = mt.get_thread();
 		fmt::print(stderr, "Script::call Closing running thread: {}\n",
 			thread->tid);
 		thread->exit();
@@ -162,8 +160,8 @@ void Script::handle_timeout(gaddr_t address)
 	fmt::print(stderr, "Script::call hit max instructions for: {}"
 		" (Overruns: {})\n", callsite.name, m_budget_overruns);
 	// check if we need to suspend a thread
-	auto* mt = (multithreading<MARCH>*) m_threads;
-	auto* thread = mt->get_thread();
+	auto& mt = machine().threads();
+	auto* thread = mt.get_thread();
 	if (thread->tid != 0) {
 		// try to do the right thing here
 		if (thread->block_reason != 0) {
@@ -172,7 +170,7 @@ void Script::handle_timeout(gaddr_t address)
 			thread->suspend();
 		}
 		// resume some other thread
-		mt->wakeup_next();
+		mt.wakeup_next();
 	}
 }
 void Script::print_backtrace(const gaddr_t addr)
@@ -234,17 +232,17 @@ void Script::each_tick_event()
 {
 	if (this->m_tick_event == 0)
 		return;
-	auto* mt = (multithreading<MARCH>*) this->m_threads;
-	assert(mt->get_thread()->tid == 0 && "Avoid clobbering regs");
+	auto& mt = machine().threads();
+	assert(mt.get_thread()->tid == 0 && "Avoid clobbering regs");
 
 	int count = 0;
-	for (auto* thread : mt->blocked)
+	for (auto* thread : mt.blocked)
 	{
 		if (thread->block_reason == this->m_tick_block_reason)
 			count++;
 	}
 	this->preempt(this->m_tick_event, (int) count, (int) this->m_tick_block_reason);
-	assert(mt->get_thread()->tid == 0 && "Avoid clobbering regs");
+	assert(mt.get_thread()->tid == 0 && "Avoid clobbering regs");
 }
 
 void Script::set_dynamic_call(const std::string& name, ghandler_t handler)
@@ -287,10 +285,10 @@ void Script::dynamic_call(uint32_t hash)
 }
 
 gaddr_t Script::guest_alloc(gaddr_t bytes) {
-	return arena_malloc((sas_alloc::Arena*) m_arena, bytes);
+	return machine().arena().malloc(bytes);
 }
-void    Script::guest_free(gaddr_t addr) {
-	arena_free((sas_alloc::Arena*) m_arena, addr);
+void Script::guest_free(gaddr_t addr) {
+	machine().arena().free(addr);
 }
 
 

@@ -77,6 +77,7 @@ public:
 	gaddr_t guest_alloc(gaddr_t bytes);
 	void    guest_free(gaddr_t addr);
 
+	static void setup_syscall_interface();
 	Script(const machine_t&, void* userptr, const std::string& name, bool = false);
 	~Script();
 
@@ -86,7 +87,6 @@ private:
 	bool install_binary(const std::string& file, bool shared = true);
 	bool machine_initialize();
 	void machine_setup();
-	void setup_syscall_interface(machine_t&);
 	void gdb_remote_finish();
 	static long finish_benchmark(std::vector<long>&);
 	static std::array<riscv::Page, 2> g_shared_area; // shared memory area
@@ -94,8 +94,6 @@ private:
 	std::unique_ptr<machine_t> m_machine = nullptr;
 	const machine_t& m_source_machine;
 	void*       m_userptr;
-	void*       m_arena;
-	void*       m_threads;
 	gaddr_t     m_tick_event = 0;
 	int         m_tick_block_reason = 0;
 	std::string m_name;

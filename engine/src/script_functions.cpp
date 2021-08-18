@@ -88,6 +88,16 @@ inline void do_farcall(machine_t& machine, Script& dest, gaddr_t addr)
 	machine.cpu.jump(machine.cpu.reg(riscv::REG_RA) - 4);
 }
 
+APICALL(api_dyncall)
+{
+	auto& regs = machine.cpu.registers();
+	// call the handler with register t0 as hash
+	script(machine).dynamic_call(regs.get(riscv::REG_T0));
+	// skip return since PC is only allowed to change
+	// for normal system calls
+	machine.cpu.jump(regs.get(riscv::REG_RA) - 4);
+}
+
 APICALL(api_farcall)
 {
 	const auto [mhash, fhash] =
@@ -205,26 +215,17 @@ APICALL(api_vector_normalize)
 	machine.set_result(dx, dy);
 }
 
-void Script::setup_syscall_interface(machine_t& machine)
+void Script::setup_syscall_interface()
 {
 	// Implement the most basic functionality here,
 	// common to all scripts. The syscall numbers
 	// are stored in syscalls.h
-	machine.install_syscall_handlers({
+	machine_t::install_syscall_handlers({
 		{ECALL_SELF_TEST,   api_self_test},
 		{ECALL_ASSERT_FAIL, assert_fail},
 		{ECALL_WRITE,       api_write},
 		{ECALL_MEASURE,     api_measure},
-		{ECALL_DYNCALL,
-			[this] (auto& machine) {
-				auto& regs = machine.cpu.registers();
-				// call the handler with register t0 as hash
-				this->dynamic_call(regs.get(riscv::REG_T0));
-				// skip return since PC is only allowed to change
-				// for normal system calls
-				machine.cpu.jump(regs.get(riscv::REG_RA) - 4);
-			}
-		},
+		{ECALL_DYNCALL,     api_dyncall},
 		{ECALL_FARCALL,     api_farcall},
 		{ECALL_FARCALL_DIRECT, api_farcall_direct},
 		{ECALL_INTERRUPT,   api_interrupt},
