@@ -4,12 +4,13 @@
 
 _Static_assert(ECALL_DYNCALL == 104,
 	"The dynamic call syscall number is hard-coded in assembly");
-__asm__(".global dyncall_helper\n"
-"dyncall_helper:\n"
+__asm__(".global sys_breakpoint\n"
+"sys_breakpoint:\n"
 "	li a7, 104\n"
+"	li t0, 0xcaaff686\n"
 "	ecall\n"
 "   ret\n");
-extern long dyncall_helper(uint32_t, ...);
+extern long sys_breakpoint(uint16_t);
 
 void console_print(const char* text, size_t tlen)
 {
@@ -18,6 +19,6 @@ void console_print(const char* text, size_t tlen)
 
 void remote_breakpoint(int port)
 {
-	// Dynamic call: "remote_gdb"
-	dyncall_helper(0x8c68ab32, port);
+	// Dynamic call: "Debug::breakpoint"
+	sys_breakpoint(port);
 }

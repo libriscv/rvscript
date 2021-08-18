@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.11.0)
 project(programs C)
 
-set(NIM_LIBS "$ENV{HOME}/nim-1.4.2/lib" CACHE STRING "Nim library folder")
+set(NIM_LIBS "$ENV{HOME}/nim-1.4.8/lib" CACHE STRING "Nim library folder")
 
 include(micronim.cmake)
 

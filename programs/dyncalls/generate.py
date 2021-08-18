@@ -11,6 +11,9 @@ parser.add_argument("-o", "--output", dest="output",
 parser.add_argument("-v", "--verbose",
                     action="store_true", dest="verbose", default=False,
                     help="print status messages to stdout")
+parser.add_argument("-P", "--print-sources",
+                    action="store_true", dest="print_sources", default=False,
+                    help="print generated sources to stdout")
 parser.add_argument('--dyncall', dest='dyncall', action='store', default=104,
                    help='set the dyncall system call number')
 parser.add_argument('--cpp', dest='cpp', action='store_true', default=False,
@@ -69,6 +72,8 @@ for key in j:
 		asmdef  = j[key]
 		asmname = asmdef.split(' ')[1]
 		crc = '%08x' % (crc32(key) & 0xffffffff)
+		if args.verbose:
+			print(key + " dynamic call hash 0x" + crc)
 
 		header += "// " + key + ": 0x" + crc + "\n";
 		header += "extern " + asmdef + ";\n";
@@ -86,7 +91,7 @@ header += """
 #endif
 """;
 
-if (args.verbose):
+if (args.print_sources):
 	print(header)
 	print(source)
 
