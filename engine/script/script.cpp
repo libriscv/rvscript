@@ -9,7 +9,6 @@ using gaddr_t = Script::gaddr_t;
 #include "machine/include_api.hpp"
 
 // the shared area is read-write for the guest
-std::array<riscv::Page, 2> Script::g_shared_area;
 using riscv::crc32;
 
 Script::Script(const machine_t& smach, void* userptr, const std::string& name, bool debug)
@@ -39,16 +38,11 @@ bool Script::reset()
 	// setup system calls and traps
 	this->machine_setup();
 
-	if (this->machine_initialize()) {
-		this->m_crashed = false;
-		return true;
-	}
-	return false;
+	return true;
 }
 
 void Script::add_shared_memory()
 {
-	const int shared_pageno = shared_memory_location() >> riscv::Page::SHIFT;
 	const int heap_pageno   = heap_area() >> riscv::Page::SHIFT;
 
 	static int counter = 0;
@@ -62,15 +56,11 @@ void Script::add_shared_memory()
 	// Install our shared guard-page around the shared-
 	// memory area, put the shared page in the middle.
 	auto& guard_page = riscv::Page::guard_page();
-	mem.install_shared_page(shared_pageno-1, guard_page);
-	for (size_t i = 0; i < g_shared_area.size(); i++)
-		mem.install_shared_page(shared_pageno+i,   g_shared_area[i]);
-	mem.install_shared_page(shared_pageno+g_shared_area.size(), guard_page);
 	// this separates heap and stack
 	mem.install_shared_page(stack_pageno,    guard_page);
 }
 
-bool Script::machine_initialize()
+bool Script::initialize()
 {
 	// clear some state belonging to previous initialization
 	this->m_tick_event = 0;
@@ -99,8 +89,6 @@ bool Script::machine_initialize()
 void Script::machine_setup()
 {
 	machine().set_userdata<Script>(this);
-	if (UNLIKELY(machine().memory.exit_address() == 0))
-		throw std::runtime_error("Exit function not visible/available in program");
 	// add system call interface
 	machine().setup_native_heap(HEAP_SYSCALLS_BASE, heap_area(), MAX_HEAP);
 	machine().setup_native_memory(MEMORY_SYSCALLS_BASE, true);

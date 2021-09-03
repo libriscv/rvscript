@@ -67,10 +67,7 @@ public:
 	gaddr_t api_function_from_hash(uint32_t);
 
 	void add_shared_memory();
-	static auto&   shared_memory_page() noexcept { return g_shared_area; }
-	static size_t  shared_memory_size() noexcept { return g_shared_area.size(); };
-	static gaddr_t shared_memory_location() noexcept { return 0x2000; };
-	gaddr_t        heap_area() const noexcept {
+	gaddr_t heap_area() const noexcept {
 		return m_is_debug ? 0x80000000 : 0x40000000;
 	}
 
@@ -78,6 +75,7 @@ public:
 	void    guest_free(gaddr_t addr);
 
 	static void setup_syscall_interface();
+	bool initialize();
 	Script(const machine_t&, void* userptr, const std::string& name, bool = false);
 	~Script();
 
@@ -85,11 +83,9 @@ private:
 	void handle_exception(gaddr_t);
 	void handle_timeout(gaddr_t);
 	bool install_binary(const std::string& file, bool shared = true);
-	bool machine_initialize();
 	void machine_setup();
 	void gdb_remote_finish();
 	static long finish_benchmark(std::vector<long>&);
-	static std::array<riscv::Page, 2> g_shared_area; // shared memory area
 
 	std::unique_ptr<machine_t> m_machine = nullptr;
 	const machine_t& m_source_machine;

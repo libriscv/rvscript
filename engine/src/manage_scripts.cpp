@@ -21,6 +21,8 @@ Script& Scripts::create(const std::string& name, const std::string& bbname, bool
 		script.hash_public_api_symbols(box.symbols);
 	else
 		script.hash_public_api_symbols_file(box.sympath);
+
+	script.initialize();
 	return script;
 }
 /* Retrieve machines based on name (hashed), used by system calls.
