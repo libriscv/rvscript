@@ -89,6 +89,10 @@ bool Script::initialize()
 void Script::machine_setup()
 {
 	machine().set_userdata<Script>(this);
+	machine().set_printer(
+		[] (const char* p, size_t len) {
+			fmt::print(stderr, "{}", std::string_view{p, len});
+		});
 	// add system call interface
 	machine().setup_native_heap(HEAP_SYSCALLS_BASE, heap_area(), MAX_HEAP);
 	machine().setup_native_memory(MEMORY_SYSCALLS_BASE, true);
