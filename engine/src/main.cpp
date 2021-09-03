@@ -16,9 +16,11 @@ int main()
 	extern char _binary_gameplay_elf_end;
 	extern char _binary_gameplay_symbols_start;
 	extern char _binary_gameplay_symbols_end;
-	blackbox.insert_embedded_binary("gameplay",
-		&_binary_gameplay_elf_start, &_binary_gameplay_elf_end,
-		&_binary_gameplay_symbols_start, &_binary_gameplay_symbols_end);
+	const size_t binary_size = &_binary_gameplay_elf_end - &_binary_gameplay_elf_start;
+	const size_t symbols_size = &_binary_gameplay_symbols_end - &_binary_gameplay_symbols_start;
+	Scripts::embedded_binary("gameplay",
+		std::string_view{&_binary_gameplay_elf_start, binary_size},
+		std::string_view{&_binary_gameplay_symbols_start, symbols_size});
 #endif
 
 	Script::setup_syscall_interface();

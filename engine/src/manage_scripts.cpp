@@ -52,3 +52,10 @@ void Scripts::load_binary(const std::string& name,
 {
 	blackbox.insert_binary(name, filename, symbols);
 }
+
+void Scripts::embedded_binary(const std::string& name,
+	std::string_view binary,
+	std::string_view symbols)
+{
+	blackbox.insert_embedded_binary(name, binary, symbols);
+}

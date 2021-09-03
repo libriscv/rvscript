@@ -113,16 +113,16 @@ void Script::handle_exception(gaddr_t address)
 	try {
 		throw; // re-throw
 	}
+	catch (const riscv::MachineTimeoutException& e) {
+		this->handle_timeout(address);
+		return; // NOTE: might wanna stay
+	}
 	catch (const riscv::MachineException& e) {
 		fmt::print(stderr, "Script::call exception: {} (data: {:#x})\n",
 			e.what(), e.data());
 		fmt::print(stderr, ">>> Machine registers:\n[PC\t{:08x}] {}\n",
 			(long) machine().cpu.pc(),
 			machine().cpu.registers().to_string());
-	}
-	catch (const riscv::MachineTimeoutException& e) {
-		this->handle_timeout(address);
-		return; // NOTE: might wanna stay
 	}
 	catch (const std::exception& e) {
 		fmt::print(stderr, "Script::call exception: {}\n",
