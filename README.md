@@ -32,26 +32,26 @@ engine$ ./engine
 >>> [events] says: Entering event loop...
 >>> [gameplay1] says: Hello world!
 >>> [gameplay1] says: Exception caught!
-> median 5ns  		lowest: 5ns     	highest: 5ns
+> median 5ns  		lowest: 5ns     	highest: 14ns
 >>> Measurement "VM function call overhead" median: 5 nanos
 
-> median 173ns  		lowest: 170ns     	highest: 186ns
+> median 173ns  		lowest: 172ns     	highest: 226ns
 >>> Measurement "Thread creation overhead" median: 173 nanos
 
-> median 17ns  		lowest: 17ns     	highest: 20ns
->>> Measurement "Dynamic call handler" median: 17 nanos
+> median 15ns  		lowest: 14ns     	highest: 32ns
+>>> Measurement "Dynamic call handler" median: 15 nanos
 
-> median 39ns  		lowest: 39ns     	highest: 40ns
->>> Measurement "Farcall lookup" median: 39 nanos
+> median 44ns  		lowest: 44ns     	highest: 76ns
+>>> Measurement "Farcall lookup" median: 44 nanos
 
-> median 38ns  		lowest: 38ns     	highest: 43ns
->>> Measurement "Farcall direct" median: 38 nanos
+> median 40ns  		lowest: 39ns     	highest: 57ns
+>>> Measurement "Farcall direct" median: 40 nanos
 
 >>> [gameplay2] says: Hello Remote World! value = 1234!
 >>> [gameplay2] says: Some struct string: Hello 123!
 >>> [gameplay2] says: Some struct value: 42
 >>> [gameplay1] says: Back again in the start() function! Return value: 1234
-Skipped over breakpoint in gameplay1:0x12066C. Break here with DEBUG=1.
+Skipped over breakpoint in gameplay1:0x1206AC. Break here with DEBUG=1.
 >>> [gameplay1] says: Hello Microthread World!
 >>> [gameplay1] says: Back again in the start() function!
 ...
@@ -70,9 +70,9 @@ Calling 'myobject_death' in 'gameplay2'
 >>> [gameplay2] says: Object 'myobject' is dying!
 ...
 Benchmarking full fork:
-> median 1541ns  		lowest: 1526ns     	highest: 4353ns
+> median 920ns  		lowest: 900ns     	highest: 974ns
 Benchmarking reset:
-> median 1452ns  		lowest: 1430ns     	highest: 1599ns
+> median 895ns  		lowest: 873ns     	highest: 930ns
 ```
 
 This particular output is with C++ RTTI and exceptions enabled.
@@ -80,7 +80,7 @@ This particular output is with C++ RTTI and exceptions enabled.
 
 ## Getting started
 
-Install cmake, git, clang-11 for your system. Don't use GCC - it's slower on all benchmarks.
+Install cmake, git, clang-11, lld-11 or later for your system. You can also use GCC-10 or later.
 
 Run `setup.sh` to make sure that libriscv is initialized properly. Then go into the engine folder and run:
 
@@ -99,9 +99,9 @@ There are several ways to do this. However for now one requirement is to install
 ```
 git clone https://github.com/riscv/riscv-gnu-toolchain.git
 cd riscv-gnu-toolchain
-git submodule update --init riscv-binutils
-git submodule update --init riscv-gcc
-git submodule update --init riscv-newlib
+git submodule update --depth 1 --init riscv-binutils
+git submodule update --depth 1 --init riscv-gcc
+git submodule update --depth 1 --init riscv-newlib
 <install dependencies for GCC on your particular system here>
 ./configure --prefix=$HOME/riscv --with-arch=rv64g --with-abi=lp64d
 make -j8
@@ -264,24 +264,21 @@ myscript.set_dynamic_call("struct_by_ref",
 - The emulator is jumping to a misaligned instruction, or faulting on some other thing but I know for a fact that the assembly is fine.
 	- You might have to enable an extension such as atomics (RISCV_EXT_A) or compressed (RISCV_EXT_C). These are enabled by default and have to be disabled by something, such as in `engine/build.sh`.
 - After I enabled C++ exceptions and ran a try..catch the emulator seems to just stop.
-	- When you call into the virtual machine you can give it a budget. A limit on the number of instructions it gets to run for that particular call (or any other limit you impose yourself). If you forget to check if the limit has been reached, then it will just look like it stopped. You can check this by comparing calculating instruction counter + max instructions beforehand, and comparing that to the instruction counter after the call. You can safely resume execution again by calling `machine.simulate()` again, as running out of instructions is not an exception. The first C++ exception thrown uses a gigaton of instructions and will easily blow the limit.
+	- When you call into the virtual machine you usually give it a budget. A limit on the number of instructions it gets to run for that particular call (or any other limit you impose yourself). If you forget to check if the limit has been reached, then it will just look like it stopped. You can check this by comparing calculating instruction counter + max instructions beforehand, and comparing that to the instruction counter after the call. You can safely resume execution again by calling `machine.simulate()` again, as running out of instructions is not an exception. The first C++ exception thrown uses a gigaton of instructions and will easily blow the limit.
 - I can't seem to call a public API function in another machine.
-	- The function has to be added to the symbol file for it to not be removed as an optimization, assuming no other function references it. It's also possible that the remote machine you are calling into simply doesn't have that function - if it's running another binary.
+	- The function has to be added to the symbol file for it to not be removed as an optimization, assuming no other function references it. It's also possible that the remote machine you are calling into simply doesn't have that function if it's running another binary.
 - How do I share memory with the engine?
 	- Create aligned memory in your engine and use the `machine.memory.insert_non_owned_memory()` function to insert it using the given page attributes. The machine will then create non-owning pages pointing to this memory sequentially. You can do this on as many machines as you want. The challenge then is to be able to use the pages as memory for your objects, and access the readable members in a portable way (the VMs are default 64-bit).
-- My thread blocked and when it returned some shared data is stale now.
-	- The microthread block function is an inline system call, which is not a full function call. If it was a function call then the compiler will assume memory is clobbered. You can solve this by adding a memory clobber somewhere where you think it makes the most sense. You can see what it looks like in the implementation of `block()` with a condition.
 - Passing strings are slow.
-	- Yes, use compile-time hashes of strings where you can, but I'm constantly trying new things to make things go fast. CRC32 is excellent for this, and it might be possible to make it use the SSE 4.2 CRC32 instruction both for run-time and compile-time.
+	- Use compile-time hashes of strings where you can.
+	- Alternatively use memory sharing, riscv::Buffer or buffer gathering for large strings.
 - Why is a particular API function implemented as a macro?
 	- Most likely that API function uses compile-time string hashes, and they can't be passed to a function. Instead the hash has to be computed before it's passed to the function and the way to do that is using macros. Hashes can be turned back into strings using reverse lookups, so you will be able to give context when logging errors.
 - How do I allow non-technical people to compile script?
 	- Hard question. If they are only going to write scripts for the actual levels it might be good enough to use a web API endpoint to compile these simpler binaries. You don't have to do the compilation in a Docker container, so it should be fairly straight-forward for a dedicated server. You could also have an editor in the browser, and when you press Save or Compile the resulting binary is sent to you. They can then move it to the folder it's supposed to be in, and restart the level. Something like that. I'm sure something that is even higher iteration can be done with some thought put into it.
 - Will you add support for SIMD-like instructions for RISC-V?
 	- Definitely. The extension isn't finalized yet, but if I think it's close to the real thing I'll do it. It should make it possible to implement most vector functions in the script, but benchmarking is needed.
-- I'm unable to build one of the projects because of missing files.
-	- If you're having problems with missing files, you might not have initialized all git submodules in the project. All the `ext` folders contain sub-projects. You can explicitly initialize these folders by going into each of them and running `git submodule update --init`.
 - I'm worried about the impact on the performance from the ever-growing larger binaries, especially when using string formatting.
 	- So far I haven't noticed any performance degradation from this, although I did notice when I enabled C++ exceptions. Don't use GC-sections as a band-aid - I've never seen it improve performance.
 - I have real-time requirements.
-	- As long as pausing the script to continue later is an option, you will not have any trouble. Just don't pause the script while it's in a thread and then accidentally vmcall into it from somewhere else. This will clobber all registers and you can't resume the machine later. You can use preempt provided that it returns to the same thread again (although you are able to yield back to a thread manually). There are many options where things will be OK. In my engine all long-running tasks are running on separate machines, alone.
+	- As long as pausing the script to continue later is an option, you will not have any trouble. Just don't pause the script while it's in a thread and then accidentally vmcall into it from somewhere else. This will clobber all registers and you will have trouble later. You can use preempt provided that it returns to the same thread again (although you are able to yield back to a thread manually). There are many options where things will be OK. In my engine all long-running tasks are running on separate machines to simplify things.
