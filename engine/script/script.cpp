@@ -290,8 +290,9 @@ inline long nanodiff(timespec start_time, timespec end_time);
 template <int ROUNDS = 2000>
 inline long perform_test(Script::machine_t& machine, gaddr_t func)
 {
-	auto regs = machine.cpu.registers();
-	auto counter = machine.instruction_counter();
+	const auto regs = machine.cpu.registers();
+	const auto counter = machine.instruction_counter();
+	const auto max_counter = machine.max_instructions();
 	// this is a very hacky way of avoiding blowing up the stack
 	// because vmcall() resets the stack pointer on each call
 	auto old_stack = machine.memory.stack_initial();
@@ -308,8 +309,8 @@ inline long perform_test(Script::machine_t& machine, gaddr_t func)
 	machine.cpu.registers() = regs;
 	machine.reset_instruction_counter();
 	machine.increment_counter(counter);
+	machine.set_max_instructions(max_counter);
 	machine.memory.set_stack_initial(old_stack);
-	machine.stop(false);
 	return nanodiff(t0, t1);
 }
 
