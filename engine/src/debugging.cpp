@@ -7,10 +7,7 @@ static void gdb_remote_finish(Script& script)
 	auto& machine = script.machine();
 	// resume until stopped
 	const uint64_t max = Script::MAX_INSTRUCTIONS;
-	while (!machine.stopped() && machine.instruction_counter() < max) {
-		machine.cpu.simulate();
-		machine.increment_counter(1);
-	}
+	machine.cpu.simulate(max);
 }
 static void gdb_listen(Script& script, uint16_t port)
 {
