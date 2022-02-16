@@ -1,3 +1,4 @@
 **/build/
+**/gcc_build/
 *.elf
 engine/engine

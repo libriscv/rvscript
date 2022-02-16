@@ -94,7 +94,7 @@ Running the engine is only half the equation as you will also want to be able to
 
 ## Getting a RISC-V compiler
 
-There are several ways to do this. However for now one requirement is to install the riscv-gnu-toolchains GCC 10 for RISC-V. Install it like this:
+There are several ways to do this. However for now one requirement is to install the riscv-gnu-toolchains GCC 11 for RISC-V. Install it like this:
 
 ```
 git clone https://github.com/riscv/riscv-gnu-toolchain.git
@@ -138,6 +138,15 @@ You can share symbol file with any other binaries, and if you don't have a parti
 There is a lot of helper functionality built to make it easy to drop in new programs. See `engine/src/main.cpp` for some example code.
 
 The debug.sh script will produce programs that you can remotely connect to with GDB. Run `DEBUG=1 ./build.sh` in the engine folder to enable remote debugging with GDB. The engine will listen for a remote debugger on each breakpoint dyncall in the code.
+
+Install gdb-multiarch from your distro packaging system and run it like this:
+```
+gdb-multiarch gameplay.elf
+```
+Once inside GDB, you will need to connect to the GDB server in the engine:
+```
+target remote localhost:2159
+```
 
 ## Building with C++ RTTI and exceptions
 
@@ -264,7 +273,7 @@ myscript.set_dynamic_call("struct_by_ref",
 - The emulator is jumping to a misaligned instruction, or faulting on some other thing but I know for a fact that the assembly is fine.
 	- You might have to enable an extension such as atomics (RISCV_EXT_A) or compressed (RISCV_EXT_C). These are enabled by default and have to be disabled by something, such as in `engine/build.sh`.
 - After I enabled C++ exceptions and ran a try..catch the emulator seems to just stop.
-	- When you call into the virtual machine you usually give it a budget. A limit on the number of instructions it gets to run for that particular call (or any other limit you impose yourself). If you forget to check if the limit has been reached, then it will just look like it stopped. You can check this by comparing calculating instruction counter + max instructions beforehand, and comparing that to the instruction counter after the call. You can safely resume execution again by calling `machine.simulate()` again, as running out of instructions is not an exception. The first C++ exception thrown uses a gigaton of instructions and will easily blow the limit.
+	- When you call into the virtual machine you usually give it a budget. A limit on the number of instructions it gets to run for that particular call (or any other limit you impose yourself). If you forget to check if the limit has been reached, then it will just look like it stopped. You can check this by comparing calculating instruction counter + max instructions beforehand, and comparing that to the instruction counter after the call. You can safely resume execution again by calling `machine.simulate()` again, as running out of instructions is not a fatal exception. For example the first C++ exception thrown inside the RISC-V emulator uses a gigaton of instructions and will easily blow the limit.
 - I can't seem to call a public API function in another machine.
 	- The function has to be added to the symbol file for it to not be removed as an optimization, assuming no other function references it. It's also possible that the remote machine you are calling into simply doesn't have that function if it's running another binary.
 - How do I share memory with the engine?

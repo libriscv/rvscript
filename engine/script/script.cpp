@@ -228,7 +228,7 @@ void Script::each_tick_event()
 	assert(mt.get_thread()->tid == 0 && "Avoid clobbering regs");
 
 	int count = 0;
-	for (auto* thread : mt.blocked)
+	for (auto* thread : mt.m_blocked)
 	{
 		if (thread->block_reason == this->m_tick_block_reason)
 			count++;
