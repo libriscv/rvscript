@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.11.0)
 project(programs C)
 
+# Auto-detected if Nim is in PATH
 set(NIM_LIBS "$ENV{HOME}/nim-1.4.8/lib" CACHE STRING "Nim library folder")
 
 include(micronim.cmake)

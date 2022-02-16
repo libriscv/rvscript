@@ -184,7 +184,7 @@ void do_nim_testing(bool debug)
 
 			nim_machine.reset_dynamic_call("remote_gdb", [] (auto&) {});
 			nim_machine.stdout_enable(false);
-			const auto address = nim_machine.address_of("hello_nim");
+			const auto address = nim_machine.address_of("bench_nim");
 			nim_machine.vmbench(address);
 			nim_machine.stdout_enable(true);
 		}

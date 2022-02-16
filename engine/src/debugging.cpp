@@ -5,9 +5,10 @@ static const uint16_t RSP_PORT = 2159;
 static void gdb_remote_finish(Script& script)
 {
 	auto& machine = script.machine();
-	// resume until stopped
-	const uint64_t max = Script::MAX_INSTRUCTIONS;
-	machine.cpu.simulate(max);
+	if (!machine.stopped()) {
+		// resume until stopped
+		machine.simulate(machine.max_instructions());
+	}
 }
 static void gdb_listen(Script& script, uint16_t port)
 {

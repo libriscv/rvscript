@@ -7,4 +7,4 @@ cmake .. -DRISCV_EXT_A=ON -DRISCV_EXT_C=OFF -DRISCV_DEBUG=ON -DFLTO=OFF -DCMAKE_
 make -j4
 popd
 
-time ./engine
+gdb ./engine
