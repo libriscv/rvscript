@@ -11,7 +11,7 @@ int main()
 		"mods/hello_world/scripts/gameplay.elf",
 		"mods/hello_world/scripts/src/gameplay.symbols");
 #else
-	/* Program embedded into the engine */
+	/* "gameplay.elf" program embedded into the engine (by the build system) */
 	extern char _binary_gameplay_elf_start;
 	extern char _binary_gameplay_elf_end;
 	extern char _binary_gameplay_symbols_start;
@@ -49,7 +49,7 @@ int main()
 	events.call("event_loop");
 
 	/* Get one of our gameplay machines */
-	auto& gameplay1 = SCRIPT(gameplay1);
+	auto& gameplay1 = SCRIPT("gameplay1");
 	/* Create an dynamic function for benchmarking */
 	gameplay1.set_dynamic_call("empty", [] (auto&) {});
 
@@ -81,7 +81,7 @@ int main()
 	struct C {
 		char c = 'C';
 	};
-	auto& another_machine = SCRIPT(gameplay2);
+	auto& another_machine = SCRIPT("gameplay2");
 	another_machine.call("cpp_function", "Hello", C{}, "World");
 
 	fmt::print("...\n");
@@ -96,8 +96,7 @@ int main()
 	};
 	GameObject objects[200]; // Page worth of objects
 
-	/* Insert objects into memory, and as this is just example
-	   code. We won't try to align anything to page sizes.
+	/* Insert objects into memory.
 	   This allows zero-copy sharing of game state. */
 	static constexpr Script::gaddr_t OBJECT_AREA = 0xC000000;
 	another_machine.machine().memory.insert_non_owned_memory(

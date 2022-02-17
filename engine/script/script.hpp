@@ -5,7 +5,7 @@
 
 class Script {
 public:
-	static constexpr int MARCH = (RISCV_ARCH == 32) ? 4 : 8;
+	static constexpr int MARCH = RISCV_ARCH / 8;
 	using gaddr_t = riscv::address_type<MARCH>;
 	using machine_t = riscv::Machine<MARCH>;
 	using ghandler_t = std::function<void(Script&)>;

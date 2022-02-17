@@ -17,4 +17,4 @@ struct Scripts {
 };
 
 
-#define SCRIPT(x) Scripts::get(riscv::crc32(#x), #x)
+#define SCRIPT(x) Scripts::get(riscv::crc32(x), x)
