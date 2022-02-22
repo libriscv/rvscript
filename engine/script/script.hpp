@@ -12,7 +12,7 @@ public:
 	static constexpr gaddr_t MAX_MEMORY    = 1024*1024 * 16;
 	static constexpr gaddr_t MAX_HEAP      = 1024*1024 * 8;
 	static constexpr gaddr_t HEAP_BASE     = 0x40000000;
-	static constexpr uint64_t MAX_INSTRUCTIONS = 16'000'000;
+	static constexpr uint64_t MAX_INSTRUCTIONS = 32'000'000;
 
 	// Call any script function, with any parameters
 	template <typename... Args>

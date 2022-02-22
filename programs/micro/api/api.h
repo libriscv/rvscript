@@ -45,6 +45,12 @@ float sin(float);
 float rand(float, float);
 float smoothstep(float, float, float);
 
+/** Multiprocessing **/
+
+using multiprocess_func_t = void(*)(int, void*);
+int multiprocess(int cpus, multiprocess_func_t func, void* data);
+void multiprocess_wait();
+
 // only see the implementation on RISC-V
 #ifdef __riscv
 #include "api_impl.h"

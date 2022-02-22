@@ -14,6 +14,8 @@ enum game_api_ids
 	ECALL_INTERRUPT,
 	ECALL_MACHINE_HASH,
 	ECALL_EACH_FRAME,
+	ECALL_MULTIPROCESS,
+	ECALL_MULTIPROCESS_WAIT,
 	ECALL_GAME_EXIT,
 	// Math
 	ECALL_SINF,
@@ -30,8 +32,3 @@ enum game_api_ids
 #define REASON_FRAME         10
 #define REASON_CAMERA_DOLLY  12
 #define REASON_DIALOGUE      22
-
-// Configurable location of function groups
-#define FUNCTION_GROUP_AREA  0xFF000000
-
-#define GROUP_TIMERS 2

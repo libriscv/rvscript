@@ -30,4 +30,4 @@ if (USE_NEWLIB)
 		USE_NEWLIB=1
 	)
 endif()
-target_link_libraries(libc PUBLIC strf)
+target_link_libraries(libc PUBLIC strf-static-lib)

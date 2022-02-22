@@ -78,7 +78,7 @@ function (add_micro_binary NAME VERFILE)
 	target_include_directories(${NAME} PUBLIC ${CMAKE_BINARY_DIR}/dyncalls)
 	add_dependencies(${NAME} generate_dyncalls)
 	target_link_libraries(${NAME} -static -Wl,--whole-archive libc -Wl,--no-whole-archive)
-	target_link_libraries(${NAME} frozen::frozen strf)
+	target_link_libraries(${NAME} frozen::frozen)
 	# place ELF into the sub-projects source folder
 	set_target_properties(${NAME}
 		PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"

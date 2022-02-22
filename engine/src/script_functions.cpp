@@ -28,11 +28,19 @@ APICALL(api_write)
 {
 	auto [address, len] = machine.sysargs<gaddr_t, uint32_t> ();
 	const uint32_t len_g = std::min(1024u, (uint32_t) len);
+
 	auto& scr = script(machine);
+	if (scr.machine().is_multiprocessing()) {
+		machine.set_result(-1);
+		return;
+	}
+	if (scr.stdout_enabled() == false) {
+		machine.set_result(len_g);
+		return;
+	}
+
 	machine.memory.foreach(address, len_g,
 		[&scr] (auto&, auto, const uint8_t* data, size_t len) {
-			if (scr.stdout_enabled() == false)
-				return;
 			if (data == nullptr) {
 				fmt::print(stderr,
 					">>> [{}] had an illegal write\n",
@@ -158,6 +166,27 @@ APICALL(api_machine_hash)
 	machine.set_result(script(machine).hash());
 }
 
+APICALL(api_multiprocess)
+{
+	auto [vcpus, addr, stack, stksize, data]
+		= machine.sysargs <int, gaddr_t, gaddr_t, gaddr_t, gaddr_t> ();
+	try {
+		//printf("multiprocess(%d, func=0x%lX, stack=0x%lX), sz=0x%lX, data=0x%lX)\n",
+		//	vcpus, addr, stack, stksize, data);
+		const bool activated =
+			machine.multiprocess(vcpus, (gaddr_t)addr, Script::MAX_INSTRUCTIONS,
+			(gaddr_t)stack, (gaddr_t)stksize, (gaddr_t)data);
+		machine.set_result(activated ? 0 : -1);
+	} catch (...) {
+		machine.set_result(-1);
+	}
+}
+APICALL(api_multiprocess_wait)
+{
+	machine.multiprocess_wait();
+	machine.set_result(0);
+}
+
 APICALL(api_each_frame)
 {
 	auto [addr, reason] = machine.template sysargs <gaddr_t, int> ();
@@ -231,6 +260,8 @@ void Script::setup_syscall_interface()
 		{ECALL_INTERRUPT,   api_interrupt},
 		{ECALL_MACHINE_HASH, api_machine_hash},
 		{ECALL_EACH_FRAME,  api_each_frame},
+		{ECALL_MULTIPROCESS, api_multiprocess},
+		{ECALL_MULTIPROCESS_WAIT, api_multiprocess_wait},
 
 		{ECALL_GAME_EXIT,   api_game_exit},
 

@@ -40,6 +40,81 @@ static void farcall_lookup_testcall() {
 	FarCall<void()> fc("gameplay2", "public_donothing");
 	fc();
 }
+template <size_t SIZE>
+struct MultiprocessWork {
+	unsigned workers = 1;
+	std::array<float, SIZE> data_a;
+	std::array<float, SIZE> data_b;
+	float result[16] = {0};
+
+	inline size_t work_size() const noexcept {
+		return SIZE / workers;
+	}
+	float final_sum() const noexcept {
+		float sum = 0.0f;
+		for (size_t i = 0; i < this->workers; i++) sum += this->result[i];
+		return sum;
+	}
+};
+static constexpr size_t WORK_SIZE = 8192;
+static constexpr size_t MP_WORKERS = 4;
+static bool work_output = false;
+static MultiprocessWork<WORK_SIZE> mp_work;
+static void initialize_work() {
+	for (size_t i = 0; i < WORK_SIZE; i++) {
+		mp_work.data_a[i] = 1.0;
+		mp_work.data_b[i] = 1.0;
+	}
+}
+
+template <size_t SIZE>
+static void multiprocessing_function(int cpu, void* vdata)
+{
+	asm("" ::: "memory");
+	auto& data = *(MultiprocessWork<SIZE> *)vdata;
+	const size_t start = (cpu + 0) * data.work_size();
+	const size_t end   = (cpu + 1) * data.work_size();
+
+	float sum = 0.0f;
+	for (size_t i = start; i < end; i++) {
+		sum += data.data_a[i] * data.data_b[i];
+	}
+
+	data.result[cpu] = sum;
+}
+static void multiprocessing_forever(int, void*)
+{
+	while (true);
+}
+
+static void test_singleprocessing()
+{
+	mp_work.workers = 1;
+
+	// Perform part of the work on main vCPU
+	multiprocessing_function<WORK_SIZE> (0, &mp_work);
+
+	const float sum = mp_work.final_sum();
+	if (work_output)
+		print("Single-process sum = ", (double)sum, "\n");
+}
+static void test_multiprocessing()
+{
+	mp_work.workers = MP_WORKERS;
+
+	// Start the vCPUs and run the given function
+	multiprocess(MP_WORKERS, multiprocessing_function<WORK_SIZE>, &mp_work);
+	//multiprocess(MP_WORKERS, multiprocessing_forever, &mp_work);
+	// Perform part of the work on main vCPU
+	multiprocessing_function<WORK_SIZE> (0, &mp_work);
+	// Wait for all multiprocessing workers
+	multiprocess_wait();
+
+	// Sum the work together
+	const float sum = mp_work.final_sum();
+	if (work_output)
+		print("Multi-process sum = ", (double)sum, "\n");
+}
 
 /* This is the function that gets called at the start */
 /* See engine/src/main.cpp:69 */
@@ -48,6 +123,12 @@ PUBLIC(void start())
 	/* This function is implemented in api_impl.h, and it makes a
 	   system call into the engine, which then writes to the terminal. */
 	print("Hello world!\n");
+
+	initialize_work();
+	work_output = true;
+	test_singleprocessing();
+	test_multiprocessing();
+	work_output = false;
 
 #ifdef __EXCEPTIONS
 	try {
@@ -64,6 +145,9 @@ PUBLIC(void start())
 	measure("Dynamic call handler", dyncall_handler);
 	measure("Farcall lookup", farcall_lookup_testcall);
 	measure("Farcall direct", direct_farcall_testcall);
+
+	measure("Single-processing", test_singleprocessing);
+	measure("Multi-processing", test_multiprocessing);
 
 	/* This incantation creates a callable object that when called, tells
 	   the engine to find the "gameplay2" machine, and then make a call
@@ -123,7 +207,9 @@ PUBLIC(void start())
 			print("I am being run on another machine!\n");
 		});
 	}, "Microthread"s);
+
 	print("Back again in the start() function!\n");
+	// RA is loaded from stack, and becomes 0x0
 }
 
 /* We can only call this function remotely if it's added to "gameplay.symbols",
