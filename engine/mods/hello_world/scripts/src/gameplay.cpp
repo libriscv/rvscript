@@ -40,6 +40,69 @@ static void farcall_lookup_testcall() {
 	FarCall<void()> fc("gameplay2", "public_donothing");
 	fc();
 }
+template <size_t SIZE>
+struct MultiprocessWork {
+	unsigned workers;
+	float data_a[SIZE];
+	float data_b[SIZE];
+	float sum[16] = {};
+
+	inline size_t work_size() const noexcept {
+		return SIZE / workers;
+	}
+};
+template <size_t SIZE>
+static void multiprocessing_function(int cpu, void* vdata)
+{
+	auto& data = *(MultiprocessWork<SIZE> *)vdata;
+	const size_t offset = cpu * data.work_size();
+
+	float sum = 0.0f;
+	for (size_t i = 0; i < data.work_size(); i++) {
+		sum += data.data_a[offset + i] * data.data_b[offset + i];
+	}
+
+	data.sum[cpu] = sum;
+}
+static void test_singleprocessing()
+{
+	constexpr size_t WORK_SIZE = 4096;
+	MultiprocessWork<WORK_SIZE> work;
+	work.workers = 1;
+
+	asm("" ::: "memory");
+
+	// Perform part of the work on main vCPU
+	multiprocessing_function<WORK_SIZE> (0, &work);
+
+	asm("" ::: "memory");
+
+	// Sum the work together
+	float sum = 0.0f;
+	for (size_t i = 0; i < work.workers; i++) sum += work.sum[i];
+
+	//print("Done, sum = ", sum, "\n");
+}
+static void test_multiprocessing()
+{
+	constexpr size_t WORK_SIZE = 4096;
+	constexpr size_t WORKERS   = 4;
+	MultiprocessWork<WORK_SIZE> work;
+	work.workers = WORKERS;
+
+	// Start the vCPUs and run the given function
+	multiprocess(WORKERS, multiprocessing_function<WORK_SIZE>, &work);
+	// Perform part of the work on main vCPU
+	multiprocessing_function<WORK_SIZE> (0, &work);
+	// Wait for all multiprocessing workers
+	multiprocess_wait();
+
+	// Sum the work together
+	float sum = 0.0f;
+	for (size_t i = 0; i < WORKERS; i++) sum += work.sum[i];
+
+	//print("Done, sum = ", sum, "\n");
+}
 
 /* This is the function that gets called at the start */
 /* See engine/src/main.cpp:69 */
@@ -48,6 +111,8 @@ PUBLIC(void start())
 	/* This function is implemented in api_impl.h, and it makes a
 	   system call into the engine, which then writes to the terminal. */
 	print("Hello world!\n");
+
+	test_multiprocessing();
 
 #ifdef __EXCEPTIONS
 	try {
@@ -64,6 +129,9 @@ PUBLIC(void start())
 	measure("Dynamic call handler", dyncall_handler);
 	measure("Farcall lookup", farcall_lookup_testcall);
 	measure("Farcall direct", direct_farcall_testcall);
+
+	measure("Single-processing", test_singleprocessing);
+	measure("Multi-processing", test_multiprocessing);
 
 	/* This incantation creates a callable object that when called, tells
 	   the engine to find the "gameplay2" machine, and then make a call
@@ -123,7 +191,9 @@ PUBLIC(void start())
 			print("I am being run on another machine!\n");
 		});
 	}, "Microthread"s);
+
 	print("Back again in the start() function!\n");
+	// RA is loaded from stack, and becomes 0x0
 }
 
 /* We can only call this function remotely if it's added to "gameplay.symbols",

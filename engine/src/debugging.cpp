@@ -7,7 +7,7 @@ static void gdb_remote_finish(Script& script)
 	auto& machine = script.machine();
 	if (!machine.stopped()) {
 		// resume until stopped
-		machine.simulate(machine.max_instructions());
+		machine.simulate(machine.cpu.max_instructions());
 	}
 }
 static void gdb_listen(Script& script, uint16_t port)

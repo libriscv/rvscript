@@ -34,3 +34,12 @@ asm(".global interrupt_helper\n"
 "	ecall\n"
 "   ret\n"
 ""); // The system call handler must jump back to caller
+
+static_assert(ECALL_MULTIPROCESS == 110,
+	"The multiprocess syscall number is hard-coded in assembly");
+asm(".global sys_multiprocess\n"
+"sys_multiprocess:\n"
+"	li a7, 110\n"
+"	ecall\n"
+"   ret\n"
+""); // The system call handler must jump back to caller

@@ -68,7 +68,7 @@ bool Script::initialize()
 	try {
 		machine().simulate(MAX_INSTRUCTIONS);
 
-		if (UNLIKELY(machine().instruction_counter() >= MAX_INSTRUCTIONS)) {
+		if (UNLIKELY(machine().cpu.instruction_counter() >= MAX_INSTRUCTIONS)) {
 			fmt::print(stderr, ">>> Exception: Ran out of instructions\n");
 			return false;
 		}
@@ -291,8 +291,8 @@ template <int ROUNDS = 2000>
 inline long perform_test(Script::machine_t& machine, gaddr_t func)
 {
 	const auto regs = machine.cpu.registers();
-	const auto counter = machine.instruction_counter();
-	const auto max_counter = machine.max_instructions();
+	const auto counter = machine.cpu.instruction_counter();
+	const auto max_counter = machine.cpu.max_instructions();
 	// this is a very hacky way of avoiding blowing up the stack
 	// because vmcall() resets the stack pointer on each call
 	auto old_stack = machine.memory.stack_initial();
@@ -307,9 +307,9 @@ inline long perform_test(Script::machine_t& machine, gaddr_t func)
 	auto t1 = time_now();
 	asm("" : : : "memory");
 	machine.cpu.registers() = regs;
-	machine.reset_instruction_counter();
-	machine.increment_counter(counter);
-	machine.set_max_instructions(max_counter);
+	machine.cpu.reset_instruction_counter();
+	machine.cpu.increment_counter(counter);
+	machine.cpu.set_max_instructions(max_counter);
 	machine.memory.set_stack_initial(old_stack);
 	return nanodiff(t0, t1);
 }
