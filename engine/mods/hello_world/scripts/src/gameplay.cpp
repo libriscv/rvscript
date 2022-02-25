@@ -71,16 +71,19 @@ template <size_t SIZE>
 static void multiprocessing_function(int cpu, void* vdata)
 {
 	asm("" ::: "memory");
-	auto& data = *(MultiprocessWork<SIZE> *)vdata;
-	const size_t start = (cpu + 0) * data.work_size();
-	const size_t end   = (cpu + 1) * data.work_size();
+	auto& work = *(MultiprocessWork<SIZE> *)vdata;
+	const size_t start = (cpu + 0) * work.work_size();
+	const size_t end   = (cpu + 1) * work.work_size();
 
 	float sum = 0.0f;
 	for (size_t i = start; i < end; i++) {
-		sum += data.data_a[i] * data.data_b[i];
+		sum += work.data_a[i] * work.data_b[i];
 	}
 
-	data.result[cpu] = sum;
+	work.result[cpu] = sum;
+}
+static void multiprocessing_dummy(int, void*)
+{
 }
 static void multiprocessing_forever(int, void*)
 {
@@ -105,8 +108,6 @@ static void test_multiprocessing()
 	// Start the vCPUs and run the given function
 	multiprocess(MP_WORKERS, multiprocessing_function<WORK_SIZE>, &mp_work);
 	//multiprocess(MP_WORKERS, multiprocessing_forever, &mp_work);
-	// Perform part of the work on main vCPU
-	multiprocessing_function<WORK_SIZE> (0, &mp_work);
 	// Wait for all multiprocessing workers
 	multiprocess_wait();
 
@@ -114,6 +115,15 @@ static void test_multiprocessing()
 	const float sum = mp_work.final_sum();
 	if (work_output)
 		print("Multi-process sum = ", (double)sum, "\n");
+}
+static void multiprocessing_overhead()
+{
+	mp_work.workers = MP_WORKERS;
+
+	// Start the vCPUs and run the given function
+	multiprocess(MP_WORKERS, multiprocessing_dummy, nullptr);
+	// Wait for all multiprocessing workers
+	multiprocess_wait();
 }
 
 /* This is the function that gets called at the start */
@@ -146,8 +156,10 @@ PUBLIC(void start())
 	measure("Farcall lookup", farcall_lookup_testcall);
 	measure("Farcall direct", direct_farcall_testcall);
 
-	measure("Single-processing", test_singleprocessing);
-	measure("Multi-processing", test_multiprocessing);
+	measure("Benchmarking overhead", empty_function);
+	measure("Multi-processing overhead", multiprocessing_overhead);
+	measure("Multi-processing dotprod", test_multiprocessing);
+	measure("Single-processing dotprod", test_singleprocessing);
 
 	/* This incantation creates a callable object that when called, tells
 	   the engine to find the "gameplay2" machine, and then make a call
