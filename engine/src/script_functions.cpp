@@ -168,22 +168,18 @@ APICALL(api_machine_hash)
 
 APICALL(api_multiprocess)
 {
-	auto [vcpus, addr, stack, stksize, data]
-		= machine.sysargs <int, gaddr_t, gaddr_t, gaddr_t, gaddr_t> ();
-	try {
-		//printf("multiprocess(%d, func=0x%lX, stack=0x%lX), sz=0x%lX, data=0x%lX)\n",
-		//	vcpus, addr, stack, stksize, data);
-		const bool activated =
-			machine.multiprocess(vcpus, (gaddr_t)addr, Script::MAX_INSTRUCTIONS,
-			(gaddr_t)stack, (gaddr_t)stksize, (gaddr_t)data);
-		machine.set_result(activated ? 0 : -1);
-	} catch (...) {
-		machine.set_result(-1);
-	}
+	auto [vcpus, stk, stksize] = machine.sysargs <unsigned, gaddr_t, gaddr_t> ();
+	machine.multiprocess(vcpus, Script::MAX_INSTRUCTIONS,
+		(gaddr_t)stk, (gaddr_t)stksize);
+	machine.set_result(0);
 }
 APICALL(api_multiprocess_wait)
 {
-	machine.multiprocess_wait();
+	if (machine.cpu.cpu_id() == 0) {
+		machine.multiprocess_wait();
+	} else {
+		machine.stop();
+	}
 	machine.set_result(0);
 }
 

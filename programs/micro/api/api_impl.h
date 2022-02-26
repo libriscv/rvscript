@@ -92,22 +92,26 @@ inline uint32_t current_machine()
 }
 #define RUNNING_ON(mach) (api::current_machine() == crc32(mach))
 
-extern "C" long sys_multiprocess(int, multiprocess_func_t, void*, size_t, void*);
-static char* multiprocessing_stacks = nullptr;
-inline int multiprocess(int cpus, multiprocess_func_t func, void* data)
+extern "C" long sys_multiprocess(unsigned, void*, size_t, multiprocess_func_t, void*);
+extern "C" long sys_multiprocess_wait();
+static struct {
+	uint64_t* stacks = nullptr;
+	unsigned  cpus = 0;
+} mp_data;
+inline unsigned multiprocess(unsigned cpus, multiprocess_func_t func, void* data)
 {
-	const size_t STACK_SIZE = 128*1024;
-	delete[] multiprocessing_stacks;
-	multiprocessing_stacks = new char[cpus * STACK_SIZE];
-	int result = sys_multiprocess(cpus, func,
-		multiprocessing_stacks, STACK_SIZE, data);
-	return result;
+	constexpr size_t STACK_SIZE = 512 * 1024u;
+	if (mp_data.cpus < cpus) {
+		mp_data.cpus = cpus;
+		delete[] mp_data.stacks;
+		mp_data.stacks = new uint64_t[(STACK_SIZE * cpus) / sizeof(uint64_t)];
+	}
+
+	return sys_multiprocess(cpus, mp_data.stacks, STACK_SIZE, func, data);
 }
 inline void multiprocess_wait()
 {
-	syscall(ECALL_MULTIPROCESS_WAIT);
-	delete[] multiprocessing_stacks;
-	multiprocessing_stacks = nullptr;
+	sys_multiprocess_wait();
 }
 
 inline void each_frame_helper(int count, int reason)

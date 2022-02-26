@@ -60,10 +60,11 @@ static constexpr size_t WORK_SIZE = 8192;
 static constexpr size_t MP_WORKERS = 4;
 static bool work_output = false;
 static MultiprocessWork<WORK_SIZE> mp_work;
-static void initialize_work() {
-	for (size_t i = 0; i < WORK_SIZE; i++) {
-		mp_work.data_a[i] = 1.0;
-		mp_work.data_b[i] = 1.0;
+template <size_t SIZE>
+static void initialize_work(MultiprocessWork<SIZE>& work) {
+	for (size_t i = 0; i < SIZE; i++) {
+		work.data_a[i] = 1.0;
+		work.data_b[i] = 1.0;
 	}
 }
 
@@ -105,10 +106,9 @@ static void test_multiprocessing()
 {
 	mp_work.workers = MP_WORKERS;
 
-	// Start the vCPUs and run the given function
+	// Start N extra vCPUs and execute the function
 	multiprocess(MP_WORKERS, multiprocessing_function<WORK_SIZE>, &mp_work);
-	//multiprocess(MP_WORKERS, multiprocessing_forever, &mp_work);
-	// Wait for all multiprocessing workers
+	// Wait and stop workers here
 	multiprocess_wait();
 
 	// Sum the work together
@@ -120,7 +120,7 @@ static void multiprocessing_overhead()
 {
 	mp_work.workers = MP_WORKERS;
 
-	// Start the vCPUs and run the given function
+	// Start the vCPUs
 	multiprocess(MP_WORKERS, multiprocessing_dummy, nullptr);
 	// Wait for all multiprocessing workers
 	multiprocess_wait();
@@ -134,10 +134,10 @@ PUBLIC(void start())
 	   system call into the engine, which then writes to the terminal. */
 	print("Hello world!\n");
 
-	initialize_work();
+	initialize_work(mp_work);
 	work_output = true;
-	test_singleprocessing();
 	test_multiprocessing();
+	test_singleprocessing();
 	work_output = false;
 
 #ifdef __EXCEPTIONS

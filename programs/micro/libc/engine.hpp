@@ -18,6 +18,12 @@ inline constexpr uint32_t operator "" _hash (const char* value, std::size_t len)
 	return crc32(value, len);
 }
 
+inline auto hart_id()
+{
+	uint64_t id;
+	asm ("csrr %0, mhartid\n" : "=r"(id));
+	return id;
+}
 inline auto rdcycle()
 {
 	union {

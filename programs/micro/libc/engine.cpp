@@ -41,5 +41,18 @@ asm(".global sys_multiprocess\n"
 "sys_multiprocess:\n"
 "	li a7, 110\n"
 "	ecall\n"
-"   ret\n"
-""); // The system call handler must jump back to caller
+"   beqz a0, sys_multiprocess_ret\n" // Early return for vCPU 0
+// Otherwise, create a function call
+"   addi a0, a0, -1\n" // Subtract 1 from vCPU ID, making it 0..N-1
+"   mv a1, a4\n"       // Move work data to argument 1
+"   jalr zero, a3\n"   // Direct jump to work function
+"sys_multiprocess_ret:\n"
+"   ret\n");           // Return to caller
+
+static_assert(ECALL_MULTIPROCESS_WAIT == 111,
+	"The multiprocess_wait syscall number is hard-coded in assembly");
+asm(".global sys_multiprocess_wait\n"
+"sys_multiprocess_wait:\n"
+"	li a7, 111\n"
+"	ecall\n"
+"   ret\n");

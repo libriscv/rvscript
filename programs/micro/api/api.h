@@ -48,7 +48,8 @@ float smoothstep(float, float, float);
 /** Multiprocessing **/
 
 using multiprocess_func_t = void(*)(int, void*);
-int multiprocess(int cpus, multiprocess_func_t func, void* data);
+unsigned multiprocess(unsigned cpus);
+unsigned multiprocess(unsigned cpus, multiprocess_func_t func, void* data);
 void multiprocess_wait();
 
 // only see the implementation on RISC-V
