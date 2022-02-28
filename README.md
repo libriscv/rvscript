@@ -28,30 +28,43 @@ All the host-side code is in the engine folder, and is written as if it was runn
 The output from the program should look like this after completion:
 
 ```
-engine$ ./engine
 >>> [events] says: Entering event loop...
 >>> [gameplay1] says: Hello world!
+>>> [gameplay1] says: Multi-process sum = 8192
+>>> [gameplay1] says: Single-process sum = 8192
 >>> [gameplay1] says: Exception caught!
-> median 5ns  		lowest: 5ns     	highest: 14ns
->>> Measurement "VM function call overhead" median: 5 nanos
+> median 7ns  		lowest: 7ns     	highest: 9ns
+>>> Measurement "VM function call overhead" median: 7 nanos
 
-> median 173ns  		lowest: 172ns     	highest: 226ns
->>> Measurement "Thread creation overhead" median: 173 nanos
+> median 184ns  		lowest: 184ns     	highest: 331ns
+>>> Measurement "Thread creation overhead" median: 184 nanos
 
-> median 15ns  		lowest: 14ns     	highest: 32ns
->>> Measurement "Dynamic call handler" median: 15 nanos
+> median 22ns  		lowest: 21ns     	highest: 43ns
+>>> Measurement "Dynamic call handler" median: 22 nanos
 
-> median 44ns  		lowest: 44ns     	highest: 76ns
->>> Measurement "Farcall lookup" median: 44 nanos
+> median 57ns  		lowest: 57ns     	highest: 64ns
+>>> Measurement "Farcall lookup" median: 57 nanos
 
-> median 40ns  		lowest: 39ns     	highest: 57ns
->>> Measurement "Farcall direct" median: 40 nanos
+> median 49ns  		lowest: 49ns     	highest: 72ns
+>>> Measurement "Farcall direct" median: 49 nanos
+
+> median 7ns  		lowest: 7ns     	highest: 10ns
+>>> Measurement "Benchmarking overhead" median: 7 nanos
+
+> median 10426ns  		lowest: 9747ns     	highest: 11358ns
+>>> Measurement "Multi-processing overhead" median: 10426 nanos
+
+> median 72089ns  		lowest: 69491ns     	highest: 101571ns
+>>> Measurement "Multi-processing dotprod" median: 72089 nanos
+
+> median 220333ns  		lowest: 219855ns     	highest: 223532ns
+>>> Measurement "Single-processing dotprod" median: 220333 nanos
 
 >>> [gameplay2] says: Hello Remote World! value = 1234!
 >>> [gameplay2] says: Some struct string: Hello 123!
 >>> [gameplay2] says: Some struct value: 42
 >>> [gameplay1] says: Back again in the start() function! Return value: 1234
-Skipped over breakpoint in gameplay1:0x1206AC. Break here with DEBUG=1.
+Skipped over breakpoint in gameplay1:0x120398. Break here with DEBUG=1.
 >>> [gameplay1] says: Hello Microthread World!
 >>> [gameplay1] says: Back again in the start() function!
 ...
@@ -70,9 +83,21 @@ Calling 'myobject_death' in 'gameplay2'
 >>> [gameplay2] says: Object 'myobject' is dying!
 ...
 Benchmarking full fork:
-> median 920ns  		lowest: 900ns     	highest: 974ns
+> median 1039ns  		lowest: 1019ns     	highest: 1133ns
 Benchmarking reset:
-> median 895ns  		lowest: 873ns     	highest: 930ns
+> median 1020ns  		lowest: 994ns     	highest: 1168ns
+...
+>>> [nim] says: Before debugging
+Skipped over breakpoint in nim:0x120244. Break here with DEBUG=1.
+>>> [nim] says: Hello Nim World!
+{
+  "name": "Hello",
+  "email": "World",
+  "books": [
+    "Foundation"
+  ]
+}
+> median 25811ns  		lowest: 25635ns     	highest: 26507ns
 ```
 
 This particular output is with C++ RTTI and exceptions enabled.
