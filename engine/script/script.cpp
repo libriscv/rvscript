@@ -47,12 +47,19 @@ void Script::add_shared_memory()
 
 	static int counter = 0;
 	const int stack_pageno  = heap_pageno - 2 - counter;
-	// Separate each stack base address by 16 pages, for each machine.
+	// Separate each stack base address by 32 pages, for each machine.
 	// This will make it simple to mirror stacks when calling remotely.
-	counter = (counter + 16) % 256;
+	counter = (counter + 32) % 256;
 
 	auto& mem = machine().memory;
-	mem.set_stack_initial((gaddr_t) stack_pageno << riscv::Page::SHIFT);
+	const auto stack_base = (gaddr_t) stack_pageno * riscv::Page::size();
+	mem.set_stack_initial(stack_base);
+
+	// I don't like this, but we will do it like this for now
+	auto* main_thread = machine().threads().get_thread();
+	main_thread->stack_base = stack_base;
+	main_thread->stack_size = 32 * riscv::Page::size();
+
 	// Install our shared guard-page around the shared-
 	// memory area, put the shared page in the middle.
 	auto& guard_page = riscv::Page::guard_page();

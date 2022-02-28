@@ -107,7 +107,11 @@ static void test_multiprocessing()
 	mp_work.workers = MP_WORKERS;
 
 	// Start N extra vCPUs and execute the function
-	multiprocess(MP_WORKERS, multiprocessing_function<WORK_SIZE>, &mp_work);
+	//multiprocess(MP_WORKERS, multiprocessing_function<WORK_SIZE>, &mp_work);
+	unsigned cpu = multiprocess(MP_WORKERS);
+	if (cpu != 0) {
+		multiprocessing_function<WORK_SIZE> (cpu-1, &mp_work);
+	}
 	// Wait and stop workers here
 	multiprocess_wait();
 
@@ -121,7 +125,11 @@ static void multiprocessing_overhead()
 	mp_work.workers = MP_WORKERS;
 
 	// Start the vCPUs
-	multiprocess(MP_WORKERS, multiprocessing_dummy, nullptr);
+	//multiprocess(MP_WORKERS, multiprocessing_dummy, nullptr);
+	unsigned cpu = multiprocess(MP_WORKERS);
+	if (cpu != 0) {
+		multiprocessing_dummy (cpu-1, &mp_work);
+	}
 	// Wait for all multiprocessing workers
 	multiprocess_wait();
 }

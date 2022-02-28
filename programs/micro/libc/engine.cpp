@@ -49,10 +49,18 @@ asm(".global sys_multiprocess\n"
 "sys_multiprocess_ret:\n"
 "   ret\n");           // Return to caller
 
-static_assert(ECALL_MULTIPROCESS_WAIT == 111,
+static_assert(ECALL_MULTIPROCESS_FORK == 111,
+	"The multiprocess_fork syscall number is hard-coded in assembly");
+asm(".global sys_multiprocess_fork\n"
+"sys_multiprocess_fork:\n"
+"	li a7, 111\n"
+"	ecall\n"
+"   ret\n");           // Return to caller
+
+static_assert(ECALL_MULTIPROCESS_WAIT == 112,
 	"The multiprocess_wait syscall number is hard-coded in assembly");
 asm(".global sys_multiprocess_wait\n"
 "sys_multiprocess_wait:\n"
-"	li a7, 111\n"
+"	li a7, 112\n"
 "	ecall\n"
 "   ret\n");

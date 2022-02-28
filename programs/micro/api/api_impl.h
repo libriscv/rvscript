@@ -93,6 +93,7 @@ inline uint32_t current_machine()
 #define RUNNING_ON(mach) (api::current_machine() == crc32(mach))
 
 extern "C" long sys_multiprocess(unsigned, void*, size_t, multiprocess_func_t, void*);
+extern "C" long sys_multiprocess_fork(unsigned);
 extern "C" long sys_multiprocess_wait();
 static struct {
 	uint64_t* stacks = nullptr;
@@ -108,6 +109,10 @@ inline unsigned multiprocess(unsigned cpus, multiprocess_func_t func, void* data
 	}
 
 	return sys_multiprocess(cpus, mp_data.stacks, STACK_SIZE, func, data);
+}
+inline unsigned multiprocess(unsigned cpus)
+{
+	return sys_multiprocess_fork(cpus);
 }
 inline void multiprocess_wait()
 {

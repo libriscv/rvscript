@@ -1,4 +1,5 @@
 #include "script_functions.hpp"
+#include <libriscv/threads.hpp>
 #include <script/machine/include_api.hpp>
 #include <cmath>
 #include <fmt/core.h>
@@ -173,6 +174,16 @@ APICALL(api_multiprocess)
 		(gaddr_t)stk, (gaddr_t)stksize);
 	machine.set_result(0);
 }
+APICALL(api_multiprocess_fork)
+{
+	auto [vcpus] = machine.sysargs <unsigned> ();
+	auto* thread = machine.threads().get_thread();
+	//printf("Multiprocessing (forked) stack: 0x%lX size: 0x%lX  SP=0x%lX\n",
+	//	thread->stack_base, thread->stack_size, machine.cpu.reg(riscv::REG_SP));
+	machine.multiprocess(vcpus, Script::MAX_INSTRUCTIONS,
+		thread->stack_base, thread->stack_size, true);
+	machine.set_result(0);
+}
 APICALL(api_multiprocess_wait)
 {
 	if (machine.cpu.cpu_id() == 0) {
@@ -257,6 +268,7 @@ void Script::setup_syscall_interface()
 		{ECALL_MACHINE_HASH, api_machine_hash},
 		{ECALL_EACH_FRAME,  api_each_frame},
 		{ECALL_MULTIPROCESS, api_multiprocess},
+		{ECALL_MULTIPROCESS_FORK, api_multiprocess_fork},
 		{ECALL_MULTIPROCESS_WAIT, api_multiprocess_wait},
 
 		{ECALL_GAME_EXIT,   api_game_exit},
