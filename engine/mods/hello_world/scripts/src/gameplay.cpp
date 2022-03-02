@@ -46,6 +46,7 @@ struct MultiprocessWork {
 	std::array<float, SIZE> data_a;
 	std::array<float, SIZE> data_b;
 	float result[16] = {0};
+	int counter = 0;
 
 	inline size_t work_size() const noexcept {
 		return SIZE / workers;
@@ -82,6 +83,7 @@ static void multiprocessing_function(int cpu, void* vdata)
 	}
 
 	work.result[cpu] = sum;
+	__sync_fetch_and_add(&work.counter, 1);
 }
 static void multiprocessing_dummy(int, void*)
 {
@@ -117,8 +119,10 @@ static void test_multiprocessing()
 
 	// Sum the work together
 	const float sum = mp_work.final_sum();
-	if (work_output)
+	if (work_output) {
 		print("Multi-process sum = ", (double)sum, "\n");
+		print("Multi-process counter = ", mp_work.counter, "\n");
+	}
 }
 static void multiprocessing_overhead()
 {

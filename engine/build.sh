@@ -7,5 +7,4 @@ cmake .. -DRISCV_EXT_A=ON -DRISCV_EXT_C=OFF -DRISCV_DEBUG=OFF -DFLTO=ON -DCMAKE_
 make -j4
 popd
 
-export CFLAGS="-O2 -ffast-math"
 time ./engine
