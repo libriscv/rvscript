@@ -101,7 +101,7 @@ APICALL(api_dyncall)
 {
 	auto& regs = machine.cpu.registers();
 	// call the handler with register t0 as hash
-	script(machine).dynamic_call(regs.get(riscv::REG_T0));
+	script(machine).dynamic_call(regs.get(riscv::REG_T0), regs.get(riscv::REG_T1));
 	// skip return since PC is only allowed to change
 	// for normal system calls
 	machine.cpu.jump(regs.get(riscv::REG_RA) - 4);

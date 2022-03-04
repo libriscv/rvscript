@@ -271,15 +271,16 @@ void Script::set_dynamic_calls(std::vector<std::pair<std::string, ghandler_t>> v
 	}
 }
 
-void Script::dynamic_call(uint32_t hash)
+void Script::dynamic_call(uint32_t hash, gaddr_t straddr)
 {
 	auto it = m_dynamic_functions.find(hash);
 	if (LIKELY(it != m_dynamic_functions.end())) {
 		it->second(*this);
 	} else {
-		fmt::print("Unable to find dynamic function with hash: {:#08x}\n",
-			hash);
-		throw std::runtime_error("Unable to find dynamic function");
+		auto name = machine().memory.memstring(straddr);
+		fmt::print("Unable to find dynamic function '{}' with hash: {:#08x}\n",
+			name, hash);
+		throw std::runtime_error("Unable to find dynamic function: " + name);
 	}
 }
 

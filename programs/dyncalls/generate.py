@@ -77,13 +77,21 @@ for key in j:
 
 		header += "// " + key + ": 0x" + crc + "\n";
 		header += "extern " + asmdef + ";\n";
-		source += 'asm(".global ' + asmname + '\\n\\\n'
-		source += '.type ' + asmname + ', @function\\n\\\n'
+		source += 'asm("\\n\\\n'
+		source += '.global ' + asmname + '\\n\\\n'
+		source += '.func ' + asmname + '\\n\\\n'
 		source += asmname + ':\\n\\\n'
 		source += '  li t0, 0x' + crc + '\\n\\\n'
+		source += '  la t1, ' + asmname + '_str\\n\\\n'
 		source += '  li a7, ' + str(args.dyncall) + '\\n\\\n'
 		source += '  ecall\\n\\\n'
-		source += '  ret");\n\n'
+		source += '  ret\\n\\\n'
+		source += '.endfunc\\n\\\n'
+		source += '.pushsection .rodata\\n\\\n'
+		source += asmname + '_str:\\n\\\n'
+		source += '.asciz \\\"' + key + '\\\"\\n\\\n'
+		source += '.popsection\\n\\\n'
+		source += '");\n\n'
 
 header += """
 #ifdef __cplusplus
