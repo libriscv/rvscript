@@ -52,13 +52,13 @@ void Script::add_shared_memory()
 	counter = (counter + 32) % 256;
 
 	auto& mem = machine().memory;
-	const auto stack_base = (gaddr_t) stack_pageno * riscv::Page::size();
-	mem.set_stack_initial(stack_base);
+	const auto stack_addr = (gaddr_t) stack_pageno * riscv::Page::size();
+	mem.set_stack_initial(stack_addr);
 
 	// I don't like this, but we will do it like this for now
 	auto* main_thread = machine().threads().get_thread();
-	main_thread->stack_base = stack_base;
 	main_thread->stack_size = 32 * riscv::Page::size();
+	main_thread->stack_base = stack_addr - main_thread->stack_size;
 
 	// Install our shared guard-page around the shared-
 	// memory area, put the shared page in the middle.
