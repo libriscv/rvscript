@@ -59,6 +59,7 @@ struct MultiprocessWork {
 };
 static constexpr size_t WORK_SIZE = 8192;
 static constexpr size_t MP_WORKERS = 4;
+#define MULTIPROCESS_FORK
 static bool work_output = false;
 static MultiprocessWork<WORK_SIZE> mp_work;
 template <size_t SIZE>
@@ -109,13 +110,25 @@ static void test_multiprocessing()
 	mp_work.workers = MP_WORKERS;
 
 	// Start N extra vCPUs and execute the function
-	//multiprocess(MP_WORKERS, multiprocessing_function<WORK_SIZE>, &mp_work);
+#ifndef MULTIPROCESS_FORK
+	// Method 1: Start new workers, each with their own stacks
+	// then call the given function. Most of this is handled
+	// in RISC-V assembly.
+	multiprocess(MP_WORKERS, multiprocessing_function<WORK_SIZE>, &mp_work);
+	// Wait and stop workers here
+	multiprocess_wait();
+#else
+	// Method 2: Fork this machine and wait until multiprocessing
+	// ends, by calling multiprocess_wait() on all workers. Each
+	// worker uses the current stack, copy-on-write. No need for
+	// hand-written assembly to handle this variant.
 	unsigned cpu = multiprocess(MP_WORKERS);
 	if (cpu != 0) {
 		multiprocessing_function<WORK_SIZE> (cpu-1, &mp_work);
+		// Finish multiprocessing here
+		multiprocess_wait();
 	}
-	// Wait and stop workers here
-	multiprocess_wait();
+#endif
 
 	// Sum the work together
 	const float sum = mp_work.final_sum();
@@ -129,13 +142,18 @@ static void multiprocessing_overhead()
 	mp_work.workers = MP_WORKERS;
 
 	// Start the vCPUs
-	//multiprocess(MP_WORKERS, multiprocessing_dummy, nullptr);
+#ifndef MULTIPROCESS_FORK
+	multiprocess(MP_WORKERS, multiprocessing_dummy, nullptr);
+	// Wait for all multiprocessing workers
+	multiprocess_wait();
+#else
 	unsigned cpu = multiprocess(MP_WORKERS);
 	if (cpu != 0) {
 		multiprocessing_dummy (cpu-1, &mp_work);
+		// Finish multiprocessing here
+		multiprocess_wait();
 	}
-	// Wait for all multiprocessing workers
-	multiprocess_wait();
+#endif
 }
 
 /* This is the function that gets called at the start */
