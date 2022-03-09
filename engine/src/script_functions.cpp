@@ -81,7 +81,7 @@ inline void do_farcall(machine_t& machine, Script& dest, gaddr_t addr)
 	// Page-sharing mechanisms
 	dest.machine().memory.set_page_readf_handler(
 		[&m = machine.memory] (const auto&, size_t pageno) -> const auto& {
-			return m.get_pageno(pageno);
+			return m.get_readable_pageno(pageno);
 		});
 
 	// vmcall with no arguments to avoid clobbering registers
