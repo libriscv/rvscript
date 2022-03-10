@@ -102,7 +102,7 @@ void Script::machine_setup()
 		});
 	// add system call interface
 	machine().setup_native_heap(HEAP_SYSCALLS_BASE, heap_area(), MAX_HEAP);
-	machine().setup_native_memory(MEMORY_SYSCALLS_BASE, true);
+	machine().setup_native_memory(MEMORY_SYSCALLS_BASE);
 	machine().setup_native_threads(THREADS_SYSCALL_BASE);
 	machine().on_unhandled_syscall =
 		[] (machine_t&, int number) {
