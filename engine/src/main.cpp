@@ -9,7 +9,7 @@ int main()
 	/* A single program that will be shared among all the machines, for convenience */
 	Scripts::load_binary("gameplay",
 		"mods/hello_world/scripts/gameplay.elf",
-		"mods/hello_world/scripts/src/gameplay.symbols");
+		"../programs/symbols.map");
 #else
 	/* "gameplay.elf" program embedded into the engine (by the build system) */
 	extern char _binary_gameplay_elf_start;
@@ -26,7 +26,7 @@ int main()
 	Script::setup_syscall_interface();
 	Scripts::load_binary("test",
 		"mods/hello_world/scripts/gameplay.elf",
-		"mods/hello_world/scripts/src/gameplay.symbols");
+		"../programs/symbols.map");
 
 	/* Naming the machines allows us to call into one machine from another
 	   using this name (hashed). These machines will be fully intialized. */

@@ -4,7 +4,7 @@
 # add some Nim code.
 #
 
-add_micro_binary(gameplay.elf "src/gameplay.symbols"
+add_micro_binary(gameplay.elf
 	"src/gameplay.cpp"
 	"src/events.cpp"
 )

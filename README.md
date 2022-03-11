@@ -141,7 +141,7 @@ It's technically possible to build without any system files at all, but you will
 If you have installed the RISC-V compiler above, the rest should be simple enough. Just run `build.sh` in the programs folder. It will create a new folder simply called `build` and build all the programs that are defined in `engine/mods/hello_world/scripts/CMakeLists.txt`:
 
 ```
-add_micro_binary(gameplay.elf "src/gameplay.symbols"
+add_micro_binary(gameplay.elf
 	"src/gameplay.cpp"
 	"src/events.cpp"
 )
@@ -152,13 +152,13 @@ It only builds one binary currently, however that binary is used for many purpos
 If you want to build more binaries you can edit `CMakeLists.txt` and add a new binary like so:
 
 ```
-add_micro_binary(my.elf "src/my.symbols"
+add_micro_binary(my.elf
 	"src/mycode.cpp"
 	"src/morecode.cpp"
 )
 ```
 
-You can share symbol file with any other binaries, and if you don't have a particular symbol that is listed that is fine. It should be possible to reuse the same symbol file for all binaries. The symbol file is a list of symbols that are public, and can be called from outside of the machine. In other words, if `start` is made public, by adding it to a symbols file, then you can call the function froom the outside like so: `myscript.call("start")`.
+Any functions you want to be callable from outside must be listed in the symbols file, usually `programs/symbols.map`. The file is shared between all programs. The symbol file is a text file with a list of symbols that are public, and can be called from the engine. In other words, if `start` is made public, by adding it to a symbols file, then you can call the function from the engine like so: `myscript.call("start")`.
 
 There is a lot of helper functionality built to make it easy to drop in new programs. See `engine/src/main.cpp` for some example code.
 
