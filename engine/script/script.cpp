@@ -7,8 +7,13 @@ using gaddr_t = Script::gaddr_t;
 #include <fstream> // Windows doesn't implement C getline()
 #include <sstream>
 #include "machine/include_api.hpp"
-
 // the shared area is read-write for the guest
+static const uint64_t STACK_BASE = 0x6000;
+static const uint64_t SHM_BASE   = 0x2000;
+static const uint64_t SHM_SIZE   = 2 * riscv::Page::size();
+// Memory area used by remote function calls and such
+static std::array<uint8_t, SHM_SIZE> shared_memory {};
+
 using riscv::crc32;
 
 Script::Script(const machine_t& smach, void* userptr, const std::string& name, bool debug)
@@ -43,28 +48,28 @@ bool Script::reset()
 
 void Script::add_shared_memory()
 {
-	const int heap_pageno   = heap_area() >> riscv::Page::SHIFT;
-
-	static int counter = 0;
-	const int stack_pageno  = heap_pageno - 2 - counter;
-	// Separate each stack base address by 32 pages, for each machine.
-	// This will make it simple to mirror stacks when calling remotely.
-	counter = (counter + 32) % 256;
-
 	auto& mem = machine().memory;
-	const auto stack_addr = (gaddr_t) stack_pageno * riscv::Page::size();
+	const auto heap_pageno  = heap_area() / riscv::Page::size();
+	const auto stack_pageno = (mem.stack_initial() / riscv::Page::size())-2;
+	const auto stack_baseno = STACK_BASE / riscv::Page::size();
+
+	const auto stack_addr = stack_pageno * riscv::Page::size();
 	mem.set_stack_initial(stack_addr);
 
 	// I don't like this, but we will do it like this for now
 	auto* main_thread = machine().threads().get_thread();
-	main_thread->stack_size = 32 * riscv::Page::size();
-	main_thread->stack_base = stack_addr - main_thread->stack_size;
+	main_thread->stack_size = stack_addr - STACK_BASE;
+	main_thread->stack_base = STACK_BASE;
+	//printf("Stack base: 0x%lX size: 0x%lX end: 0x%lX\n",
+	//	main_thread->stack_base, main_thread->stack_size,
+	//	stack_addr);
 
-	// Install our shared guard-page around the shared-
-	// memory area, put the shared page in the middle.
-	auto& guard_page = riscv::Page::guard_page();
-	// this separates heap and stack
-	mem.install_shared_page(stack_pageno,    guard_page);
+	// Shared memory area between all programs
+	mem.insert_non_owned_memory(SHM_BASE, &shared_memory[0], SHM_SIZE);
+
+	// This separates the heap, stack and shared memory areas
+	mem.install_shared_page(stack_pageno, riscv::Page::guard_page());
+	mem.install_shared_page(stack_baseno-1, riscv::Page::guard_page());
 }
 
 bool Script::initialize()

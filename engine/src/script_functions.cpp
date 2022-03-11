@@ -78,21 +78,12 @@ inline void do_farcall(machine_t& machine, Script& dest, gaddr_t addr)
 		regs.getfl(10 + i) = current.getfl(10 + i);
 	}
 
-	// Page-sharing mechanisms
-	dest.machine().memory.set_page_readf_handler(
-		[&m = machine.memory] (const auto&, size_t pageno) -> const auto& {
-			return m.get_readable_pageno(pageno);
-		});
-
 	// vmcall with no arguments to avoid clobbering registers
 	if constexpr (!Preempt) {
 		machine.set_result(dest.call(addr));
 	} else {
 		machine.set_result(dest.preempt(addr));
 	}
-
-	// Restore regular page faults on unreadable memory
-	dest.machine().memory.set_page_readf_handler(nullptr);
 	// we short-circuit the ret pseudo-instruction:
 	machine.cpu.jump(machine.cpu.reg(riscv::REG_RA) - 4);
 }
@@ -143,8 +134,8 @@ APICALL(api_farcall_direct)
 
 APICALL(api_interrupt)
 {
-	const auto [mhash, fhash] =
-		machine.template sysargs <uint32_t, uint32_t> ();
+	const auto [mhash, fhash, data, size] =
+		machine.template sysargs <uint32_t, uint32_t, gaddr_t, gaddr_t> ();
 	auto* script = Scripts::get(mhash);
 	if (script == nullptr) {
 		machine.set_result(-1);
@@ -153,7 +144,13 @@ APICALL(api_interrupt)
 	// vmcall with no arguments to avoid clobbering registers
 	const auto faddr = script->api_function_from_hash(fhash);
 	if (LIKELY(faddr != 0)) {
-		do_farcall<true> (machine, *script, faddr);
+		// allocate room for work item on remote
+		const EphemeralAlloc alloc { *script, size };
+		// copy data into remote machine
+		script->machine().memory.memcpy(alloc.addr, machine, data, size);
+		// interrupt the machine
+		machine.set_result(
+			script->preempt(faddr, (gaddr_t)alloc.addr, (gaddr_t)alloc.size));
 		return;
 	}
 	fmt::print(stderr,

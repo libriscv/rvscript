@@ -29,7 +29,7 @@ inline long measure(const char* testname, T testfunc)
 
 extern "C" void (*farcall_helper) ();
 extern "C" void (*direct_farcall_helper) ();
-extern "C" void (*interrupt_helper) ();
+extern "C" void interrupt_helper (uint32_t, uint32_t, const void*, size_t);
 
 template <typename Func>
 struct FarCall {
@@ -69,19 +69,13 @@ struct ExecuteRemotely {
 	}
 };
 
-template <typename Func, typename... Args>
-inline auto interrupt(uint32_t mhash, uint32_t fhash, Args... args)
+inline auto interrupt(uint32_t mhash, uint32_t fhash, const void* data, size_t size)
 {
-	static_assert( std::is_invocable_v<Func, Args...> );
-	using Ret = typename std::invoke_result<Func, Args...>::type;
-	using FP = Ret(*)(uint32_t, uint32_t, Args...);
-
-	auto fptr = reinterpret_cast<FP> (&interrupt_helper);
-	return fptr(mhash, fhash, args...);
+	interrupt_helper(mhash, fhash, data, size);
 }
 inline long interrupt(uint32_t mhash, uint32_t fhash)
 {
-	return syscall(ECALL_INTERRUPT, mhash, fhash);
+	return syscall(ECALL_INTERRUPT, mhash, fhash, 0, 0);
 }
 #define INTERRUPT(mach, function, ...) \
 		api::interrupt(crc32(mach), crc32(function), ## __VA_ARGS__)

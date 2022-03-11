@@ -188,24 +188,25 @@ PUBLIC(void start())
 
 	measure("Benchmarking overhead", empty_function);
 	measure("Multi-processing overhead", multiprocessing_overhead);
-	measure("Multi-processing dotprod", test_multiprocessing);
-	measure("Single-processing dotprod", test_singleprocessing);
+	//measure("Multi-processing dotprod", test_multiprocessing);
+	//measure("Single-processing dotprod", test_singleprocessing);
 
 	/* This incantation creates a callable object that when called, tells
 	   the engine to find the "gameplay2" machine, and then make a call
 	   into it with the provided function and arguments. */
 	ExecuteRemotely somefunc("gameplay2", some_function);
-	/* The engine will detect if we are passing a reference to the stack,
-	   and then mount this stack into the remote machine. That allows for
-	   passing stack data as arguments to remote machines, with no copying. */
-	SomeStruct some {
+	/* We will need to put the struct on a shared memory area, so that it
+	   will be visible and writable on both sides. */
+	SharedMemoryArea shm;
+	auto& some = shm(SomeStruct{
 		.string = "Hello 123!",
 		.value  = 42
-	};
+	});
 	/* This is the actual remote function call. It has to match the
 	   definition of some_function, or you get a compile error. */
 	int r = somefunc(1234, some);
 	print("Back again in the start() function! Return value: ", r, "\n");
+	print("Some struct string: ", some.string, "\n");
 
 	Game::breakpoint();
 
@@ -263,6 +264,7 @@ long some_function(int value, SomeStruct& some)
 	print("Hello Remote World! value = ", value, "!\n");
 	print("Some struct string: ", some.string, "\n");
 	print("Some struct value: ", some.value, "\n");
+	some.string = "Hello 456!";
 	return value;
 }
 

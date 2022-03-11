@@ -1,13 +1,17 @@
 #include "engine.hpp"
 
-__attribute__((noinline)) void trap()
-{
-	__builtin_trap();
-}
-
 void halt()
 {
 	asm (".insn i SYSTEM, 0, x0, x0, 0x7ff");
+}
+
+SharedMemoryArea::SharedMemoryArea()
+	: m_shm {*(SharedMemoryArray *)(void*)SHM_BASE}
+{}
+void* SharedMemoryArea::push(const void* data, size_t size, size_t align)
+{
+	auto* dst = this->realign(size, align);
+	return memcpy(dst, data, size);
 }
 
 static_assert(ECALL_FARCALL == 105,

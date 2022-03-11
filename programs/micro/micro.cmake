@@ -68,7 +68,7 @@ function (add_verfile NAME VERFILE)
 endfunction()
 
 function (add_micro_binary NAME)
-	# work-around for CMake not knowing the files are generated
+	# Find dyncall API and mark the files as generated
 	set(DYNCALL_API
 		${CMAKE_BINARY_DIR}/dyncalls/dyncall_api.cpp
 		${CMAKE_BINARY_DIR}/dyncalls/dyncall_api.h)
