@@ -33,19 +33,17 @@ inline void expect_check(Expr expr, const char* strexpr,
 template <typename... Args>
 inline void print(Args&&... args)
 {
-	char buffer[1024];
+	char buffer[2048];
 	auto res = strf::to(buffer) (std::forward<Args> (args)...);
 	const size_t size = res.ptr - buffer;
 
-/*	register const char* a0 asm("a0") = buffer;
+	register const char* a0 asm("a0") = buffer;
 	register size_t      a1 asm("a1") = size;
 	register long syscall_id asm("a7") = ECALL_WRITE;
 	register long        a0_out asm("a0");
 
 	asm volatile ("ecall" : "=r"(a0_out)
-		: "m"(*(const char(*)[size]) a0), "r"(a1), "r"(syscall_id) : "memory");
-*/
-	sys_write(buffer, size);
+		: "r"(a0), "m"(*(const char(*)[size]) a0), "r"(a1), "r"(syscall_id));
 }
 
 template <typename T>

@@ -1,6 +1,5 @@
 #include "script_functions.hpp"
 #include <libriscv/threads.hpp>
-#include <libriscv/multiprocessing.hpp>
 #include <script/machine/include_api.hpp>
 #include <cmath>
 #include <fmt/core.h>
