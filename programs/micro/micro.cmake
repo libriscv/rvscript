@@ -77,6 +77,12 @@ function (add_micro_binary NAME)
 	add_executable(${NAME} ${ARGN} ${DYNCALL_API})
 	target_include_directories(${NAME} PUBLIC ${CMAKE_BINARY_DIR}/dyncalls)
 	add_dependencies(${NAME} generate_dyncalls)
+	# Wrappers for standard memory and string functions
+	target_link_libraries(${NAME} -Wl,--wrap,memset -Wl,--wrap,memcpy -Wl,--wrap,memmove -Wl,--wrap,memcmp)
+	target_link_libraries(${NAME} -Wl,--wrap,strlen -Wl,--wrap,strcmp -Wl,--wrap,strncmp)
+	# Wrappers for heap management
+	target_link_libraries(${NAME} -Wl,--wrap,malloc,--wrap,calloc,--wrap,realloc,--wrap,free)
+	# Add the whole libc directly as source files
 	target_link_libraries(${NAME} -static -Wl,--whole-archive libc -Wl,--no-whole-archive)
 	target_link_libraries(${NAME} frozen::frozen)
 	# place ELF into the sub-projects source folder

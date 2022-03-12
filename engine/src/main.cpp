@@ -14,13 +14,13 @@ int main()
 	/* "gameplay.elf" program embedded into the engine (by the build system) */
 	extern char _binary_gameplay_elf_start;
 	extern char _binary_gameplay_elf_end;
-	extern char _binary_gameplay_symbols_start;
-	extern char _binary_gameplay_symbols_end;
+	extern char _binary_symbols_map_start;
+	extern char _binary_symbols_map_end;
 	const size_t binary_size = &_binary_gameplay_elf_end - &_binary_gameplay_elf_start;
-	const size_t symbols_size = &_binary_gameplay_symbols_end - &_binary_gameplay_symbols_start;
+	const size_t symbols_size = &_binary_symbols_map_end - &_binary_symbols_map_start;
 	Scripts::embedded_binary("gameplay",
 		std::string_view{&_binary_gameplay_elf_start, binary_size},
-		std::string_view{&_binary_gameplay_symbols_start, symbols_size});
+		std::string_view{&_binary_symbols_map_start, symbols_size});
 #endif
 
 	Script::setup_syscall_interface();

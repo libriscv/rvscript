@@ -42,6 +42,10 @@ bool Script::reset()
 	}
 	// setup system calls and traps
 	this->machine_setup();
+	// ensures new stack pointer is set
+	machine().cpu.reset_stack_pointer();
+	// setup program argv *after* setting new stack pointer
+	machine().setup_argv({name()});
 
 	return true;
 }
@@ -50,7 +54,7 @@ void Script::add_shared_memory()
 {
 	auto& mem = machine().memory;
 	const auto heap_pageno  = heap_area() / riscv::Page::size();
-	const auto stack_pageno = (mem.stack_initial() / riscv::Page::size())-2;
+	const auto stack_pageno = (mem.stack_initial() / riscv::Page::size()) - 1;
 	const auto stack_baseno = STACK_BASE / riscv::Page::size();
 
 	const auto stack_addr = stack_pageno * riscv::Page::size();
@@ -67,8 +71,8 @@ void Script::add_shared_memory()
 	// Shared memory area between all programs
 	mem.insert_non_owned_memory(SHM_BASE, &shared_memory[0], SHM_SIZE);
 
-	// This separates the heap, stack and shared memory areas
-	mem.install_shared_page(stack_pageno, riscv::Page::guard_page());
+	// This separates the program, stack and shared memory areas
+	mem.install_shared_page(stack_pageno,   riscv::Page::guard_page());
 	mem.install_shared_page(stack_baseno-1, riscv::Page::guard_page());
 }
 
@@ -114,11 +118,11 @@ void Script::machine_setup()
 			fmt::print(stderr, "Unhandled system call: {}\n", number);
 		};
 
+	// install shared memory area and guard pages
+	this->add_shared_memory();
 	// we need to pass the .eh_frame location to a supc++ function,
 	// if C++ RTTI and Exceptions is enabled
 	machine().cpu.reg(11) = machine().memory.resolve_section(".eh_frame");
-	// install the shared memory area
-	this->add_shared_memory();
 }
 void Script::handle_exception(gaddr_t address)
 {

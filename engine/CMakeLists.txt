@@ -52,7 +52,7 @@ endfunction()
 
 if (EMBEDDED_MODE)
     embed_file(engine "${CMAKE_SOURCE_DIR}/mods/hello_world/scripts" "gameplay.elf")
-    embed_file(engine "${CMAKE_SOURCE_DIR}/mods/hello_world/scripts/src" "gameplay.symbols")
+    embed_file(engine "${CMAKE_SOURCE_DIR}/../programs" "symbols.map")
     target_compile_definitions(engine PUBLIC EMBEDDED_MODE=1)
 endif()
 
