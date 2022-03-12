@@ -50,7 +50,7 @@ float smoothstep(float, float, float);
 using multiprocess_func_t = void(*)(int, void*);
 unsigned multiprocess(unsigned cpus);
 unsigned multiprocess(unsigned cpus, multiprocess_func_t func, void* data);
-void multiprocess_wait();
+long multiprocess_wait();
 
 // only see the implementation on RISC-V
 #ifdef __riscv
@@ -71,21 +71,4 @@ struct MapFile {
 #endif
 	int  width;
 	int  height;
-};
-
-struct GameplayException : public std::exception
-{
-	explicit GameplayException(const std::string& message, std::source_location sl = std::source_location::current())
-		: m_msg(message), m_location(sl) {}
-	virtual ~GameplayException() throw() {}
-
-	const auto& location() const throw() {
-        return m_location;
-    }
-    const char* what() const throw() override {
-        return m_msg.c_str();
-    }
-private:
-	const std::string m_msg;
-	const std::source_location m_location;
 };

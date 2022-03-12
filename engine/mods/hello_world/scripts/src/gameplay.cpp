@@ -89,7 +89,7 @@ static void multiprocessing_function(int cpu, void* vdata)
 static void multiprocessing_dummy(int, void*)
 {
 }
-static void multiprocessing_forever(int, void*)
+static void multiprocessing_forever()
 {
 	while (true);
 }
@@ -108,6 +108,7 @@ static void test_singleprocessing()
 static void test_multiprocessing()
 {
 	mp_work.workers = MP_WORKERS;
+	long result = -1;
 
 	// Start N extra vCPUs and execute the function
 #ifndef MULTIPROCESS_FORK
@@ -116,7 +117,7 @@ static void test_multiprocessing()
 	// in RISC-V assembly.
 	multiprocess(MP_WORKERS, multiprocessing_function<WORK_SIZE>, &mp_work);
 	// Wait and stop workers here
-	multiprocess_wait();
+	result = multiprocess_wait();
 #else
 	// Method 2: Fork this machine and wait until multiprocessing
 	// ends, by calling multiprocess_wait() on all workers. Each
@@ -125,9 +126,8 @@ static void test_multiprocessing()
 	unsigned cpu = multiprocess(MP_WORKERS);
 	if (cpu != 0) {
 		multiprocessing_function<WORK_SIZE> (cpu-1, &mp_work);
-		// Finish multiprocessing here
-		multiprocess_wait();
 	}
+	result = multiprocess_wait();
 #endif
 
 	// Sum the work together
@@ -135,7 +135,17 @@ static void test_multiprocessing()
 	if (work_output) {
 		print("Multi-process sum = ", (double)sum, "\n");
 		print("Multi-process counter = ", mp_work.counter, "\n");
+		print("Multi-process result = ", result, "\n");
 	}
+}
+static void test_multiprocessing_forever()
+{
+	unsigned cpu = multiprocess(4);
+	if (cpu != 0) {
+		multiprocessing_forever();
+	}
+	long res = multiprocess_wait();
+	print("Forever multiprocessing result: ", res, "\n");
 }
 static void multiprocessing_overhead()
 {
@@ -167,6 +177,7 @@ PUBLIC(void start())
 	initialize_work(mp_work);
 	work_output = true;
 	test_multiprocessing();
+	test_multiprocessing_forever();
 	test_singleprocessing();
 	work_output = false;
 

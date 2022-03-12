@@ -1,5 +1,6 @@
 #include "script_functions.hpp"
 #include <libriscv/threads.hpp>
+#include <libriscv/multiprocessing.hpp>
 #include <script/machine/include_api.hpp>
 #include <cmath>
 #include <fmt/core.h>
@@ -184,11 +185,11 @@ APICALL(api_multiprocess_fork)
 APICALL(api_multiprocess_wait)
 {
 	if (machine.cpu.cpu_id() == 0) {
-		machine.multiprocess_wait();
+		machine.set_result(machine.multiprocess_wait());
 	} else {
 		machine.stop();
+		machine.set_result(0);
 	}
-	machine.set_result(0);
 }
 
 APICALL(api_each_frame)
