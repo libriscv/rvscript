@@ -170,13 +170,12 @@ PUBLIC(void start())
 	test_singleprocessing();
 	work_output = false;
 
-#ifdef __EXCEPTIONS
 	try {
-		throw "";
-	} catch (...) {
-		print("Exception caught!\n");
+		throw GameplayException("This is a test!");
+	} catch (const GameplayException& ge) {
+		print("Exception caught: ", ge.what(), "!\n");
+		print("Exception thrown from: ", ge.location().function_name(), ", line ", ge.location().line(), "\n");
 	}
-#endif
 
 	/* This function makes thousands of calls into this machine,
 	   while preserving registers, and then prints some statistics. */

@@ -73,7 +73,19 @@ struct MapFile {
 	int  height;
 };
 
-#ifdef __riscv
-extern void map_main(MapFile*);
+struct GameplayException : public std::exception
+{
+	explicit GameplayException(const std::string& message, std::source_location sl = std::source_location::current())
+		: m_msg(message), m_location(sl) {}
+	virtual ~GameplayException() throw() {}
 
-#endif
+	const auto& location() const throw() {
+        return m_location;
+    }
+    const char* what() const throw() override {
+        return m_msg.c_str();
+    }
+private:
+	const std::string m_msg;
+	const std::source_location m_location;
+};

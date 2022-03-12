@@ -120,9 +120,6 @@ void Script::machine_setup()
 
 	// install shared memory area and guard pages
 	this->add_shared_memory();
-	// we need to pass the .eh_frame location to a supc++ function,
-	// if C++ RTTI and Exceptions is enabled
-	machine().cpu.reg(11) = machine().memory.resolve_section(".eh_frame");
 }
 void Script::handle_exception(gaddr_t address)
 {

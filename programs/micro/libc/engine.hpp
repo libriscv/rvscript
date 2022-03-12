@@ -1,5 +1,6 @@
 #pragma once
-#include <new>
+#include <exception>
+#include <source_location>
 #include <utility>
 #include <syscalls.h>
 #include <strf.hpp>
@@ -41,3 +42,10 @@ inline auto rdtime()
 	asm ("rdtimeh %0\n rdtime %1\n" : "=r"(word[1]), "=r"(word[0]) :: "memory");
 	return whole;
 }
+
+extern "C" long sys_write(const char*, size_t);
+extern "C" void (*farcall_helper) ();
+extern "C" void (*direct_farcall_helper) ();
+extern "C" void sys_interrupt (uint32_t, uint32_t, const void*, size_t);
+extern "C" long sys_multiprocess_fork(unsigned);
+extern "C" long sys_multiprocess_wait();

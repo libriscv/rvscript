@@ -14,6 +14,14 @@ void* SharedMemoryArea::push(const void* data, size_t size, size_t align)
 	return memcpy(dst, data, size);
 }
 
+static_assert(ECALL_WRITE == 102,
+	"The write syscall number is hard-coded in assembly");
+asm(".global sys_write\n"
+"sys_write:\n"
+"	li a7, 102\n"
+"	ecall\n"
+"   ret\n");
+
 static_assert(ECALL_FARCALL == 105,
 	"The farcall syscall number is hard-coded in assembly");
 asm(".global farcall_helper\n"
@@ -32,8 +40,8 @@ asm(".global direct_farcall_helper\n"
 
 static_assert(ECALL_INTERRUPT == 107,
 	"The interrupt syscall number is hard-coded in assembly");
-asm(".global interrupt_helper\n"
-"interrupt_helper:\n"
+asm(".global sys_interrupt\n"
+"sys_interrupt:\n"
 "	li a7, 107\n"
 "	ecall\n"
 "   ret\n"

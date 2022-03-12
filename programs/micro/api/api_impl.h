@@ -18,7 +18,17 @@ inline void print(Args&&... args)
 {
 	char buffer[1024];
 	auto res = strf::to(buffer) (std::forward<Args> (args)...);
-	psyscall(ECALL_WRITE, buffer, res.ptr - buffer);
+	const size_t size = res.ptr - buffer;
+
+/*	register const char* a0 asm("a0") = buffer;
+	register size_t      a1 asm("a1") = size;
+	register long syscall_id asm("a7") = ECALL_WRITE;
+	register long        a0_out asm("a0");
+
+	asm volatile ("ecall" : "=r"(a0_out)
+		: "m"(*(const char(*)[size]) a0), "r"(a1), "r"(syscall_id) : "memory");
+*/
+	sys_write(buffer, size);
 }
 
 template <typename T>
@@ -26,10 +36,6 @@ inline long measure(const char* testname, T testfunc)
 {
 	return syscall(ECALL_MEASURE, (long) testname, (long) static_cast<void(*)()>(testfunc));
 }
-
-extern "C" void (*farcall_helper) ();
-extern "C" void (*direct_farcall_helper) ();
-extern "C" void interrupt_helper (uint32_t, uint32_t, const void*, size_t);
 
 template <typename Func>
 struct FarCall {
@@ -71,7 +77,7 @@ struct ExecuteRemotely {
 
 inline auto interrupt(uint32_t mhash, uint32_t fhash, const void* data, size_t size)
 {
-	interrupt_helper(mhash, fhash, data, size);
+	sys_interrupt(mhash, fhash, data, size);
 }
 inline long interrupt(uint32_t mhash, uint32_t fhash)
 {
@@ -86,13 +92,11 @@ inline uint32_t current_machine()
 }
 #define RUNNING_ON(mach) (api::current_machine() == crc32(mach))
 
-extern "C" long sys_multiprocess(unsigned, void*, size_t, multiprocess_func_t, void*);
-extern "C" long sys_multiprocess_fork(unsigned);
-extern "C" long sys_multiprocess_wait();
 static struct {
 	uint64_t* stacks = nullptr;
 	unsigned  cpus = 0;
 } mp_data;
+extern "C" long sys_multiprocess(unsigned, void*, size_t, multiprocess_func_t, void*);
 inline unsigned multiprocess(unsigned cpus, multiprocess_func_t func, void* data)
 {
 	constexpr size_t STACK_SIZE = 512 * 1024u;
