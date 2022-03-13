@@ -103,7 +103,7 @@ static void test_singleprocessing()
 
 	const float sum = mp_work.final_sum();
 	if (work_output)
-		print("Single-process sum = ", (double)sum, "\n");
+		print("Single-process sum = ", sum, "\n");
 }
 static void test_multiprocessing()
 {
@@ -133,7 +133,7 @@ static void test_multiprocessing()
 	// Sum the work together
 	const float sum = mp_work.final_sum();
 	if (work_output) {
-		print("Multi-process sum = ", (double)sum, "\n");
+		print("Multi-process sum = ", sum, "\n");
 		print("Multi-process counter = ", mp_work.counter, "\n");
 		print("Multi-process result = ", result, "\n");
 	}
