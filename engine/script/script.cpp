@@ -53,20 +53,18 @@ bool Script::reset()
 void Script::add_shared_memory()
 {
 	auto& mem = machine().memory;
-	const auto heap_pageno  = heap_area() / riscv::Page::size();
 	const auto stack_pageno = (mem.stack_initial() / riscv::Page::size()) - 1;
 	const auto stack_baseno = STACK_BASE / riscv::Page::size();
 
 	const auto stack_addr = stack_pageno * riscv::Page::size();
 	mem.set_stack_initial(stack_addr);
 
-	// I don't like this, but we will do it like this for now
+	// Each thread should have its own stack, but the boundaries are
+	// usually not known. To help out things like forked multiprocessing
+	// we will add the boundaries for the main thread manually.
 	auto* main_thread = machine().threads().get_thread();
 	main_thread->stack_size = stack_addr - STACK_BASE;
 	main_thread->stack_base = STACK_BASE;
-	//printf("Stack base: 0x%lX size: 0x%lX end: 0x%lX\n",
-	//	main_thread->stack_base, main_thread->stack_size,
-	//	stack_addr);
 
 	// Shared memory area between all programs
 	mem.insert_non_owned_memory(SHM_BASE, &shared_memory[0], SHM_SIZE);
