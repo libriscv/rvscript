@@ -1,4 +1,6 @@
 **/build/
-**/gcc_build/
+**/build_*/
+**/riscv32-unknown-elf/
+**/riscv64-unknown-elf/
 *.elf
 engine/engine

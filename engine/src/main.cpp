@@ -165,7 +165,11 @@ int main()
 void do_nim_testing(bool debug)
 {
 	/* If the nim program was built, we can run hello_nim */
-	#define NIMPATH  "../programs/micronim/riscv64-unknown-elf"
+#if RISCV_ARCH == 32
+#   define NIMPATH  "../programs/micronim/riscv32-unknown-elf"
+#else
+#   define NIMPATH  "../programs/micronim/riscv64-unknown-elf"
+#endif
 	const char* nimfile = NIMPATH "/hello_nim";
 	if (access(nimfile, F_OK) == 0)
 	{
