@@ -31,7 +31,7 @@ struct SharedMemoryArea
 private:
 	void* realign(size_t size, size_t align) {
 		m_current = (char*)(((uintptr_t)m_current - size) & -align);
-		assert(m_current >= m_shm->begin());
+		assert(m_current >= m_shm.begin());
 		return m_current;
 	}
 	static constexpr uintptr_t ALIGN = 8;
