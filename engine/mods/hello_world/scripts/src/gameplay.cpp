@@ -16,8 +16,14 @@ int main()
 /* These are used for benchmarking */
 static void empty_function() {
 }
-static void thread_function() {
-	microthread::oneshot([] { /* ... */ });
+static void full_thread_function() {
+	microthread::create([] (int, int, int) { /* ... */ }, 1, 2, 3);
+}
+static void oneshot_thread_function() {
+	microthread::oneshot([] (int, int, int) { /* ... */ }, 1, 2, 3);
+}
+static void direct_thread_function() {
+	microthread::direct([] { /* ... */ });
 }
 static void dyncall_handler() {
 	sys_empty();
@@ -191,7 +197,9 @@ PUBLIC(void start())
 	/* This function makes thousands of calls into this machine,
 	   while preserving registers, and then prints some statistics. */
 	measure("VM function call overhead", empty_function);
-	measure("Thread creation overhead", thread_function);
+	measure("Full thread creation overhead", full_thread_function);
+	measure("Oneshot thread creation overhead", oneshot_thread_function);
+	measure("Direct thread creation overhead", direct_thread_function);
 	measure("Dynamic call handler", dyncall_handler);
 	measure("Farcall lookup", farcall_lookup_testcall);
 	measure("Farcall direct", direct_farcall_testcall);
@@ -200,6 +208,32 @@ PUBLIC(void start())
 	measure("Multi-processing overhead", multiprocessing_overhead);
 	//measure("Multi-processing dotprod", test_multiprocessing);
 	//measure("Single-processing dotprod", test_singleprocessing);
+
+	int a = 1, b = 2, c = 3;
+	microthread::oneshot([] (int a, int b, int c) {
+		print("Hello from thread 1! a = ", a, ", b = ", b, ", c = ", c, "\n");
+		microthread::yield();
+		print("And we're back! a = ", a, ", b = ", b, ", c = ", c, "\n");
+	}, a, b, c);
+
+	print("Back in the main thread .. going back!\n");
+	a = 2; b = 4; c = 6;
+	microthread::yield();
+
+	auto thread = microthread::create(
+		[] (int a, int b, int c) {
+			print("Hello from thread 2! a = ", a, ", b = ", b, ", c = ", c, "\n");
+			microthread::yield();
+			print("Anyone going to join us? Returning 666.\n");
+			// Since the main thread is joining this thread,
+			// we should be able to spin-yield a bit.
+			for (size_t i = 0; i < 100; i++)
+				microthread::yield();
+			return 666;
+		}, a, b, c);
+	print("Joining the thread any time now...\n");
+	auto retval = microthread::join(thread);
+	print("Full thread exited, return value: ", retval, "\n");
 
 	/* This incantation creates a callable object that when called, tells
 	   the engine to find the "gameplay2" machine, and then make a call

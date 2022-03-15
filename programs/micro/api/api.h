@@ -58,6 +58,8 @@ long multiprocess_wait();
 #endif
 }
 
+#define PUBLIC(x) extern "C" __attribute__((used, retain)) x
+
 /** Startup function and arguments **/
 struct MapFile {
 #ifdef __riscv
@@ -65,9 +67,9 @@ struct MapFile {
 	const char* file;
 	const char* event;
 #else
-	uint32_t path;
-	uint32_t file;
-	uint32_t event;
+	gaddr_t path;
+	gaddr_t file;
+	gaddr_t event;
 #endif
 	int  width;
 	int  height;

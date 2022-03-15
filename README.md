@@ -36,34 +36,47 @@ The output from the program should look like this after completion:
 >>> [gameplay1] says: Forever multiprocessing result: -1
 >>> [gameplay1] says: Single-process sum = 8192
 >>> [gameplay1] says: Exception caught: This is a test!!
->>> [gameplay1] says: Exception thrown from: void start(), line 185
-> median 6ns  		lowest: 6ns     	highest: 7ns
->>> Measurement "VM function call overhead" median: 6 nanos
+>>> [gameplay1] says: Exception thrown from: void start(), line 191
+> median 7ns  		lowest: 7ns     	highest: 8ns
+>>> Measurement "VM function call overhead" median: 7 nanos
 
-> median 159ns  		lowest: 159ns     	highest: 161ns
->>> Measurement "Thread creation overhead" median: 159 nanos
+> median 206ns  		lowest: 203ns     	highest: 391ns
+>>> Measurement "Full thread creation overhead" median: 206 nanos
 
-> median 25ns  		lowest: 24ns     	highest: 35ns
->>> Measurement "Dynamic call handler" median: 25 nanos
+> median 225ns  		lowest: 225ns     	highest: 237ns
+>>> Measurement "Oneshot thread creation overhead" median: 225 nanos
 
-> median 50ns  		lowest: 50ns     	highest: 70ns
->>> Measurement "Farcall lookup" median: 50 nanos
+> median 105ns  		lowest: 104ns     	highest: 329ns
+>>> Measurement "Direct thread creation overhead" median: 105 nanos
 
-> median 38ns  		lowest: 38ns     	highest: 40ns
->>> Measurement "Farcall direct" median: 38 nanos
+> median 26ns  		lowest: 26ns     	highest: 26ns
+>>> Measurement "Dynamic call handler" median: 26 nanos
 
-> median 7ns  		lowest: 6ns     	highest: 7ns
->>> Measurement "Benchmarking overhead" median: 7 nanos
+> median 54ns  		lowest: 54ns     	highest: 55ns
+>>> Measurement "Farcall lookup" median: 54 nanos
 
-> median 10183ns  		lowest: 9741ns     	highest: 10914ns
->>> Measurement "Multi-processing overhead" median: 10183 nanos
+> median 55ns  		lowest: 53ns     	highest: 57ns
+>>> Measurement "Farcall direct" median: 55 nanos
 
+> median 8ns  		lowest: 8ns     	highest: 8ns
+>>> Measurement "Benchmarking overhead" median: 8 nanos
+
+> median 11252ns  		lowest: 10518ns     	highest: 11941ns
+>>> Measurement "Multi-processing overhead" median: 11252 nanos
+
+>>> [gameplay1] says: Hello from thread 1! a = 1, b = 2, c = 3
+>>> [gameplay1] says: Back in the main thread .. going back!
+>>> [gameplay1] says: And we're back! a = 1, b = 2, c = 3
+>>> [gameplay1] says: Hello from thread 2! a = 2, b = 4, c = 6
+>>> [gameplay1] says: Joining the thread any time now...
+>>> [gameplay1] says: Anyone going to join us? Returning 666.
+>>> [gameplay1] says: Full thread exited, return value: 666
 >>> [gameplay2] says: Hello Remote World! value = 1234!
 >>> [gameplay2] says: Some struct string: Hello 123!
 >>> [gameplay2] says: Some struct value: 42
 >>> [gameplay1] says: Back again in the start() function! Return value: 1234
 >>> [gameplay1] says: Some struct string: Hello 456!
-Skipped over breakpoint in gameplay1:0x1205A0. Break here with DEBUG=1.
+Skipped over breakpoint in gameplay1:0x1205E4. Break here with DEBUG=1.
 >>> [gameplay1] says: Hello Microthread World!
 >>> [gameplay1] says: Back again in the start() function!
 ...
@@ -82,12 +95,12 @@ Calling 'myobject_death' in 'gameplay2'
 >>> [gameplay2] says: Object 'myobject' is dying!
 ...
 Benchmarking full fork:
-> median 1202ns  		lowest: 1166ns     	highest: 1273ns
+> median 1437ns  		lowest: 1383ns     	highest: 6913ns
 Benchmarking reset:
-> median 1207ns  		lowest: 1198ns     	highest: 1268ns
+> median 1397ns  		lowest: 1370ns     	highest: 1587ns
 ...
 >>> [nim] says: Before debugging
-Skipped over breakpoint in nim:0x120234. Break here with DEBUG=1.
+Skipped over breakpoint in nim:0x12023C. Break here with DEBUG=1.
 >>> [nim] says: Hello Nim World!
 {
   "name": "Hello",
@@ -96,7 +109,7 @@ Skipped over breakpoint in nim:0x120234. Break here with DEBUG=1.
     "Foundation"
   ]
 }
-> median 22449ns  		lowest: 22279ns     	highest: 22950ns
+> median 28266ns  		lowest: 27982ns     	highest: 29007ns
 ```
 
 This particular output is with C++ RTTI and exceptions enabled.

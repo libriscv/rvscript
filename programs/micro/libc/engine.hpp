@@ -12,7 +12,6 @@
 #include <shared_memory.h>
 constexpr double PI = 3.14159265358979323846;
 extern void halt();
-#define PUBLIC(...) extern "C" __attribute__((used)) __VA_ARGS__
 
 inline auto hart_id()
 {
