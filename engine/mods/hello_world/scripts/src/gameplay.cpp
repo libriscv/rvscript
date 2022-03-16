@@ -206,7 +206,7 @@ PUBLIC(void start())
 
 	measure("Benchmarking overhead", empty_function);
 	measure("Multi-processing overhead", multiprocessing_overhead);
-	//measure("Multi-processing dotprod", test_multiprocessing);
+	measure("Multi-processing dotprod", test_multiprocessing);
 	//measure("Single-processing dotprod", test_singleprocessing);
 
 	int a = 1, b = 2, c = 3;

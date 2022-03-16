@@ -140,12 +140,12 @@ git submodule update --depth 1 --init riscv-binutils
 git submodule update --depth 1 --init riscv-gcc
 git submodule update --depth 1 --init riscv-newlib
 <install dependencies for GCC on your particular system here>
-./configure --prefix=$HOME/riscv --with-arch=rv64g --with-abi=lp64d
+./configure --prefix=$HOME/riscv --with-arch=rv64gc --with-abi=lp64d
 make -j8
 ```
 For 32-bit RISC-V the incantation becomes:
 ```
-./configure --prefix=$HOME/riscv --with-arch=rv32g --with-abi=ilp32d
+./configure --prefix=$HOME/riscv --with-arch=rv32gc --with-abi=ilp32d
 ```
 
 
@@ -310,8 +310,6 @@ myscript.set_dynamic_call("struct_by_ref",
 
 ## Common Issues
 
-- The emulator is jumping to a misaligned instruction, or faulting on some other thing but I know for a fact that the assembly is fine.
-	- You might have to enable an extension such as atomics (RISCV_EXT_A) or compressed (RISCV_EXT_C). These are enabled by default and have to be disabled by something, such as in `engine/build.sh`.
 - After I enabled C++ exceptions and ran a try..catch the emulator seems to just stop.
 	- When you call into the virtual machine you usually give it a budget. A limit on the number of instructions it gets to run for that particular call (or any other limit you impose yourself). If you forget to check if the limit has been reached, then it will just look like it stopped. You can check this by comparing calculating instruction counter + max instructions beforehand, and comparing that to the instruction counter after the call. You can safely resume execution again by calling `machine.simulate()` again, as running out of instructions is not a fatal exception. For example the first C++ exception thrown inside the RISC-V emulator uses a gigaton of instructions and will easily blow the limit.
 - I can't seem to call a public API function in another machine.

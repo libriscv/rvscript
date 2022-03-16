@@ -51,15 +51,6 @@ target_include_directories(libc PUBLIC ${UTILPATH})
 function (add_verfile NAME VERFILE)
 	set_target_properties(${NAME} PROPERTIES LINK_DEPENDS ${VERFILE})
 	target_link_libraries(${NAME} "-Wl,--retain-symbols-file=${VERFILE}")
-	# certain languages don't allow you to mark functions as used
-	# so we need to explicitly keep these functions this way:
-	file(STRINGS "${VERFILE}" SYMBOLS)
-	foreach(SYMBOL ${SYMBOLS})
-		if (NOT ${SYMBOL} STREQUAL "")
-			#message(STATUS "Symbol retained: ${SYMBOL}")
-			target_link_libraries(${NAME} "-Wl,--undefined=${SYMBOL}")
-		endif()
-	endforeach()
 endfunction()
 
 function (add_micro_binary NAME)
