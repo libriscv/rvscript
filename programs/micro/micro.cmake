@@ -36,7 +36,6 @@ endif()
 
 set(BUILD_SHARED_LIBS OFF)
 set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "") # remove -rdynamic
-set(USE_NEWLIB ON)
 
 # enforce correct global include order for our tiny libc
 include_directories(libc)

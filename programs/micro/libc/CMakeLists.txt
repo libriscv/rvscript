@@ -8,9 +8,6 @@ set(LIBC_SOURCES
 	${BBLIBCPATH}/libcxx.cpp
 	${BBLIBCPATH}/microthread.cpp
   )
-if (NOT USE_NEWLIB)
-	list(APPEND LIBC_SOURCES start.cpp)
-endif()
 
 set_source_files_properties(${BBLIBCPATH}/libc.cpp
 	PROPERTIES COMPILE_FLAGS -fno-builtin)
@@ -25,9 +22,7 @@ target_compile_definitions(libc PUBLIC
 	NATIVE_SYSCALLS_BASE=70
 	THREAD_SYSCALLS_BASE=90
 )
-if (USE_NEWLIB)
-	target_compile_definitions(libc PUBLIC
-		USE_NEWLIB=1
-	)
-endif()
+target_compile_definitions(libc PUBLIC
+	USE_NEWLIB=1
+)
 target_link_libraries(libc PUBLIC strf-static-lib)
