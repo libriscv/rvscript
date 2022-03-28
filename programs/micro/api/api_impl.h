@@ -127,7 +127,7 @@ inline unsigned multiprocess(unsigned cpus)
 {
 	return sys_multiprocess_fork(cpus);
 }
-inline long multiprocess_wait()
+inline uint32_t multiprocess_wait()
 {
 	return sys_multiprocess_wait();
 }

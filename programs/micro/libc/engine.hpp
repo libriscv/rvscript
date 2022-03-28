@@ -42,5 +42,5 @@ extern "C" long sys_write(const char*, size_t);
 extern "C" void (*farcall_helper) ();
 extern "C" void (*direct_farcall_helper) ();
 extern "C" void sys_interrupt (uint32_t, uint32_t, const void*, size_t);
-extern "C" long sys_multiprocess_fork(unsigned);
-extern "C" long sys_multiprocess_wait();
+extern "C" unsigned sys_multiprocess_fork(unsigned);
+extern "C" uint32_t sys_multiprocess_wait();

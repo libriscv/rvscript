@@ -14,6 +14,8 @@ void* SharedMemoryArea::push(const void* data, size_t size, size_t align)
 	return memcpy(dst, data, size);
 }
 
+asm(".section .text\n\n");
+
 static_assert(ECALL_WRITE == 502,
 	"The write syscall number is hard-coded in assembly");
 asm(".global sys_write\n"
@@ -57,7 +59,8 @@ asm(".global sys_multiprocess\n"
 // Otherwise, create a function call
 "   addi a0, a0, -1\n" // Subtract 1 from vCPU ID, making it 0..N-1
 "   mv a1, a4\n"       // Move work data to argument 1
-"   jalr zero, a3\n"   // Direct jump to work function
+"   jalr ra, a3\n"     // Direct jump to work function
+"   wfi\n"             // Stop machine directly
 "sys_multiprocess_ret:\n"
 "   ret\n");           // Return to caller
 

@@ -193,7 +193,7 @@ APICALL(api_multiprocess_wait)
 
 APICALL(api_each_frame)
 {
-	auto [addr, reason] = machine.template sysargs <gaddr_t, int> ();
+	auto [addr, reason] = machine.sysargs <gaddr_t, int> ();
 	script(machine).set_tick_event((gaddr_t) addr, (int) reason);
 	machine.set_result(0);
 }

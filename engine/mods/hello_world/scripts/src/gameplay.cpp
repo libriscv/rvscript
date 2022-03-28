@@ -65,7 +65,7 @@ struct MultiprocessWork {
 };
 static constexpr size_t WORK_SIZE = 8192;
 static constexpr size_t MP_WORKERS = 4;
-#define MULTIPROCESS_FORK
+//#define MULTIPROCESS_FORK
 static bool work_output = false;
 static MultiprocessWork<WORK_SIZE> mp_work;
 template <size_t SIZE>
@@ -76,11 +76,9 @@ static void initialize_work(MultiprocessWork<SIZE>& work) {
 	}
 }
 
-template <size_t SIZE>
 static void multiprocessing_function(int cpu, void* vdata)
 {
-	asm("" ::: "memory");
-	auto& work = *(MultiprocessWork<SIZE> *)vdata;
+	auto& work = *(MultiprocessWork<WORK_SIZE> *)vdata;
 	const size_t start = (cpu + 0) * work.work_size();
 	const size_t end   = (cpu + 1) * work.work_size();
 
@@ -95,7 +93,7 @@ static void multiprocessing_function(int cpu, void* vdata)
 static void multiprocessing_dummy(int, void*)
 {
 }
-static void multiprocessing_forever()
+static void multiprocessing_forever(int, void*)
 {
 	while (true);
 }
@@ -105,7 +103,7 @@ static void test_singleprocessing()
 	mp_work.workers = 1;
 
 	// Perform part of the work on main vCPU
-	multiprocessing_function<WORK_SIZE> (0, &mp_work);
+	multiprocessing_function(0, &mp_work);
 
 	const float sum = mp_work.final_sum();
 	if (work_output)
@@ -114,14 +112,14 @@ static void test_singleprocessing()
 static void test_multiprocessing()
 {
 	mp_work.workers = MP_WORKERS;
-	long result = -1;
+	uint32_t result = UINT32_MAX;
 
 	// Start N extra vCPUs and execute the function
 #ifndef MULTIPROCESS_FORK
 	// Method 1: Start new workers, each with their own stacks
 	// then call the given function. Most of this is handled
 	// in RISC-V assembly.
-	multiprocess(MP_WORKERS, multiprocessing_function<WORK_SIZE>, &mp_work);
+	multiprocess(MP_WORKERS, multiprocessing_function, &mp_work);
 	// Wait and stop workers here
 	result = multiprocess_wait();
 #else
@@ -129,9 +127,9 @@ static void test_multiprocessing()
 	// ends, by calling multiprocess_wait() on all workers. Each
 	// worker uses the current stack, copy-on-write. No need for
 	// hand-written assembly to handle this variant.
-	unsigned cpu = multiprocess(MP_WORKERS);
+	const unsigned cpu = multiprocess(MP_WORKERS);
 	if (cpu != 0) {
-		multiprocessing_function<WORK_SIZE> (cpu-1, &mp_work);
+		multiprocessing_function(cpu-1, &mp_work);
 	}
 	result = multiprocess_wait();
 #endif
@@ -141,17 +139,16 @@ static void test_multiprocessing()
 	if (work_output) {
 		print("Multi-process sum = ", sum, "\n");
 		print("Multi-process counter = ", mp_work.counter, "\n");
-		print("Multi-process result = ", result, "\n");
+		print("Multi-process result = ", strf::bin(result >> 1), " (",
+			(result == 0) ? "good" : "bad", ")\n");
 	}
 }
 static void test_multiprocessing_forever()
 {
-	unsigned cpu = multiprocess(4);
-	if (cpu != 0) {
-		multiprocessing_forever();
-	}
-	long res = multiprocess_wait();
-	print("Forever multiprocessing result: ", res, "\n");
+	multiprocess(4, multiprocessing_forever);
+	auto res = multiprocess_wait();
+	print("Forever multiprocessing result: ", strf::bin(res >> 1),
+		" (", (res == 0) ? "good" : "bad", ")\n");
 }
 static void multiprocessing_overhead()
 {
