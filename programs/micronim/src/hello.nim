@@ -11,7 +11,7 @@ var j = %* {
 
 proc hello_nim() =
     print "Before debugging\n"
-    remote_breakpoint()
+    breakpoint()
     print "Hello Nim World!\n" & j.pretty() & "\n"
 
 proc bench_nim() =

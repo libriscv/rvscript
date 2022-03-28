@@ -9,6 +9,16 @@ static const char* getenv_with_default(const char* str, const char* defval)
 	if (value) return value;
 	return defval;
 }
+static auto replaceAll(std::string str, const std::string& from, const std::string& to)
+{
+    size_t start_pos = 0;
+    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
+    }
+	return str;
+}
+
 
 static void gdb_remote_finish(Script& script)
 {
@@ -18,7 +28,7 @@ static void gdb_remote_finish(Script& script)
 		machine.simulate(machine.max_instructions());
 	}
 }
-void Script::gdb_remote_debugging(bool one_up, uint16_t port)
+void Script::gdb_remote_debugging(std::string message, bool one_up, uint16_t port)
 {
 	port = (port != 0) ? port : RSP_PORT;
 
@@ -37,13 +47,21 @@ void Script::gdb_remote_debugging(bool one_up, uint16_t port)
 			"file " + this->filename() + "\n"
 			// Connect remotely to the given port @port
 			"target remote localhost:" + std::to_string(port) + "\n"
-			// Enable the TUI and go up one step from the syscall wrapper
-			"layout next\nlayout next\n" + std::string((one_up) ? "up\n" : "");
+			// Enable the fancy TUI
+			"layout next\nlayout next\n"
+			// Disable pagination for the message
+			"set pagination off\n"
+			// Print the message given by the caller
+			"echo " + replaceAll(message, "\t", "\\n") + "\n"
+			// Go up one step from the syscall wrapper (which can fail)
+			 + std::string(one_up ? "up\n" : "");
 
 		ssize_t len = write(fd, debugscript.c_str(), debugscript.size());
 		if (len < (ssize_t) debugscript.size()) {
 			throw std::runtime_error("Unable to write script file for debugging");
 		}
+		close(fd);
+
 		const char* argv[] = {
 			getenv_with_default("GDB", "/usr/bin/gdb-multiarch"), "-x", scrname, nullptr
 		};
@@ -53,10 +71,8 @@ void Script::gdb_remote_debugging(bool one_up, uint16_t port)
 		// behave well, but I haven't been able to find the right combination.
 		extern char** environ;
 		if (-1 == execve(argv[0], (char *const *)argv , environ)) {
-			close(fd);
 			throw std::runtime_error("Unable to start gdb-multiarch for debugging");
 		}
-		close(fd);
     }
 
 	riscv::RSP<Script::MARCH> server { this->machine(), port };
@@ -79,9 +95,12 @@ void setup_debugging_system(Script& script)
 			machine.cpu.jump(machine.cpu.pc() + 4);
 			// Wait for someone to connect:
 			auto [port, info] = machine.sysargs<uint16_t, std::string> ();
-			fmt::print("Breakpoint in {}:0x{:X}. Info: '{}'\n",
+			auto message = fmt::format("Breakpoint in {}:0x{:X}.\t{}\t\t",
 				script.name(), machine.cpu.pc(), info);
-			script.gdb_remote_debugging(true, port);
+			script.gdb_remote_debugging(message, true, port);
+			// XXX: Return back(??)
+			if (!machine.stopped())
+				machine.cpu.jump(machine.cpu.pc() - 4);
 		} else {
 			fmt::print("Skipped over breakpoint in {}:0x{:X}. Break here with DEBUG=1.\n",
 				script.name(), machine.cpu.pc());

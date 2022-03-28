@@ -75,6 +75,7 @@ function (add_micronim_binary NAME VERFILE)
 	target_link_libraries(${NAME} -static -static-libgcc)
 	target_include_directories(${NAME} PUBLIC "${APIPATH}")
 	target_include_directories(${NAME} PRIVATE "env")
+	target_include_directories(${NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/dyncalls")
 	add_dependencies(${NAME} generate_dyncalls)
 	# place ELF into the sub-projects source folder
 	set_target_properties(${NAME}

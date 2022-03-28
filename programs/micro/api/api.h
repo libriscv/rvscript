@@ -3,10 +3,8 @@
  *
 **/
 #pragma once
-#ifdef __riscv
 #include <engine.hpp>
 #include <dyncall_api.h>
-#endif
 #include "api_structs.h"
 
 namespace api {
@@ -17,7 +15,7 @@ template <typename... Args> void print(Args&&... args);
 
 struct Game {
 	static void exit();
-	static void breakpoint(const char* name = "");
+	static void breakpoint(std::source_location sl = std::source_location::current());
 };
 uint32_t current_machine();
 
@@ -53,9 +51,7 @@ unsigned multiprocess(unsigned cpus, multiprocess_func_t func, void* data);
 long multiprocess_wait();
 
 // only see the implementation on RISC-V
-#ifdef __riscv
 #include "api_impl.h"
-#endif
 }
 
 #define PUBLIC(x) extern "C" __attribute__((used, retain)) x

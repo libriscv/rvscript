@@ -99,7 +99,7 @@ bool Script::initialize()
 #else
 		// Remote debugging with DEBUG=1 ./engine
 		if (getenv("DEBUG"))
-			gdb_remote_debugging(false);
+			gdb_remote_debugging("", false);
 #endif
 		return false;
 	} catch (std::exception& e) {
@@ -145,7 +145,7 @@ void Script::handle_exception(gaddr_t address)
 			machine().cpu.registers().to_string());
 		// Remote debugging with DEBUG=1 ./engine
 		if (getenv("DEBUG"))
-			gdb_remote_debugging(false);
+			gdb_remote_debugging("", false);
 	}
 	catch (const std::exception& e) {
 		fmt::print(stderr, "Script::call exception: {}\n",

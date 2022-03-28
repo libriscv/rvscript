@@ -74,7 +74,7 @@ public:
 
 	gaddr_t guest_alloc(gaddr_t bytes);
 	void    guest_free(gaddr_t addr);
-	void    gdb_remote_debugging(bool one_up, uint16_t port = 0);
+	void    gdb_remote_debugging(std::string message, bool one_up, uint16_t port = 0);
 
 	static void setup_syscall_interface();
 	bool initialize();

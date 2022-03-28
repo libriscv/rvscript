@@ -156,9 +156,11 @@ inline void Game::exit()
 {
 	(void) syscall(ECALL_GAME_EXIT);
 }
-inline void Game::breakpoint(const char* name)
+inline void Game::breakpoint(std::source_location sl)
 {
-	sys_breakpoint(0, name);
+	char buffer[512];
+	strf::to(buffer)(sl.file_name(), ", ", sl.function_name(), ", line ", sl.line());
+	sys_breakpoint(0, buffer);
 }
 
 using timer_callback = void (*) (int, void*);

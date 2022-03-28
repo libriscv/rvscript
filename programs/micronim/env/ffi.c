@@ -1,15 +1,15 @@
 #include <syscall.h>
 #include <syscalls.h>
 #include "ffi.h"
-extern long sys_breakpoint(uint16_t);
+#include <dyncall_api.h>
 
 void console_print(const char* text, size_t tlen)
 {
 	syscall2(ECALL_WRITE, (long) text, tlen);
 }
 
-void remote_breakpoint(int port)
+void breakpoint(const char* msg)
 {
 	// Dynamic call: "Debug::breakpoint"
-	sys_breakpoint(port);
+	sys_breakpoint(0, msg);
 }
