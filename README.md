@@ -136,9 +136,7 @@ There are several ways to do this. However for now one requirement is to install
 ```
 git clone https://github.com/riscv/riscv-gnu-toolchain.git
 cd riscv-gnu-toolchain
-git submodule update --depth 1 --init riscv-binutils
-git submodule update --depth 1 --init riscv-gcc
-git submodule update --depth 1 --init riscv-newlib
+git submodule update --depth 1 --init
 <install dependencies for GCC on your particular system here>
 ./configure --prefix=$HOME/riscv --with-arch=rv64gc --with-abi=lp64d
 make -j8
@@ -179,7 +177,7 @@ Any functions you want to be callable from outside must be listed in the symbols
 
 There is a lot of helper functionality built to make it easy to drop in new programs. See `engine/src/main.cpp` for some example code.
 
-The debug.sh script will produce programs that you can remotely connect to with GDB. Run `DEBUG=1 ./build.sh` in the engine folder to enable remote debugging with GDB. The engine will listen for a remote debugger on each breakpoint dyncall in the code. It will also try to start GDB automatically and connect for you.
+The debug.sh script will produce programs that you can remotely connect to with GDB. Run `DEBUG=1 ./build.sh` in the engine folder to enable remote debugging with GDB. The engine will listen for a remote debugger on each breakpoint in the code. It will also try to start GDB automatically and connect for you.
 
 Install gdb-multiarch from your distro packaging system:
 ```
@@ -314,11 +312,9 @@ myscript.set_dynamic_call("struct_by_ref",
 
 - After I enabled C++ exceptions and ran a try..catch the emulator seems to just stop.
 	- When you call into the virtual machine you usually give it a budget. A limit on the number of instructions it gets to run for that particular call (or any other limit you impose yourself). If you forget to check if the limit has been reached, then it will just look like it stopped. You can check this by comparing calculating instruction counter + max instructions beforehand, and comparing that to the instruction counter after the call. You can safely resume execution again by calling `machine.simulate()` again, as running out of instructions is not a fatal exception. For example the first C++ exception thrown inside the RISC-V emulator uses a gigaton of instructions and will easily blow the limit.
-- I can't seem to call a public API function in another machine.
-	- The function has to be added to the symbol file for it to not be removed as an optimization, assuming no other function references it. It's also possible that the remote machine you are calling into simply doesn't have that function if it's running another binary.
 - How do I share memory with the engine?
 	- Create aligned memory in your engine and use the `machine.memory.insert_non_owned_memory()` function to insert it using the given page attributes. The machine will then create non-owning pages pointing to this memory sequentially. You can do this on as many machines as you want. The challenge then is to be able to use the pages as memory for your objects, and access the readable members in a portable way (the VMs are default 64-bit).
-- Passing strings are slow.
+- Passing long strings and big structures is slow.
 	- Use compile-time hashes of strings where you can.
 	- Alternatively use memory sharing, riscv::Buffer or buffer gathering for larger memory buffers.
 	- Page sharing if intended for communication between machines
