@@ -18,7 +18,9 @@ int main()
 	extern char _binary_symbols_map_end;
 	const size_t binary_size = &_binary_gameplay_elf_end - &_binary_gameplay_elf_start;
 	const size_t symbols_size = &_binary_symbols_map_end - &_binary_symbols_map_start;
-	Scripts::embedded_binary("gameplay",
+	/* For the purposes of debugging we supply the origin filename, however it
+	   is not used for anything other than automating GDB remote debugging. */
+	Scripts::embedded_binary("gameplay", "mods/hello_world/scripts/gameplay.elf",
 		std::string_view{&_binary_gameplay_elf_start, binary_size},
 		std::string_view{&_binary_symbols_map_start, symbols_size});
 #endif
@@ -55,7 +57,7 @@ int main()
 
 	/* This is the main start function, which would be something like the
 	   starting function for the current levels script. You can find the
-	   implementation in mods/hello_world/scripts/src/gameplay.cpp:28. */
+	   implementation in mods/hello_world/scripts/src/gameplay.cpp. */
 	gameplay1.call("start");
 
 	fmt::print("...\n");
@@ -134,7 +136,7 @@ int main()
 	gameplay1.call("test_dynamic_functions");
 	// All the functions should have been called
 	if (called != 0x3) exit(1);
-	// Duplicate hash:
+	// INVALID (Duplicate hash):
 	//gameplay1.set_dynamic_call("empty", [] (auto&) {});
 	// This will replace the function:
 	gameplay1.reset_dynamic_call("empty", [] (auto&) {});
@@ -145,11 +147,11 @@ int main()
 	fmt::print("Benchmarking full fork:\n");
 	Script::benchmark(
 		[&gameplay1] {
-			Script {gameplay1.machine(), nullptr, ""};
+			Script {gameplay1.machine(), nullptr, "name", "file"};
 		});
 	// Reset benchmark
 	fmt::print("Benchmarking reset:\n");
-	Script uhh {gameplay1.machine(), nullptr, ""};
+	Script uhh {gameplay1.machine(), nullptr, "name", "file"};
 	Script::benchmark(
 		[&uhh] {
 			uhh.reset();

@@ -8,7 +8,4 @@ add_library(script STATIC ${SOURCES})
 target_link_libraries(script PUBLIC fmt riscv)
 target_compile_definitions(script PUBLIC
 	RISCV_ARCH=${ARCH}
-	HEAP_SYSCALLS_BASE=70
-	MEMORY_SYSCALLS_BASE=75
-	THREADS_SYSCALL_BASE=90
 )

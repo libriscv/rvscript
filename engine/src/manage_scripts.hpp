@@ -12,7 +12,7 @@ struct Scripts {
 	static void load_binary(const std::string& name,
 		const std::string& filename, const std::string& symbols);
 
-	static void embedded_binary(const std::string& name,
+	static void embedded_binary(const std::string& name, const std::string& filename,
 		std::string_view binary, std::string_view symbols);
 };
 

@@ -14,7 +14,7 @@ Script& Scripts::create(const std::string& name, const std::string& bbname, bool
 	   and memory sharing mechanics to save memory. */
 	auto it = scripts.emplace(std::piecewise_construct,
 		std::forward_as_tuple(riscv::crc32(name.c_str())),
-		std::forward_as_tuple(box.machine, nullptr, name, debug));
+		std::forward_as_tuple(box.machine, nullptr, name, box.filename, debug));
 	auto& script = it.first->second;
 	/* When embedding a program, the public API symbols are stored in memory */
 	if (!box.symbols.empty())
@@ -54,8 +54,9 @@ void Scripts::load_binary(const std::string& name,
 }
 
 void Scripts::embedded_binary(const std::string& name,
+	const std::string& origin_filename,
 	std::string_view binary,
 	std::string_view symbols)
 {
-	blackbox.insert_embedded_binary(name, binary, symbols);
+	blackbox.insert_embedded_binary(name, origin_filename, binary, symbols);
 }

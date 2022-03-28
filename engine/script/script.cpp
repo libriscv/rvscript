@@ -8,16 +8,20 @@ using gaddr_t = Script::gaddr_t;
 #include <sstream>
 #include "machine/include_api.hpp"
 // the shared area is read-write for the guest
-static const uint64_t STACK_BASE = 0x6000;
+static const uint64_t STACK_BASE = 0xffffffff80000000;
 static const uint64_t SHM_BASE   = 0x2000;
 static const uint64_t SHM_SIZE   = 2 * riscv::Page::size();
+static const int HEAP_SYSCALLS_BASE   = 570;
+static const int MEMORY_SYSCALLS_BASE = 575;
+static const int THREADS_SYSCALL_BASE = 590;
 // Memory area used by remote function calls and such
 static std::array<uint8_t, SHM_SIZE> shared_memory {};
 
 using riscv::crc32;
 
-Script::Script(const machine_t& smach, void* userptr, const std::string& name, bool debug)
-	: m_source_machine(smach), m_userptr(userptr), m_name(name),
+Script::Script(const machine_t& smach, void* userptr, const std::string& name,
+	const std::string& filename, bool debug)
+	: m_source_machine(smach), m_userptr(userptr), m_name(name), m_filename(filename),
 	  m_hash(crc32(name.c_str())), m_is_debug(debug)
 {
 	this->reset();
@@ -92,6 +96,10 @@ bool Script::initialize()
 			me.type(), me.what(), me.data());
 #ifdef RISCV_DEBUG
 		m_machine->print_and_pause();
+#else
+		// Remote debugging with DEBUG=1 ./engine
+		if (getenv("DEBUG"))
+			gdb_remote_debugging(false);
 #endif
 		return false;
 	} catch (std::exception& e) {
@@ -135,6 +143,9 @@ void Script::handle_exception(gaddr_t address)
 		fmt::print(stderr, ">>> Machine registers:\n[PC\t{:08x}] {}\n",
 			(long) machine().cpu.pc(),
 			machine().cpu.registers().to_string());
+		// Remote debugging with DEBUG=1 ./engine
+		if (getenv("DEBUG"))
+			gdb_remote_debugging(false);
 	}
 	catch (const std::exception& e) {
 		fmt::print(stderr, "Script::call exception: {}\n",

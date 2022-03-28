@@ -2,7 +2,7 @@
 	"typedef": "typedef void (*timer_callback) (int, void*)",
 	"Timer::stop": "void sys_timer_stop (int)",
 	"Timer::periodic": "int sys_timer_periodic (float, float, timer_callback, void*, size_t)",
-	"Debug::breakpoint": "void sys_breakpoint (uint16_t)",
+	"Debug::breakpoint": "void sys_breakpoint (uint16_t, const char*)",
 
 	"empty":      "void sys_empty ()",
 	"testing":    "void sys_testing ()",

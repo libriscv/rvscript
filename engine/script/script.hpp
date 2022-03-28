@@ -50,6 +50,7 @@ public:
 
 	const auto& name() const noexcept { return m_name; }
 	uint32_t    hash() const noexcept { return m_hash; }
+	const auto& filename() const noexcept { return m_filename; }
 
 	bool is_debug() const noexcept { return m_is_debug; }
 	bool crashed() const noexcept { return m_crashed; }
@@ -73,10 +74,11 @@ public:
 
 	gaddr_t guest_alloc(gaddr_t bytes);
 	void    guest_free(gaddr_t addr);
+	void    gdb_remote_debugging(bool one_up, uint16_t port = 0);
 
 	static void setup_syscall_interface();
 	bool initialize();
-	Script(const machine_t&, void* userptr, const std::string& name, bool = false);
+	Script(const machine_t&, void* userptr, const std::string& name, const std::string& filename, bool = false);
 	~Script();
 
 private:
@@ -84,7 +86,6 @@ private:
 	void handle_timeout(gaddr_t);
 	bool install_binary(const std::string& file, bool shared = true);
 	void machine_setup();
-	void gdb_remote_finish();
 	static long finish_benchmark(std::vector<long>&);
 
 	std::unique_ptr<machine_t> m_machine = nullptr;
@@ -93,6 +94,7 @@ private:
 	gaddr_t     m_tick_event = 0;
 	int         m_tick_block_reason = 0;
 	std::string m_name;
+	std::string m_filename;
 	uint32_t    m_hash;
 	bool        m_is_debug = false;
 	bool        m_crashed = false;

@@ -1,5 +1,5 @@
 #pragma once
-#define GAME_API_BASE 100
+#define GAME_API_BASE 500
 
 enum game_api_ids
 {

@@ -179,6 +179,7 @@ PUBLIC(void start())
 	/* This function is implemented in api_impl.h, and it makes a
 	   system call into the engine, which then writes to the terminal. */
 	print("Hello world!\n");
+	Game::breakpoint("Testing a breakpoint here!");
 
 	initialize_work(mp_work);
 	work_output = true;
@@ -199,7 +200,7 @@ PUBLIC(void start())
 	measure("VM function call overhead", empty_function);
 	measure("Full thread creation overhead", full_thread_function);
 	measure("Oneshot thread creation overhead", oneshot_thread_function);
-	measure("Direct thread creation overhead", direct_thread_function);
+	//measure("Direct thread creation overhead", direct_thread_function);
 	measure("Dynamic call handler", dyncall_handler);
 	measure("Farcall lookup", farcall_lookup_testcall);
 	measure("Farcall direct", direct_farcall_testcall);

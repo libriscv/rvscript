@@ -179,14 +179,16 @@ Any functions you want to be callable from outside must be listed in the symbols
 
 There is a lot of helper functionality built to make it easy to drop in new programs. See `engine/src/main.cpp` for some example code.
 
-The debug.sh script will produce programs that you can remotely connect to with GDB. Run `DEBUG=1 ./build.sh` in the engine folder to enable remote debugging with GDB. The engine will listen for a remote debugger on each breakpoint dyncall in the code.
+The debug.sh script will produce programs that you can remotely connect to with GDB. Run `DEBUG=1 ./build.sh` in the engine folder to enable remote debugging with GDB. The engine will listen for a remote debugger on each breakpoint dyncall in the code. It will also try to start GDB automatically and connect for you.
 
-Install gdb-multiarch from your distro packaging system and run it like this:
+Install gdb-multiarch from your distro packaging system:
 ```
-gdb-multiarch gameplay.elf
+sudo apt install gdb-multiarch
 ```
-Once inside GDB, you will need to connect to the GDB server in the engine:
+
+Connecting manually:
 ```
+gdb-multiarch myprogram.elf
 target remote localhost:2159
 ```
 

@@ -17,7 +17,7 @@ template <typename... Args> void print(Args&&... args);
 
 struct Game {
 	static void exit();
-	static void breakpoint();
+	static void breakpoint(const char* name = "");
 };
 uint32_t current_machine();
 
@@ -59,18 +59,3 @@ long multiprocess_wait();
 }
 
 #define PUBLIC(x) extern "C" __attribute__((used, retain)) x
-
-/** Startup function and arguments **/
-struct MapFile {
-#ifdef __riscv
-	const char* path;
-	const char* file;
-	const char* event;
-#else
-	gaddr_t path;
-	gaddr_t file;
-	gaddr_t event;
-#endif
-	int  width;
-	int  height;
-};

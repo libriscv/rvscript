@@ -156,9 +156,9 @@ inline void Game::exit()
 {
 	(void) syscall(ECALL_GAME_EXIT);
 }
-inline void Game::breakpoint()
+inline void Game::breakpoint(const char* name)
 {
-	sys_breakpoint(0);
+	sys_breakpoint(0, name);
 }
 
 using timer_callback = void (*) (int, void*);

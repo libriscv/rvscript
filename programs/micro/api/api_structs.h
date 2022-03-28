@@ -13,4 +13,19 @@ struct vec2 {
 	void  normalize();
 };
 
+/** Startup function and arguments **/
+struct MapFile {
+#ifdef __riscv
+	const char* path;
+	const char* file;
+	const char* event;
+#else
+	gaddr_t path;
+	gaddr_t file;
+	gaddr_t event;
+#endif
+	int  width;
+	int  height;
+};
+
 }

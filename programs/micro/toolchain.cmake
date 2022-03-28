@@ -10,7 +10,7 @@ set(COMPILER_DIR $ENV{HOME}/riscv/${GCC_TRIPLE})
 set(LIBRARY_DIR $ENV{HOME}/riscv/lib/gcc/${GCC_TRIPLE}/${GCC_VERSION} CACHE STRING "GCC libraries")
 
 include_directories(SYSTEM
-	${CMAKE_SOURCE_DIR}/micro/libc/override
+	#${CMAKE_SOURCE_DIR}/micro/libc/override
 	${COMPILER_DIR}/include/c++/${GCC_VERSION}
 	${COMPILER_DIR}/include/c++/${GCC_VERSION}/${GCC_TRIPLE}
 	${COMPILER_DIR}/include

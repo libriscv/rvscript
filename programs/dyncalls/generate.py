@@ -14,7 +14,7 @@ parser.add_argument("-v", "--verbose",
 parser.add_argument("-P", "--print-sources",
                     action="store_true", dest="print_sources", default=False,
                     help="print generated sources to stdout")
-parser.add_argument('--dyncall', dest='dyncall', action='store', default=104,
+parser.add_argument('--dyncall', dest='dyncall', action='store', default=504,
                    help='set the dyncall system call number')
 parser.add_argument('--cpp', dest='cpp', action='store_true', default=False,
                    help='generate a .cpp file in addition to the .c file')
@@ -64,7 +64,7 @@ for key in j:
 		header += j[key] + ";\n"
 header += "\n"
 
-source = "";
+source = '__asm__(".section .text\\n");\n\n'
 
 # create dyncall prototypes and assembly
 for key in j:
@@ -77,7 +77,7 @@ for key in j:
 
 		header += "// " + key + ": 0x" + crc + "\n";
 		header += "extern " + asmdef + ";\n";
-		source += 'asm("\\n\\\n'
+		source += '__asm__("\\n\\\n'
 		source += '.global ' + asmname + '\\n\\\n'
 		source += '.func ' + asmname + '\\n\\\n'
 		source += asmname + ':\\n\\\n'

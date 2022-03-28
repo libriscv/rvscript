@@ -25,7 +25,6 @@ if (DEBUGGING)
 	set (COMMON "${COMMON} -ggdb3 -O0")
 endif()
 set(FLAGS "${WARNINGS} ${RISCV_ABI} ${COMMON}")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Ttext 0x120000")
 
 if (LTO AND NOT DEBUGGING)
 	set(FLAGS "${FLAGS} -flto -ffat-lto-objects")
@@ -38,6 +37,8 @@ endif()
 
 set(CMAKE_C_FLAGS   "-std=c11 ${FLAGS}")
 set(BUILD_SHARED_LIBS OFF)
+
+add_subdirectory(../dyncalls dyncalls)
 
 function (add_verfile NAME VERFILE)
 	set_target_properties(${NAME} PROPERTIES LINK_DEPENDS ${VERFILE})
@@ -56,7 +57,13 @@ endfunction()
 set(CHPERM  ${CMAKE_CURRENT_LIST_DIR}/chperm)
 
 function (add_micronim_binary NAME VERFILE)
-	add_executable(${NAME} ${ARGN}
+	# Find dyncall API and mark the files as generated
+	set(DYNCALL_API
+		${CMAKE_BINARY_DIR}/dyncalls/dyncall_api.c
+		${CMAKE_BINARY_DIR}/dyncalls/dyncall_api.h)
+	set_source_files_properties(${DYNCALL_API} PROPERTIES GENERATED TRUE)
+
+	add_executable(${NAME} ${ARGN} ${DYNCALL_API}
 		env/ffi.c
 		env/heap.c
 		env/libc.c
@@ -68,6 +75,7 @@ function (add_micronim_binary NAME VERFILE)
 	target_link_libraries(${NAME} -static -static-libgcc)
 	target_include_directories(${NAME} PUBLIC "${APIPATH}")
 	target_include_directories(${NAME} PRIVATE "env")
+	add_dependencies(${NAME} generate_dyncalls)
 	# place ELF into the sub-projects source folder
 	set_target_properties(${NAME}
 		PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
