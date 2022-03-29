@@ -125,7 +125,7 @@ inline unsigned multiprocess(unsigned cpus, multiprocess_func_t func, void* data
 }
 inline unsigned multiprocess(unsigned cpus)
 {
-	return sys_multiprocess_fork(cpus);
+	return syscall(ECALL_MULTIPROCESS_FORK, cpus);
 }
 inline uint32_t multiprocess_wait()
 {

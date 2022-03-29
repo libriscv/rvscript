@@ -1,4 +1,5 @@
 #include <include/libc.hpp>
+#include <include/syscall.hpp>
 #include <cstdarg>
 #include <strf.hpp>
 #include <syscalls.h>

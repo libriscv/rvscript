@@ -84,6 +84,11 @@ bool Script::initialize()
 	this->m_tick_event = 0;
 	// run through the initialization
 	try {
+#ifdef RISCV_DEBUG
+		// Verbose debugging with DEBUG=1 ./engine
+		if (getenv("DEBUG"))
+			machine().verbose_instructions = true;
+#endif
 		machine().simulate(MAX_INSTRUCTIONS);
 
 		if (UNLIKELY(machine().instruction_counter() >= MAX_INSTRUCTIONS)) {
@@ -116,7 +121,9 @@ void Script::machine_setup()
 			fmt::print(stderr, "{}", std::string_view{p, len});
 		});
 	machine().set_stdin([] (const char*, size_t) -> long { return 0; });
-	// add system call interface
+	// Add a few Newlib system calls (just in case)
+	machine().setup_newlib_syscalls();
+	// Add native system call interface
 	machine().setup_native_heap(HEAP_SYSCALLS_BASE, heap_area(), MAX_HEAP);
 	machine().setup_native_memory(MEMORY_SYSCALLS_BASE);
 	machine().setup_native_threads(THREADS_SYSCALL_BASE);
@@ -125,8 +132,11 @@ void Script::machine_setup()
 			fmt::print(stderr, "Unhandled system call: {}\n", number);
 		};
 
-	// install shared memory area and guard pages
+	// Install shared memory area and guard pages
 	this->add_shared_memory();
+	// We need to pass the .eh_frame location to a supc++ function,
+	// if C++ RTTI and Exceptions is enabled:
+	//machine().cpu.reg(11) = machine().memory.resolve_section(".eh_frame");
 }
 void Script::handle_exception(gaddr_t address)
 {

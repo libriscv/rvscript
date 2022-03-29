@@ -14,46 +14,38 @@ void* SharedMemoryArea::push(const void* data, size_t size, size_t align)
 	return memcpy(dst, data, size);
 }
 
-asm(".section .text\n\n");
+#define STRINGIFY_HELPER(x) #x
+#define STRINGIFY(x) STRINGIFY_HELPER(x)
+asm(".section .text\n.align 8\n");
 
-static_assert(ECALL_WRITE == 502,
-	"The write syscall number is hard-coded in assembly");
 asm(".global sys_write\n"
 "sys_write:\n"
-"	li a7, 502\n"
+"	li a7, " STRINGIFY(ECALL_WRITE) "\n"
 "	ecall\n"
 "   ret\n");
 
-static_assert(ECALL_FARCALL == 505,
-	"The farcall syscall number is hard-coded in assembly");
 asm(".global farcall_helper\n"
 "farcall_helper:\n"
-"	li a7, 505\n"
+"	li a7, " STRINGIFY(ECALL_FARCALL) "\n"
 "	ecall\n"
 "   ret\n");
 
-static_assert(ECALL_FARCALL_DIRECT == 506,
-	"The direct farcall syscall number is hard-coded in assembly");
 asm(".global direct_farcall_helper\n"
 "direct_farcall_helper:\n"
-"	li a7, 506\n"
+"	li a7, " STRINGIFY(ECALL_FARCALL_DIRECT) "\n"
 "	ecall\n"
 "   ret\n");
 
-static_assert(ECALL_INTERRUPT == 507,
-	"The interrupt syscall number is hard-coded in assembly");
 asm(".global sys_interrupt\n"
 "sys_interrupt:\n"
-"	li a7, 507\n"
+"	li a7, " STRINGIFY(ECALL_INTERRUPT) "\n"
 "	ecall\n"
 "   ret\n"
 ""); // The system call handler must jump back to caller
 
-static_assert(ECALL_MULTIPROCESS == 510,
-	"The multiprocess syscall number is hard-coded in assembly");
 asm(".global sys_multiprocess\n"
 "sys_multiprocess:\n"
-"	li a7, 510\n"
+"	li a7, " STRINGIFY(ECALL_MULTIPROCESS) "\n"
 "	ecall\n"
 "   beqz a0, sys_multiprocess_ret\n" // Early return for vCPU 0
 // Otherwise, create a function call
@@ -64,18 +56,14 @@ asm(".global sys_multiprocess\n"
 "sys_multiprocess_ret:\n"
 "   ret\n");           // Return to caller
 
-static_assert(ECALL_MULTIPROCESS_FORK == 511,
-	"The multiprocess_fork syscall number is hard-coded in assembly");
 asm(".global sys_multiprocess_fork\n"
 "sys_multiprocess_fork:\n"
-"	li a7, 511\n"
+"	li a7, " STRINGIFY(ECALL_MULTIPROCESS_FORK) "\n"
 "	ecall\n"
 "   ret\n");           // Return to caller
 
-static_assert(ECALL_MULTIPROCESS_WAIT == 512,
-	"The multiprocess_wait syscall number is hard-coded in assembly");
 asm(".global sys_multiprocess_wait\n"
 "sys_multiprocess_wait:\n"
-"	li a7, 512\n"
+"	li a7, " STRINGIFY(ECALL_MULTIPROCESS_WAIT) "\n"
 "	ecall\n"
 "   ret\n");

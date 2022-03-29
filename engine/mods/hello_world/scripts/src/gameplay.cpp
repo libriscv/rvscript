@@ -112,27 +112,25 @@ static void test_singleprocessing()
 static void test_multiprocessing()
 {
 	mp_work.workers = MP_WORKERS;
-	uint32_t result = UINT32_MAX;
 
 	// Start N extra vCPUs and execute the function
 #ifndef MULTIPROCESS_FORK
 	// Method 1: Start new workers, each with their own stacks
 	// then call the given function. Most of this is handled
 	// in RISC-V assembly.
-	multiprocess(MP_WORKERS, multiprocessing_function, &mp_work);
-	// Wait and stop workers here
-	result = multiprocess_wait();
+	multiprocess(mp_work.workers, multiprocessing_function, &mp_work);
 #else
 	// Method 2: Fork this machine and wait until multiprocessing
 	// ends, by calling multiprocess_wait() on all workers. Each
 	// worker uses the current stack, copy-on-write. No need for
 	// hand-written assembly to handle this variant.
-	const unsigned cpu = multiprocess(MP_WORKERS);
+	const unsigned cpu = multiprocess(mp_work.workers);
 	if (cpu != 0) {
 		multiprocessing_function(cpu-1, &mp_work);
 	}
-	result = multiprocess_wait();
 #endif
+	// Wait and stop workers here
+	const auto result = multiprocess_wait();
 
 	// Sum the work together
 	const float sum = mp_work.final_sum();
