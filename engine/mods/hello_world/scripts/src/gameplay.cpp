@@ -65,7 +65,6 @@ struct MultiprocessWork {
 };
 static constexpr size_t WORK_SIZE = 8192;
 static constexpr size_t MP_WORKERS = 4;
-//#define MULTIPROCESS_FORK
 static bool work_output = false;
 static MultiprocessWork<WORK_SIZE> mp_work;
 template <size_t SIZE>

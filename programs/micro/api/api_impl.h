@@ -123,9 +123,14 @@ inline unsigned multiprocess(unsigned cpus, multiprocess_func_t func, void* data
 
 	return sys_multiprocess(cpus, mp_data.stacks, STACK_SIZE, func, data);
 }
+__attribute__((always_inline))
 inline unsigned multiprocess(unsigned cpus)
 {
-	return syscall(ECALL_MULTIPROCESS_FORK, cpus);
+	register unsigned a0 asm("a0") = cpus;
+	register int     sid asm("a7") = ECALL_MULTIPROCESS_FORK ;
+
+	asm volatile ("ecall" : "+r"(a0) : "r"(sid));
+	return a0;
 }
 inline uint32_t multiprocess_wait()
 {
