@@ -150,6 +150,8 @@ void Script::handle_exception(gaddr_t address)
 	catch (const riscv::MachineException& e) {
 		fmt::print(stderr, "Script::call exception: {} (data: {:#x})\n",
 			e.what(), e.data());
+		const auto instruction = machine().cpu.current_instruction_to_string();
+		fmt::print(stderr, ">>> {}\n", instruction);
 		fmt::print(stderr, ">>> Machine registers:\n[PC\t{:08x}] {}\n",
 			(long) machine().cpu.pc(),
 			machine().cpu.registers().to_string());
