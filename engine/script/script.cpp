@@ -121,6 +121,11 @@ void Script::machine_setup()
 			fmt::print(stderr, "{}", std::string_view{p, len});
 		});
 	machine().set_stdin([] (const char*, size_t) -> long { return 0; });
+	machine().on_unhandled_csr =
+		[] (auto& machine, int csr, int, int) {
+			auto& script = *machine.template get_userdata<Script> ();
+			fmt::print(stderr, "{}: Unhandled CSR: {}\n", script.name(), csr);
+		};
 	// Add a few Newlib system calls (just in case)
 	machine().setup_newlib_syscalls();
 	// Add native system call interface
