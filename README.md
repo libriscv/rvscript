@@ -125,9 +125,11 @@ Run `setup.sh` to make sure that libriscv is initialized properly. Then go into 
 bash build.sh
 ```
 
-The engine itself should have no external dependencies outside of libriscv.
+The engine itself should have no external dependencies outside of libriscv and libfmt.
 
 Running the engine is only half the equation as you will also want to be able to modify the scripts themselves. To do that you need a RISC-V compiler. However, the gameplay binary is provided with the repo so that you can run the engine demonstration without having to download and build a RISC-V compiler.
+
+While you can technically just install the `g++-10-riscv64-linux-gnu` package and use that to compile your scripts, keep in mind that it will use glibc and compressed instructions are enabled. Especially compressed instructions are less efficient when emulating RISC-V. Newlib is generally preferred as the libc because it doesn't bloat the binaries.
 
 ## Getting a RISC-V compiler
 
@@ -195,9 +197,6 @@ target remote localhost:2159
 The programs `CMakeLists.txt` is used to build programs. Go into the build folder in `programs/build`. Enable the RTTI_EXCEPT CMake option using ccmake or you can also edit `build.sh` and add `-DRTTI_EXCEPT=ON` to the arguments passed to CMake. Run `build.sh` in to build any changes.
 
 Exceptions and RTTI will bloat the binary by at least 170k according to my measurements. Additionally, you will have to increase the maximum allotted number of instructions to a call by at least 600k instructions, as the first exception thrown will have to run through a massive amount of code. However, any code that does not throw exceptions as part of normal operation will be fine. It could also be fine to just give up when an exception is thrown, although I recommend re-initializing the machine (around 10-20 micros on my hardware).
-
-The binary that comes with the repository for testing does have C++ exceptions enabled. Atomics will probably have to be enabled to be able to catch exceptions. They are on by default and has no known associated performance penalty.
-
 
 ## WSL2 support
 
