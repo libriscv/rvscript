@@ -113,6 +113,7 @@ static void test_multiprocessing()
 	mp_work.workers = MP_WORKERS;
 
 	// Start N extra vCPUs and execute the function
+#define MULTIPROCESS_FORK
 #ifndef MULTIPROCESS_FORK
 	// Method 1: Start new workers, each with their own stacks
 	// then call the given function. Most of this is handled
@@ -200,7 +201,7 @@ PUBLIC(void start())
 
 	measure("Multi-processing overhead", multiprocessing_overhead);
 	measure("Multi-processing dotprod", test_multiprocessing);
-	//measure("Single-processing dotprod", test_singleprocessing);
+	measure("Single-processing dotprod", test_singleprocessing);
 
 	int a = 1, b = 2, c = 3;
 	microthread::oneshot([] (int a, int b, int c) {
