@@ -16,7 +16,7 @@ Note that I update the gist now and then as I make improvements. The key benchma
 
 The overhead of a system call is around 5ns last time I measured it, so keep that in mind. The threshold for benefiting from using a dedicated system call is very low, but for simple things like reading the position of an entity you could be using shared memory. Read-only to the machine.
 
-For generally extending the API there is dynamic calls, which have an overhead of around 14ns. Dynamic calls require looking up a hash value in a hash map, and is backed by a std::function with capture storage.
+For generally extending the API there is dynamic calls, which have an overhead of around 20ns. Dynamic calls require looking up a hash value in a hash map, and is backed by a std::function with capture storage.
 
 
 ## Demonstration
@@ -317,7 +317,7 @@ See `libriscv/memory.hpp` for a list of helper functions, each with a specific p
 
 ## Common Issues
 
-- After I enabled C++ exceptions and ran a try..catch the emulator seems to just stop.
+- After I throw a C++ exception the emulator seems to just stop.
 	- When you call into the virtual machine you usually give it a budget. A limit on the number of instructions it gets to run for that particular call (or any other limit you impose yourself). If you forget to check if the limit has been reached, then it will just look like it stopped. You can check this by comparing calculating instruction counter + max instructions beforehand, and comparing that to the instruction counter after the call. You can safely resume execution again by calling `machine.simulate()` again, as running out of instructions is not a fatal exception. For example the first C++ exception thrown inside the RISC-V emulator uses a gigaton of instructions and will easily blow the limit.
 - How do I share memory with the engine?
 	- Create aligned memory in your engine and use the `machine.memory.insert_non_owned_memory()` function to insert it using the given page attributes. The machine will then create non-owning pages pointing to this memory sequentially. You can do this on as many machines as you want. The challenge then is to be able to use the pages as memory for your objects, and access the readable members in a portable way (the VMs are default 64-bit).
@@ -332,3 +332,5 @@ See `libriscv/memory.hpp` for a list of helper functions, each with a specific p
 	- Heavy compute operations is probably best left implemented as specialized system calls or dynamic function calls.
 - I have real-time requirements.
 	- As long as pausing the script to continue later is an option, you will not have any trouble. Just don't pause the script while it's in a thread and then accidentally vmcall into it from somewhere else. This will clobber all registers and you will have trouble later. You can use preempt provided that it returns to the same thread again (although you are able to yield back to a thread manually). There are many options where things will be OK. In my own engine all long-running tasks are running on separate machines to simplify things.
+- My program is jumping to a misaligned instruction. Something is very wrong!
+	- Try enabling the RISCV_EXT_C CMake option and see if perhaps your RISC-V programs are built with compressed instructions enabled. They are not very performant in libriscv, but they are pretty standard. For example the standard 64-bit RISC-V architecture is RV64GC, while the most performant in libriscv is RV64G.

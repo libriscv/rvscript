@@ -1,5 +1,7 @@
 
 # libriscv
+# C-extension is supported, but is not very performant
+option(RISCV_EXT_C        "" OFF)
 option(RISCV_EXPERIMENTAL "" ON)
 option(RISCV_MULTIPROCESS "" ON)
 
