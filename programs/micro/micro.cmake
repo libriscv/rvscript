@@ -1,7 +1,7 @@
 option(LTO         "Link-time optimizations" ON)
 option(GCSECTIONS  "Garbage collect empty sections" ON)
 set(VERSION_FILE   "symbols.map" CACHE STRING "Retained symbols file")
-option(STRIP_SYMBOLS "Remove all symbols except the public API" ON)
+option(STRIP_SYMBOLS "Remove all symbols except the public API" OFF)
 
 #
 # Build configuration
