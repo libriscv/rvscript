@@ -143,18 +143,17 @@ git clone https://github.com/riscv/riscv-gnu-toolchain.git
 cd riscv-gnu-toolchain
 git submodule update --depth 1 --init
 <install dependencies for GCC on your particular system here>
-./configure --prefix=$HOME/riscv --with-arch=rv64gc --with-abi=lp64d
+./configure --prefix=$HOME/riscv --with-arch=rv64g --with-abi=lp64d
 make -j8
 ```
 For 32-bit RISC-V the incantation becomes:
 ```
-./configure --prefix=$HOME/riscv --with-arch=rv32gc --with-abi=ilp32d
+./configure --prefix=$HOME/riscv --with-arch=rv32g --with-abi=ilp32d
 ```
-
 
 This compiler will be automatically used by the CMake script in the micro folder. Check out `micro/toolchain.cmake` for the details.
 
-It's technically possible to build without any system files at all, but you will need to provide some minimal C++ headers for convenience: All freestanding headers, functional, type_traits and whatever else you need yourself. I recommend just installing the whole thing and just not link against it. The barebones example in libriscv does this pretty well. Check out how it can build a custom environment in 4 different ways, including raw clang builds. Unfortunately, as mentioned above, if we can't even use std::string because there is no standard library, we might risk being hampered. Scripting is better when it's easy and straightforward.
+It's technically possible to build without any system files at all, but you will need to provide some minimal C++ headers for convenience: All freestanding headers, functional, type_traits and whatever else you need yourself. I recommend just installing the whole thing and just not link against it. The barebones example in libriscv does this pretty well. Check out how it can build a custom environment in 4 different ways, including raw clang builds. Unfortunately, as mentioned above, if we can't even use std::string because there is no standard library, we might risk being hampered. Scripting is better when it's easy and straightforward, and this repository tries to make things easy.
 
 ## Building script files
 
@@ -178,7 +177,7 @@ add_micro_binary(my.elf
 )
 ```
 
-Any functions you want to be callable from outside must be listed in the symbols file if you want them to not be pruned when stripping symbols, usually `programs/symbols.map`. The file is shared between all programs. The symbol file is a text file with a list of symbols that are to be left alone when stripping the script programs. These symbols are usually the ones you want to be made visible so that we can call public functions from the engine. In other words, if the function `start` is made public, by retaining it, then you can call the function from the engine like so: `myscript.call("start")`. Note that even GC-sections will not prune functions that are using the `PUBLIC()` macro. This is because of `__attribute__((used, retain))`. It's only when the `STRIP_SYMBOLS` CMake option is enabled in `programs` that you need to care about the `symbols.map` file.
+Any functions you want to be callable from outside should be listed in the symbols file if you want them to not be pruned when stripping symbols, usually `programs/symbols.map`. The file is shared between all programs. The symbol file is a text file with a list of symbols that are to be left alone when stripping the script programs. Stripping is enabled by default in micro.cmake, but you can change that at your convenience. These symbols are usually the ones you want to be made visible so that we can call public functions from the engine. In other words, if the function `start` is made public, by retaining it, then you can call the function from the engine like so: `myscript.call("start")`. Note that even GC-sections will not prune functions that are using the `PUBLIC()` macro. This is because of `__attribute__((used, retain))`. It's only when the `STRIP_SYMBOLS` CMake option is enabled in `programs` that you need to care about the `symbols.map` file.
 
 There is a lot of helper functionality built to make it easy to drop in new programs. See `engine/src/main.cpp` for some example code.
 
@@ -195,11 +194,11 @@ gdb-multiarch myprogram.elf
 target remote localhost:2159
 ```
 
+
 ## Building with C++ RTTI and exceptions
 
-The programs `CMakeLists.txt` is used to build programs. Go into the build folder in `programs/build`. Enable the RTTI_EXCEPT CMake option using ccmake or you can also edit `build.sh` and add `-DRTTI_EXCEPT=ON` to the arguments passed to CMake. Run `build.sh` in to build any changes.
+Exceptions and RTTI are currently always enabled, and will bloat the binary by at least 170k according to my measurements. Additionally, you will have to increase the maximum allotted number of instructions to a call by at least 600k instructions, as the first exception thrown will have to run through a massive amount of code. However, any code that does not throw exceptions as part of normal operation will be fine performance-wise.
 
-Exceptions and RTTI will bloat the binary by at least 170k according to my measurements. Additionally, you will have to increase the maximum allotted number of instructions to a call by at least 600k instructions, as the first exception thrown will have to run through a massive amount of code. However, any code that does not throw exceptions as part of normal operation will be fine. It could also be fine to just give up when an exception is thrown, although I recommend re-initializing the machine (around 10-20 micros on my hardware).
 
 ## WSL2 support
 
@@ -230,6 +229,7 @@ Remember to use `.exportc` to make your Nim entry functions callable from the ou
 
 You may also have to enable RTTI and exceptions.
 
+
 ## Details
 
 I have written in detail about this subject here:
@@ -241,6 +241,7 @@ I have written in detail about this subject here:
 3: https://medium.com/@fwsgonzo/adventures-in-game-engine-programming-part-3-3895a9f5af1d
 
 Part 3 is a good introduction that will among other things answer the 'why'.
+
 
 ## Creating an API
 
@@ -289,7 +290,7 @@ myscript.set_dynamic_call("struct_by_ref",
 
 Also, let's take a `char* buffer, size_t length` pair as argument:
 ```
-myscript.set_dynamic_call("struct_by_ref",
+myscript.set_dynamic_call("big_data",
 	[] (auto& script) {
 		// A Buffer is a list of pointers to fragmented virtual memory,
 		// which cannot be guaranteed to be sequential.
@@ -308,7 +309,11 @@ myscript.set_dynamic_call("struct_by_ref",
 	});
 ```
 
-
+In this case we would add this to `dyncalls.json`:
+```
+"big_data":      "void sys_big_data (const char*, size_t)"
+```
+See `libriscv/memory.hpp` for a list of helper functions, each with a specific purpose.
 
 ## Common Issues
 
