@@ -2,7 +2,7 @@
 
 This repository implements a game engine oriented scripting system using [libriscv](https://github.com/fwsGonzo/libriscv) as a backend. By using a fast virtual machine with low call overhead and modern programming techniques like compile-time programming we can have a fast budgeted script that lives in a separate address space.
 
-The guest environment is modern C++20 using GCC 11.1 with an option for enabling RTTI and exceptions. Several CRT functions have been implemented as system calls, and will have good performance. There is also Nim support and some example code.
+The guest environment is modern C++20 using GCC 11.1 with RTTI and exceptions enabled. Several CRT functions have been implemented as system calls, and will have good performance. There is also Nim support and some example code.
 
 The example program has some basic example timers and threads, as well as multiple machines to call into and between. The repository is a starting point for anyone who wants to try to use this in their game engine.
 
@@ -115,8 +115,6 @@ Skipped over breakpoint in nim:0x10334. Break here with DEBUG=1.
 > median 19290ns  		lowest: 19175ns     	highest: 19849ns
 ```
 
-This particular output is with C++ RTTI and exceptions enabled.
-
 
 ## Getting started
 
@@ -177,6 +175,8 @@ add_micro_binary(my.elf
 )
 ```
 
+The usual suspects will work with the build system such as ccache and ninja/n2.
+
 Any functions you want to be callable from outside should be listed in the symbols file if you want them to not be pruned when stripping symbols, usually `programs/symbols.map`. The file is shared between all programs. The symbol file is a text file with a list of symbols that are to be left alone when stripping the script programs. Stripping is enabled by default in micro.cmake, but you can change that at your convenience. These symbols are usually the ones you want to be made visible so that we can call public functions from the engine. In other words, if the function `start` is made public, by retaining it, then you can call the function from the engine like so: `myscript.call("start")`. Note that even GC-sections will not prune functions that are using the `PUBLIC()` macro. This is because of `__attribute__((used, retain))`. It's only when the `STRIP_SYMBOLS` CMake option is enabled in `programs` that you need to care about the `symbols.map` file.
 
 There is a lot of helper functionality built to make it easy to drop in new programs. See `engine/src/main.cpp` for some example code.
@@ -216,7 +216,7 @@ https://github.com/fwsGonzo/script_bench/tree/master/rvprogram/rustbin
 
 You can use any programming language that can output RISC-V binaries. A tiny bit of info about Rust is that I was unable to build anything but rv64gc binaries, so you would need to enable the C extension in the build.sh script (where it is sometimes explicitly set to OFF).
 
-The easiest languages to integrate are those that transpile to C or C++, such as Nim, Haxe and Pythran. If you can stomach the extra cost of interpreting JavaScript then QuickJS can work well.
+The easiest languages to integrate are those that transpile to C or C++, such as Nim, Haxe and Pythran. If you can stomach the extra cost of interpreting JavaScript then QuickJS can work well. Any language on the [list of compilers targetting C](https://github.com/dbohdan/compilers-targeting-c) would work.
 
 Good luck.
 
