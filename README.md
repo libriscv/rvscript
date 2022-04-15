@@ -10,7 +10,7 @@ In no uncertain terms: This requires compiling ahead of time, and there is no JI
 
 ## Benchmarks
 
-https://gist.github.com/fwsGonzo/f874ba58f2bab1bf502cad47a9b2fbed
+https://gist.github.com/fwsGonzo/2f4518b66b147ee657d64496811f9edb
 
 Note that I update the gist now and then as I make improvements. The key benchmark is showing the low overhead to calling into the script.
 
@@ -177,7 +177,7 @@ add_micro_binary(my.elf
 
 The usual suspects will work with the build system such as ccache and ninja/n2.
 
-Any functions you want to be callable from outside should be listed in the symbols file if you want them to not be pruned when stripping symbols, usually `programs/symbols.map`. The file is shared between all programs. The symbol file is a text file with a list of symbols that are to be left alone when stripping the script programs. Stripping is enabled by default in micro.cmake, but you can change that at your convenience. These symbols are usually the ones you want to be made visible so that we can call public functions from the engine. In other words, if the function `start` is made public, by retaining it, then you can call the function from the engine like so: `myscript.call("start")`. Note that even GC-sections will not prune functions that are using the `PUBLIC()` macro. This is because of `__attribute__((used, retain))`. It's only when the `STRIP_SYMBOLS` CMake option is enabled in `programs` that you need to care about the `symbols.map` file.
+Any functions you want to be callable from outside should be listed in the symbols file if you want them to not be pruned when stripping symbols, usually `programs/symbols.map`. The file is shared between all programs. The symbol file is a text file with a list of symbols that are to be left alone when stripping the script programs. These symbols are usually the ones you want to be made visible so that we can call public functions from the engine. In other words, if the function `start` is made public, by retaining it, then you can call the function from the engine like so: `myscript.call("start")`. Note that even GC-sections will not prune functions that are using the `PUBLIC()` macro. This is because of `__attribute__((used, retain))`. It's only when the `STRIP_SYMBOLS` CMake option is enabled in `programs` that you need to care about the `symbols.map` file.
 
 There is a lot of helper functionality built to make it easy to drop in new programs. See `engine/src/main.cpp` for some example code.
 
@@ -195,7 +195,7 @@ target remote localhost:2159
 ```
 
 
-## Building with C++ RTTI and exceptions
+## C++ RTTI and exceptions
 
 Exceptions and RTTI are currently always enabled, and will bloat the binary by at least 170k according to my measurements. Additionally, you will have to increase the maximum allotted number of instructions to a call by at least 600k instructions, as the first exception thrown will have to run through a massive amount of code. However, any code that does not throw exceptions as part of normal operation will be fine performance-wise.
 
@@ -226,8 +226,6 @@ Good luck.
 There is Nim support with the HAVE_NIM boolean CMake option enabled. Once enabled, the `nim` program must be in PATH, and `NIM_LIBS` will be auto-detected to point to the nim lib folder. For example `/home/user/nim-1.6.4/lib`. Nim support is very experimental, especially 32-bit RISC-V as yours truly added that support in Nim and thus it cannot be trusted.
 
 Remember to use `.exportc` to make your Nim entry functions callable from the outside, and also add them to your symbols file. Last, you will need to call `NimMain()` from the `int main()` entry function. All of this is shown in the `gameplay.nim` example as well as `gameplay.cpp`. The example code gets run from `main.cpp` with `another_machine.call("nim_test");`.
-
-You may also have to enable RTTI and exceptions.
 
 
 ## Details
