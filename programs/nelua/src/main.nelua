@@ -1,0 +1,48 @@
+require 'math'
+
+do -- Recursive solution.
+  local function fibonacci(n: integer): integer
+    if n <= 2 then
+      return 1
+    end
+    return fibonacci(n - 1) + fibonacci(n - 2)
+  end
+  print("fib(10) = ", fibonacci(10))
+end
+
+do -- Tail recursive solution.
+  local function fibonacci(n: integer, current: integer, next: integer): integer
+    if n == 0 then
+      return current
+    end
+    return fibonacci(n - 1, next, current + next)
+  end
+  print("fib(10) = ", fibonacci(10, 0, 1))
+end
+
+do -- Iterative solution.
+  local function fibonacci(n: integer): integer
+    local first, second = 0, 1
+    for i=1,n do
+      first, second = second, first
+      second = second + first
+    end
+    return first
+  end
+  print("fib(10) = ", fibonacci(10))
+end
+
+do -- Analytic solution.
+  local function fibonacci(n: integer): integer
+    local p = (1.0 + math.sqrt(5.0)) / 2.0
+    local q = 1.0 / p
+    return math.floor((p^n + q^n) / math.sqrt(5.0))
+  end
+  print("fib(10) = ", fibonacci(10))
+end
+
+-- callable exported C function
+global function hello(): cint <cexport, codename 'hello_nelua'>
+  print("Hello from Nelua")
+  return 666
+end

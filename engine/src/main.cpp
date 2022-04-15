@@ -160,6 +160,9 @@ int main()
 	void do_nim_testing(bool debug);
 	do_nim_testing(debug);
 
+	void do_nelua_testing(bool debug);
+	do_nelua_testing(debug);
+
 	return 0;
 }
 
@@ -192,6 +195,29 @@ void do_nim_testing(bool debug)
 			const auto address = nim_machine.address_of("bench_nim");
 			nim_machine.vmbench(address);
 			nim_machine.stdout_enable(true);
+		}
+	}
+}
+
+void do_nelua_testing(bool debug)
+{
+	/* If the nelua program was built, we can run nelua_sum */
+#if RISCV_ARCH == 32
+#   define NELUAPATH  "../programs/nelua/riscv32-unknown-elf"
+#else
+#   define NELUAPATH  "../programs/nelua/riscv64-unknown-elf"
+#endif
+	const char* filename = NELUAPATH "/hello_nelua";
+	if (access(filename, F_OK) == 0)
+	{
+		Scripts::load_binary("hello_nelua",
+			filename,
+			NELUAPATH "/../src/default.symbols");
+		auto& machine = Scripts::create("nelua", "hello_nelua", debug);
+		if (machine.address_of("hello_nelua")) {
+			fmt::print("...\n");
+			long result = machine.call("hello_nelua");
+			fmt::print("> nelua returned {}\n", result);
 		}
 	}
 }
