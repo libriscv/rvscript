@@ -48,9 +48,7 @@ APICALL(api_write)
 					scr.name());
 				return;
 			}
-			fmt::print(">>> [{}] says: {}",
-				scr.name(),
-				std::string_view((const char*) data, len));
+			scr.print(std::string_view((const char*) data, len));
 		});
 	machine.set_result(len_g);
 }

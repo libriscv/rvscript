@@ -55,6 +55,7 @@ public:
 	bool is_debug() const noexcept { return m_is_debug; }
 	bool crashed() const noexcept { return m_crashed; }
 	bool reset(); // true if the reset was successful
+	void print(std::string_view text);
 	void print_backtrace(const gaddr_t addr);
 	void stdout_enable(bool e) noexcept { m_stdout = e; }
 	bool stdout_enabled() const noexcept { return m_stdout; }
@@ -99,6 +100,7 @@ private:
 	bool        m_is_debug = false;
 	bool        m_crashed = false;
 	bool        m_stdout = true;
+	bool        m_last_newline = true;
 	int         m_budget_overruns = 0;
 	// hash to public API direct function map
 	std::unordered_map<uint32_t, gaddr_t> m_public_api;

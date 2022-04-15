@@ -216,6 +216,16 @@ void Script::print_backtrace(const gaddr_t addr)
 			origin.address, origin.offset, origin.name);
 }
 
+void Script::print(std::string_view text)
+{
+	if (this->m_last_newline) {
+		fmt::print(">>> [{}] says: {}", this->name(), text);
+	} else {
+		fmt::print("{}", text);
+	}
+	this->m_last_newline = (text.back() == '\n');
+}
+
 void Script::hash_public_api_symbols(std::string_view contents)
 {
 	std::stringstream infile {std::string(contents)};
