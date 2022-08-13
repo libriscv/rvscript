@@ -162,9 +162,9 @@ void Script::handle_exception(gaddr_t address)
 		machine().memory.get_page_info(machine().cpu.pc()));
 	fmt::print(stderr, "Stack page: {}\n",
 		machine().memory.get_page_info(machine().cpu.reg(2)));
-	// close all threads
+	// Close active non-main thread (XXX: Probably not what we want)
 	auto& mt = machine().threads();
-	while (mt.get_thread()->tid != 0) {
+	while (mt.get_tid() != 0) {
 		auto* thread = mt.get_thread();
 		fmt::print(stderr, "Script::call Closing running thread: {}\n",
 			thread->tid);
@@ -181,7 +181,7 @@ void Script::handle_timeout(gaddr_t address)
 	auto callsite = machine().memory.lookup(address);
 	fmt::print(stderr, "Script::call hit max instructions for: {}"
 		" (Overruns: {})\n", callsite.name, m_budget_overruns);
-	// check if we need to suspend a thread
+	// Check if we need to suspend a thread
 	auto& mt = machine().threads();
 	auto* thread = mt.get_thread();
 	if (thread->tid != 0) {
@@ -265,10 +265,10 @@ void Script::each_tick_event()
 	if (this->m_tick_event == 0)
 		return;
 	auto& mt = machine().threads();
-	assert(mt.get_thread()->tid == 0 && "Avoid clobbering regs");
+	assert(mt.get_tid() == 0 && "Avoid clobbering regs");
 
 	int count = 0;
-	for (auto* thread : mt.m_blocked)
+	for (auto* thread : mt.blocked_threads())
 	{
 		if (thread->block_reason == this->m_tick_block_reason)
 			count++;
@@ -283,9 +283,9 @@ void Script::set_dynamic_call(const std::string& name, ghandler_t handler)
 	//fmt::print("{}: {:x}\n", name, hash);
 	auto it = m_dynamic_functions.find(hash);
 	if (it != m_dynamic_functions.end()) {
-		fmt::print("Dynamic function with hash {:#08x} already exists\n",
-			hash);
-		throw std::runtime_error("set_dynamic_call failed: Hash collision");
+		fmt::print("Dynamic function {} with hash {:#08x} already exists\n",
+			name, hash);
+		throw std::runtime_error("Script::set_dynamic_call failed: Hash collision with " + name);
 	}
 	m_dynamic_functions.emplace(hash, std::move(handler));
 }

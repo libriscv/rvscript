@@ -73,6 +73,7 @@ public:
 		return m_is_debug ? 0x80000000 : 0x40000000;
 	}
 
+	/* The guest heap is managed outside using system calls. */
 	gaddr_t guest_alloc(gaddr_t bytes);
 	void    guest_free(gaddr_t addr);
 	void    gdb_remote_debugging(std::string message, bool one_up, uint16_t port = 0);
