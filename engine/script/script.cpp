@@ -34,22 +34,19 @@ bool Script::reset()
 		// Fork the source machine into m_machine */
 		riscv::MachineOptions<MARCH> options {
 			.memory_max = MAX_MEMORY,
-#ifdef RISCV_BINARY_TRANSLATION
-			.translate_blocks_max = (m_is_debug ? 0u : 4000u),
-#endif
 		};
 		m_machine.reset(new machine_t(m_source_machine, options));
 
+		// setup system calls and traps
+		this->machine_setup();
+		// ensures new stack pointer is set
+		machine().cpu.reset_stack_pointer();
+		// setup program argv *after* setting new stack pointer
+		machine().setup_argv({name()});
 	} catch (std::exception& e) {
 		fmt::print(">>> Exception during initialization: {}\n", e.what());
 		throw;
 	}
-	// setup system calls and traps
-	this->machine_setup();
-	// ensures new stack pointer is set
-	machine().cpu.reset_stack_pointer();
-	// setup program argv *after* setting new stack pointer
-	machine().setup_argv({name()});
 
 	return true;
 }
@@ -116,13 +113,14 @@ bool Script::initialize()
 void Script::machine_setup()
 {
 	machine().set_userdata<Script>(this);
-	machine().set_printer(
-		[] (const char* p, size_t len) {
+	machine().set_printer((machine_t::printer_func)
+		[] (const machine_t&, const char* p, size_t len) {
 			fmt::print(stderr, "{}", std::string_view{p, len});
 		});
-	machine().set_stdin([] (const char*, size_t) -> long { return 0; });
+	machine().set_stdin((machine_t::stdin_func)
+		[](const machine_t &, char *, size_t)->long { return 0; });
 	machine().on_unhandled_csr =
-		[] (auto& machine, int csr, int, int) {
+		[] (machine_t& machine, int csr, int, int) {
 			auto& script = *machine.template get_userdata<Script> ();
 			fmt::print(stderr, "{}: Unhandled CSR: {}\n", script.name(), csr);
 		};
