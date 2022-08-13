@@ -1,10 +1,10 @@
 # RVScript
 
-This repository implements a game engine oriented scripting system using [libriscv](https://github.com/fwsGonzo/libriscv) as a backend. By using a fast virtual machine with low call overhead and modern programming techniques like compile-time programming we can have a fast budgeted script that lives in a separate address space.
+This repository implements a game engine oriented scripting system using [libriscv](https://github.com/fwsGonzo/libriscv) as a backend. By using a fast userspace emulator with low call overhead and memory usage, combined with modern programming techniques we can have a fast budgeted script that lives separately in its own address space.
 
 The guest environment is modern C++20 using GCC 11.1 with RTTI and exceptions enabled. Several CRT functions have been implemented as system calls, and will have good performance. There is also Nim support and some example code.
 
-The example program has some basic example timers and threads, as well as multiple machines to call into and between. The repository is a starting point for anyone who wants to try to use this in their game engine.
+The example programs have some basic example timers and threads, as well as multiple machines to call into and between. The repository is a starting point for anyone who wants to try to use this in their game engine.
 
 In no uncertain terms: This requires compiling ahead of time, and there is no JIT, although that means you can use it on consoles. I have so far had no issues compiling my script on WSL2 or any Linux.
 
@@ -14,7 +14,7 @@ https://gist.github.com/fwsGonzo/2f4518b66b147ee657d64496811f9edb
 
 Note that I update the gist now and then as I make improvements. The key benchmark is showing the low overhead to calling into the script.
 
-The overhead of a system call is around 5ns last time I measured it, so keep that in mind. The threshold for benefiting from using a dedicated system call is very low, but for simple things like reading the position of an entity you could be using shared memory. Read-only to the machine.
+The overhead of a system call is around 5ns last time I measured it, so keep that in mind. The threshold for benefiting from using a dedicated system call is so low that anything that falls into the used-often category could have its own system call.
 
 For generally extending the API there is dynamic calls, which have an overhead of around 20ns. Dynamic calls require looking up a hash value in a hash map, and is backed by a std::function with capture storage.
 
@@ -130,13 +130,13 @@ The engine itself should have no external dependencies outside of libriscv and l
 
 Running the engine is only half the equation as you will also want to be able to modify the scripts themselves. To do that you need a RISC-V compiler. However, the gameplay binary is provided with the repo so that you can run the engine demonstration without having to download and build a RISC-V compiler.
 
-While you can technically just install the `g++-10-riscv64-linux-gnu` package and use that to compile your scripts, keep in mind that it will use glibc and compressed instructions are enabled. Especially compressed instructions are less efficient when emulating RISC-V. Newlib is generally preferred as the libc because it doesn't bloat the binaries.
+While you can technically install the `g++-10-riscv64-linux-gnu` package and use that to compile your scripts, keep in mind that it will use glibc and compressed instructions are enabled. Especially compressed instructions are less efficient when emulating RISC-V. Newlib is generally preferred as the libc because it doesn't bloat the binaries.
 
 ## Getting a RISC-V compiler
 
 There are several ways to do this. However for now one requirement is to install the riscv-gnu-toolchains GCC 11 for RISC-V. Install it like this:
 
-```
+```sh
 git clone https://github.com/riscv/riscv-gnu-toolchain.git
 cd riscv-gnu-toolchain
 git submodule update --depth 1 --init
@@ -236,10 +236,15 @@ Good luck.
 
 ## Nim language support
 
-There is Nim support with the HAVE_NIM boolean CMake option enabled. Once enabled, the `nim` program must be in PATH, and `NIM_LIBS` will be auto-detected to point to the nim lib folder. For example `$HOME/nim-1.6.6/lib`. Nim support is very experimental, especially 32-bit RISC-V as yours truly added that support in Nim and thus it cannot be trusted.
+There is Nim support and a few examples are in the [micronim folder](/programs/micronim). The `nim` program must be in PATH, and `NIM_LIBS` will be auto-detected to point to the nim lib folder. For example `$HOME/nim-1.6.6/lib`. Nim support is experimental and the API is fairly incomplete.
 
-Remember to use `.exportc` to make your Nim entry functions callable from the outside, and also add them to your symbols file. Last, you will need to call `NimMain()` from the `int main()` entry function. All of this is shown in the `gameplay.nim` example as well as `gameplay.cpp`. The example code gets run from `main.cpp` with `another_machine.call("nim_test");`.
+The Nim build system is not easily worked with to build in parallel, but I have made an effort with the build scripts. Nim programs are built in parallel and the CMake build after is also that. There is still a lot of shared generated code, but those issues need to be solved by the Nim developers.
 
+Remember to use `.exportc` to make your Nim entry functions callable from the outside, and also add them to the [symbols file](/programs/micronim/src/default.symbols). If your function is listed in the symbols file as well as exported with `.exportc`, you should be able to straight up call it using `script.call("myfunction")`.
+
+There is example code on how to load Nim programs at the bottom of [main.cpp](/engine/src/main.cpp).
+
+Nim code can be live-debugged just like other programs by running the engine with `DEBUG=1`. The Nim programs should be built with `DEBUG=1` also, to disable optimizations and generate richer debug information.
 
 ## Details
 
@@ -261,16 +266,16 @@ The general API to adding new functionality inside the VM is to add more system 
 Dynamic calls are string names that when invoked will call a std::function on the host side. An example:
 
 ```
-myscript.set_dynamic_call("lazy", [] (auto&) {
+Script::set_dynamic_call("lazy", [] (auto&) {
 		fmt::print("I'm not doing much, tbh.\n");
 	});
 ```
-Will assign the function to the string "lazy". To call this function from inside the VM we have to amend dyncalls.json in the programs/dyncalls folder, like so:
+Will assign the function to the string "lazy". To call this function from inside the RISC-V programs we have to amend [dyncalls.json](/programs/dyncalls/dyncalls.json) in the [dyncalls folder](/programs/dyncalls), like so:
 
 ```
 "lazy":      "void sys_lazy ()"
 ```
-The build system will see the JSON changed and rebuild some API files (see `programs/dyncalls/generate.py`), and it will expose the callable function `sys_lazy`:
+The build system will see the JSON changed and rebuild some API files (see [generate.py](/programs/dyncalls/generate.py)), and it will expose the callable function `sys_lazy`:
 
 ```
 sys_lazy();
@@ -278,7 +283,7 @@ sys_lazy();
 
 A slightly more complex example, where we take an integer as argument, and return an integer as the result:
 ```
-myscript.set_dynamic_call("object_id",
+Script::set_dynamic_call("object_id",
 	[] (auto& script) {
 		const auto [id] = script.machine().template sysargs <int> ();
 		fmt::print("Object ID: {}\n", id);
@@ -289,7 +294,7 @@ myscript.set_dynamic_call("object_id",
 
 Or, let's take a struct by reference or pointer:
 ```
-myscript.set_dynamic_call("struct_by_ref",
+Script::set_dynamic_call("struct_by_ref",
 	[] (auto& script) {
 		struct Something {
 			int a, b, c, d;
@@ -301,10 +306,11 @@ myscript.set_dynamic_call("struct_by_ref",
 
 Also, let's take a `char* buffer, size_t length` pair as argument:
 ```
-myscript.set_dynamic_call("big_data",
+Script::set_dynamic_call("big_data",
 	[] (auto& script) {
 		// A Buffer is a list of pointers to fragmented virtual memory,
-		// which cannot be guaranteed to be sequential.
+		// which cannot always be guaranteed to be sequential.
+		// riscv::Buffer consumes two system call arguments (pointer + length).
 		const auto [buffer] = script.machine().template sysargs <riscv::Buffer> ();
 
 		// But we can check if it is, as a fast-path:
