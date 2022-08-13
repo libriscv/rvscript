@@ -4,19 +4,14 @@ GCC_TRIPLE="riscv64-unknown-elf"
 export CC=$GCC_TRIPLE-gcc
 export CXX=$GCC_TRIPLE-g++
 NIMCPU="--cpu=riscv64"
-NIMFILE="$PWD/${1:-src/hello.nim}"
-
-mkdir -p $GCC_TRIPLE
-pushd $GCC_TRIPLE
+NIMLIST=$PWD/files.txt
+TOOLCHAIN="$PWD/../micro/toolchain.cmake"
+FILEDIR=$PWD
 
 # find nim and replace /bin/nim with /lib to detect the Nim lib folder
 NIM_LIBS=`whereis nim`
 NIM_LIBS="${NIM_LIBS##*: }"
 NIM_LIBS="${NIM_LIBS/bin*/lib}"
-
-# temporary folder for some build output
-NIMCACHE=$PWD/nimcache
-mkdir -p $NIMCACHE
 
 if [[ -z "${DEBUG}" ]]; then
 	DMODE="-d:release"
@@ -26,9 +21,32 @@ else
 	CDEBUG="-DGCSECTIONS=OFF -DCMAKE_BUILD_TYPE=Debug"
 fi
 
-nim c --nimcache:$NIMCACHE $NIMCPU --colors:on --os:linux --gc:arc -d:useMalloc --noMain --app:lib $DMODE -c ${NIMFILE}
-jq '.compile[] [0]' $NIMCACHE/*.json > buildfiles.txt
+mkdir -p $GCC_TRIPLE
+pushd $GCC_TRIPLE
 
-cmake .. -G Ninja -DGCC_TRIPLE=$GCC_TRIPLE -DNIM_LIBS=$NIM_LIBS $CDEBUG -DCMAKE_TOOLCHAIN_FILE=../../micro/toolchain.cmake
+CMAKE_LIST=$PWD/files.cmake
+: > $CMAKE_LIST
+
+# run nim on each file and produce CMake build target
+while read file; do
+  FILEBASE=`basename --suffix=.nim $file`
+
+  # temporary folder for some build output
+  NIMCACHE=$PWD/nimcache_$FILEBASE
+  mkdir -p $NIMCACHE
+
+  nim c --nimcache:$NIMCACHE $NIMCPU --colors:on --os:linux --gc:arc -d:useMalloc --noMain --app:lib $DMODE -c $FILEDIR/$file
+  jq '.compile[] [0]' $NIMCACHE/*.json > $NIMCACHE/buildfiles.txt
+  rm -f $NIMCACHE/*.json
+
+  echo "add_micronim_binary($FILEBASE" >> "$CMAKE_LIST"
+  echo " src/default.symbols" >> "$CMAKE_LIST"
+  cat "$NIMCACHE/buildfiles.txt" >> "$CMAKE_LIST"
+  echo ")" >> "$CMAKE_LIST"
+  echo "target_include_directories($FILEBASE PRIVATE ${NIM_LIBS})" >> "$CMAKE_LIST"
+
+done < $NIMLIST
+
+cmake .. -G Ninja -DGCC_TRIPLE=$GCC_TRIPLE -DNIM_LIBS=$NIM_LIBS $CDEBUG -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN
 ninja
 popd

@@ -1,5 +1,4 @@
 proc hello_nim() {.cdecl, exportc.}
-proc bench_nim() {.cdecl, exportc.}
 import json
 import ffi
 
@@ -13,6 +12,3 @@ proc hello_nim() =
     print "Before debugging\n"
     breakpoint()
     print "Hello Nim World!\n" & j.pretty() & "\n"
-
-proc bench_nim() =
-    discard j.pretty()

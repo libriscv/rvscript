@@ -164,33 +164,38 @@ int main()
 }
 
 #include <unistd.h>
+static Script* do_nim_load_and_create(const std::string& name, bool debug)
+{
+	/* If the nim program exists, load it */
+#if RISCV_ARCH == 32
+#   define NIMPATH  "../programs/micronim/riscv32-unknown-elf/"
+#else
+#   define NIMPATH  "../programs/micronim/riscv64-unknown-elf/"
+#endif
+	const std::string filename = NIMPATH + name;
+	if (access(filename.c_str(), F_OK) == 0)
+	{
+		const std::string binary = name + ".nim.elf";
+		Scripts::load_binary(binary,
+			filename,
+			NIMPATH "../src/default.symbols");
+		return &Scripts::create("nim." + name, binary, debug);
+	}
+	return nullptr;
+}
 void do_nim_testing(bool debug)
 {
-	/* If the nim program was built, we can run hello_nim */
-#if RISCV_ARCH == 32
-#   define NIMPATH  "../programs/micronim/riscv32-unknown-elf"
-#else
-#   define NIMPATH  "../programs/micronim/riscv64-unknown-elf"
-#endif
-	const char* nimfile = NIMPATH "/hello_nim";
-	if (access(nimfile, F_OK) == 0)
-	{
-		Scripts::load_binary("micronim",
-			nimfile,
-			NIMPATH "/../src/default.symbols");
-		auto& nim_machine = Scripts::create("nim", "micronim", debug);
-		if (nim_machine.address_of("hello_nim")) {
-			fmt::print("...\n");
-			/* This call sets a breakpoint, which if you don't connect in
-			   time will be skipped over, and execution continues. */
-			nim_machine.call("hello_nim");
+	auto* nim1 = do_nim_load_and_create("hello", debug);
+	if (nim1 && nim1->address_of("hello_nim")) {
+		fmt::print("...\n");
+		/* This call initiates a breakpoint, which you can connect to
+			remotely with GDB. Once disconnected, execution continues. */
+		nim1->call("hello_nim");
+	}
 
-			nim_machine.reset_dynamic_call("remote_gdb", [] (auto&) {});
-			nim_machine.stdout_enable(false);
-			const auto address = nim_machine.address_of("bench_nim");
-			nim_machine.vmbench(address, 10);
-			nim_machine.stdout_enable(true);
-		}
+	auto* nim2 = do_nim_load_and_create("bench", debug);
+	if (nim2) {
+		nim2->call("start");
 	}
 }
 
