@@ -4,9 +4,8 @@ project(builder C)
 
 option(LTO         "Link-time optimizations" ON)
 option(GCSECTIONS  "Garbage collect empty sections" OFF)
-option(DEBUGGING   "Add debugging information" OFF)
 set(VERSION_FILE   "symbols.map" CACHE STRING "Retained symbols file")
-option(STRIP_SYMBOLS "Remove all symbols except the public API" ON)
+option(STRIP_SYMBOLS "Remove all symbols except the public API" OFF)
 
 #
 # Build configuration
@@ -19,12 +18,14 @@ if (GCC_TRIPLE STREQUAL "riscv32-unknown-elf")
 else()
 	set(RISCV_ABI "-march=rv64g -mabi=lp64d")
 endif()
-set(WARNINGS  "-Wall -Wextra -Werror=return-type -Wno-unused")
+set(WARNINGS  "-Wall -Werror=return-type -Wno-parentheses -Wno-unused")
 set(COMMON    "-fno-math-errno -fno-stack-protector")
-if (DEBUGGING)
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 	set (COMMON "${COMMON} -ggdb3 -O0")
+	set (DEBUGGING TRUE)
 endif()
 set(FLAGS "${WARNINGS} ${RISCV_ABI} ${COMMON}")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Ttext-segment=0x400000")
 
 if (LTO AND NOT DEBUGGING)
 	set(FLAGS "${FLAGS} -flto -ffat-lto-objects")

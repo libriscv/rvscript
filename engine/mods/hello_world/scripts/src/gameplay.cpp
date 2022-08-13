@@ -11,6 +11,7 @@ static long some_function(int value, SomeStruct&);
 int main()
 {
 	/* This gets called before anything else, on each machine */
+	return 0;
 }
 
 /* These are used for benchmarking */
@@ -63,7 +64,7 @@ struct MultiprocessWork {
 		return sum;
 	}
 };
-static constexpr size_t WORK_SIZE = 8192;
+static constexpr size_t WORK_SIZE = 2048;
 static constexpr size_t MP_WORKERS = 4;
 static bool work_output = false;
 static MultiprocessWork<WORK_SIZE> mp_work;
@@ -201,7 +202,8 @@ PUBLIC(void start())
 
 	measure("Multi-processing overhead", multiprocessing_overhead);
 	measure("Multi-processing dotprod", test_multiprocessing);
-	measure("Single-processing dotprod", test_singleprocessing);
+	/* Takes a long time. Disabled (for now). */
+	//measure("Single-processing dotprod", test_singleprocessing);
 
 	int a = 1, b = 2, c = 3;
 	microthread::oneshot([] (int a, int b, int c) {

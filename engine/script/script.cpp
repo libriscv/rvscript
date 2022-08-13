@@ -42,7 +42,7 @@ bool Script::reset()
 		// ensures new stack pointer is set
 		machine().cpu.reset_stack_pointer();
 		// setup program argv *after* setting new stack pointer
-		machine().setup_argv({name()});
+		machine().setup_linux({name()}, {"LC_TYPE=C", "LC_ALL=C", "USER=root"});
 	} catch (std::exception& e) {
 		fmt::print(">>> Exception during initialization: {}\n", e.what());
 		throw;
@@ -125,7 +125,7 @@ void Script::machine_setup()
 			fmt::print(stderr, "{}: Unhandled CSR: {}\n", script.name(), csr);
 		};
 	// Add a few Newlib system calls (just in case)
-	machine().setup_newlib_syscalls();
+	machine().setup_linux_syscalls();
 	// Add native system call interface
 	machine().setup_native_heap(HEAP_SYSCALLS_BASE, heap_area(), MAX_HEAP);
 	machine().setup_native_memory(MEMORY_SYSCALLS_BASE);

@@ -20,10 +20,10 @@ mkdir -p $NIMCACHE
 
 if [[ -z "${DEBUG}" ]]; then
 	DMODE="-d:release"
-	CDEBUG="-DGCSECTIONS=ON -DDEBUGGING=OFF -DCMAKE_BUILD_TYPE=Release"
+	CDEBUG="-DGCSECTIONS=ON -DCMAKE_BUILD_TYPE=Release"
 else
 	DMODE="--debugger:native"
-	CDEBUG="-DGCSECTIONS=OFF -DDEBUGGING=ON -DCMAKE_BUILD_TYPE=Debug"
+	CDEBUG="-DGCSECTIONS=OFF -DCMAKE_BUILD_TYPE=Debug"
 fi
 
 nim c --nimcache:$NIMCACHE $NIMCPU --colors:on --os:linux --gc:arc -d:useMalloc --noMain --app:lib $DMODE -c ${NIMFILE}

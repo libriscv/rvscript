@@ -23,6 +23,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 	set(DEBUGGING TRUE)
 endif()
 set(CMAKE_CXX_FLAGS "${WARNINGS} ${RISCV_ABI} -std=c++20 ${COMMON}")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Ttext-segment=0x400000")
 
 if (LTO)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto -ffat-lto-objects")

@@ -120,7 +120,7 @@ Skipped over breakpoint in nim:0x10334. Break here with DEBUG=1.
 
 Install cmake, git, clang-12, lld-12 or later for your system. You can also use GCC 11.1 or later.
 
-Run `setup.sh` to make sure that libriscv is initialized properly. Then go into the engine folder and run:
+Run [setup.sh](/setup.sh) to make sure that libriscv is initialized properly. Then go into the engine folder and run:
 
 ```bash
 bash build.sh
@@ -149,9 +149,14 @@ For 32-bit RISC-V the incantation becomes:
 ./configure --prefix=$HOME/riscv --with-arch=rv32g --with-abi=ilp32d
 ```
 
-This compiler will be automatically used by the CMake script in the micro folder. Check out `micro/toolchain.cmake` for the details.
+Add `$HOME/riscv` to your PATH by adding `export PATH=$PATH:$HOME/riscv/bin` to your `~/.bashrc` file. After you have done this, close and reopen your terminals. You should be able to tab-complete `riscv64-unknown-elf-` now.
 
-It's technically possible to build without any system files at all, but you will need to provide some minimal C++ headers for convenience: All freestanding headers, functional, type_traits and whatever else you need yourself. I recommend just installing the whole thing and just not link against it. The barebones example in libriscv does this pretty well. Check out how it can build a custom environment in 4 different ways, including raw clang builds. Unfortunately, as mentioned above, if we can't even use std::string because there is no standard library, we might risk being hampered. Scripting is better when it's easy and straightforward, and this repository tries to make things easy.
+This compiler will be used by the CMake script in the micro folder. Check out `micro/toolchain.cmake` for the details.
+
+```
+$ riscv64-unknown-elf-g++ --version
+riscv64-unknown-elf-g++ (g5964b5cd7) 11.1.0
+```
 
 ## Building script files
 
@@ -177,11 +182,19 @@ add_micro_binary(my.elf
 
 The usual suspects will work with the build system such as ccache and ninja/n2.
 
-Any functions you want to be callable from outside should be listed in the symbols file if you want them to not be pruned when stripping symbols, usually `programs/symbols.map`. The file is shared between all programs. The symbol file is a text file with a list of symbols that are to be left alone when stripping the script programs. These symbols are usually the ones you want to be made visible so that we can call public functions from the engine. In other words, if the function `start` is made public, by retaining it, then you can call the function from the engine like so: `myscript.call("start")`. Note that even GC-sections will not prune functions that are using the `PUBLIC()` macro. This is because of `__attribute__((used, retain))`. It's only when the `STRIP_SYMBOLS` CMake option is enabled in `programs` that you need to care about the `symbols.map` file.
-
 There is a lot of helper functionality built to make it easy to drop in new programs. See `engine/src/main.cpp` for some example code.
 
-The debug.sh script will produce programs that you can remotely connect to with GDB. Run `DEBUG=1 ./build.sh` in the engine folder to enable remote debugging with GDB. The engine will listen for a remote debugger on each breakpoint in the code. It will also try to start GDB automatically and connect for you.
+
+## Stripping symbols
+
+Any functions you want to be callable from outside should be listed in the symbols file if you want them to not be pruned when stripping symbols. The symbol file is `programs/symbols.map`, and the file is shared between all programs. It is a text file with a list of symbols that are to be left alone when stripping the script programs. It is only relevant when the `STRIP_SYMBOLS` CMake option is enabled. It is disabled by default.
+
+These symbols are usually the ones you want to be made visible so that we can call public functions from the engine. In other words, if the function `start` is made public, by retaining it, then you can call the function from the engine like so: `myscript.call("start")`. Note that even GC-sections will not prune functions that are using the `PUBLIC()` macro. This is because of `__attribute__((used, retain))`.
+
+
+## Live-debugging
+
+Running `DEBUG=1 ./build.sh` in the [programs](programs) folder will produce programs that are easy to debug with GDB. Run `DEBUG=1 ./build.sh` in the engine folder to enable remote debugging with GDB. The engine will listen for a remote debugger on each breakpoint in the code. It will also try to start GDB automatically and connect for you. Remote GDB is a little bit wonky and doesn't like microthreads much but for the most part it works well.
 
 Install gdb-multiarch from your distro packaging system:
 ```
@@ -223,7 +236,7 @@ Good luck.
 
 ## Nim language support
 
-There is Nim support with the HAVE_NIM boolean CMake option enabled. Once enabled, the `nim` program must be in PATH, and `NIM_LIBS` will be auto-detected to point to the nim lib folder. For example `/home/user/nim-1.6.4/lib`. Nim support is very experimental, especially 32-bit RISC-V as yours truly added that support in Nim and thus it cannot be trusted.
+There is Nim support with the HAVE_NIM boolean CMake option enabled. Once enabled, the `nim` program must be in PATH, and `NIM_LIBS` will be auto-detected to point to the nim lib folder. For example `$HOME/nim-1.6.6/lib`. Nim support is very experimental, especially 32-bit RISC-V as yours truly added that support in Nim and thus it cannot be trusted.
 
 Remember to use `.exportc` to make your Nim entry functions callable from the outside, and also add them to your symbols file. Last, you will need to call `NimMain()` from the `int main()` entry function. All of this is shown in the `gameplay.nim` example as well as `gameplay.cpp`. The example code gets run from `main.cpp` with `another_machine.call("nim_test");`.
 

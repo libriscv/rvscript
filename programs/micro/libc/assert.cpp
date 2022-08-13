@@ -27,7 +27,7 @@ void panic(const char* reason)
 	exit(-1);
 }
 
-extern "C"
+extern "C" __attribute__((weak))
 void abort()
 {
 	print_backtrace();
@@ -57,9 +57,9 @@ void __assert_func(
 
 extern "C"
 {
-	__attribute__((used))
+	__attribute__((used, weak))
 	uintptr_t __stack_chk_guard __attribute__((section(".data"))) = 0x0C0A00FF;
-	__attribute__((used))
+	__attribute__((used, weak))
 	void __stack_chk_fail()
 	{
 		print_backtrace();

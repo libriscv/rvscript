@@ -60,7 +60,7 @@ public:
 	void stdout_enable(bool e) noexcept { m_stdout = e; }
 	bool stdout_enabled() const noexcept { return m_stdout; }
 	long vmbench(gaddr_t address, size_t ntimes = 30);
-	static long benchmark(std::function<void()>, size_t ntimes = 2000);
+	static long benchmark(std::function<void()>, size_t ntimes = 1000);
 
 	void hash_public_api_symbols_file(const std::string& file);
 	void hash_public_api_symbols(std::string_view lines);

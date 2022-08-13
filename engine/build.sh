@@ -3,7 +3,7 @@ set -e
 
 mkdir -p build
 pushd build
-cmake .. -DFLTO=ON -DCMAKE_BUILD_TYPE=Release -DSANITIZE=OFF
+cmake .. -DRISCV_EXT_C=OFF -DFLTO=ON -DCMAKE_BUILD_TYPE=Release -DSANITIZE=OFF
 make -j4
 popd
 
