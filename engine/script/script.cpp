@@ -16,7 +16,7 @@ static const int MEMORY_SYSCALLS_BASE = 575;
 static const int THREADS_SYSCALL_BASE = 590;
 // Memory area used by remote function calls and such
 static std::array<uint8_t, SHM_SIZE> shared_memory {};
-
+std::map<uint32_t, Script::ghandler_t> Script::m_dynamic_functions {};
 using riscv::crc32;
 
 Script::Script(const machine_t& smach, void* userptr, const std::string& name,
@@ -42,7 +42,7 @@ bool Script::reset()
 		// ensures new stack pointer is set
 		machine().cpu.reset_stack_pointer();
 		// setup program argv *after* setting new stack pointer
-		machine().setup_linux({name()}, {"LC_TYPE=C", "LC_ALL=C", "USER=root"});
+		machine().setup_argv({name()});
 	} catch (std::exception& e) {
 		fmt::print(">>> Exception during initialization: {}\n", e.what());
 		throw;
@@ -117,6 +117,7 @@ void Script::machine_setup()
 		[] (const machine_t&, const char* p, size_t len) {
 			fmt::print(stderr, "{}", std::string_view{p, len});
 		});
+	machine().set_debug_printer(machine().get_printer());
 	machine().set_stdin((machine_t::stdin_func)
 		[](const machine_t &, char *, size_t)->long { return 0; });
 	machine().on_unhandled_csr =
@@ -124,22 +125,13 @@ void Script::machine_setup()
 			auto& script = *machine.template get_userdata<Script> ();
 			fmt::print(stderr, "{}: Unhandled CSR: {}\n", script.name(), csr);
 		};
-	// Add a few Newlib system calls (just in case)
-	machine().setup_linux_syscalls();
-	// Add native system call interface
+	// Add native system call interfaces
 	machine().setup_native_heap(HEAP_SYSCALLS_BASE, heap_area(), MAX_HEAP);
 	machine().setup_native_memory(MEMORY_SYSCALLS_BASE);
 	machine().setup_native_threads(THREADS_SYSCALL_BASE);
-	machine().on_unhandled_syscall =
-		[] (machine_t&, int number) {
-			fmt::print(stderr, "Unhandled system call: {}\n", number);
-		};
 
 	// Install shared memory area and guard pages
 	this->add_shared_memory();
-	// We need to pass the .eh_frame location to a supc++ function,
-	// if C++ RTTI and Exceptions is enabled:
-	//machine().cpu.reg(11) = machine().memory.resolve_section(".eh_frame");
 }
 void Script::handle_exception(gaddr_t address)
 {

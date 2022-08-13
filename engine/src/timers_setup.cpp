@@ -4,7 +4,7 @@
 static Timers timers; // put this in a level structure
 
 /** Timers **/
-void setup_timer_system(Script& script)
+void setup_timer_system()
 {
 	using gaddr_t = Script::gaddr_t;
 
@@ -12,7 +12,7 @@ void setup_timer_system(Script& script)
 	// using named functions. They abstract away system calls
 	// and other low level things, and gives us a nice API
 	// with a std::function to work with.
-	script.set_dynamic_calls({
+	Script::set_dynamic_calls({
 		{"Timer::stop", [] (Script& script) {
 			// Stop timer
 			const auto [timer_id] = script.machine().sysargs<int> ();

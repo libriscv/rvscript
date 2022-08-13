@@ -40,9 +40,9 @@ public:
 
 	// Install a callback function using a string name
 	// Can be invoked from the guest using the same string name
-	void set_dynamic_call(const std::string& name, ghandler_t);
-	void set_dynamic_calls(std::vector<std::pair<std::string, ghandler_t>>);
-	void reset_dynamic_call(const std::string& name, ghandler_t = nullptr);
+	static void set_dynamic_call(const std::string& name, ghandler_t);
+	static void set_dynamic_calls(std::vector<std::pair<std::string, ghandler_t>>);
+	static void reset_dynamic_call(const std::string& name, ghandler_t = nullptr);
 	void dynamic_call(uint32_t hash, gaddr_t strname);
 
 	auto& machine() { return *m_machine; }
@@ -105,7 +105,7 @@ private:
 	// hash to public API direct function map
 	std::unordered_map<uint32_t, gaddr_t> m_public_api;
 	// map of functions that extend engine using string hashes
-	std::map<uint32_t, ghandler_t> m_dynamic_functions;
+	static std::map<uint32_t, ghandler_t> m_dynamic_functions;
 };
 static_assert(RISCV_ARCH == 32 || RISCV_ARCH == 64, "Architecture must be 32- or 64-bit");
 

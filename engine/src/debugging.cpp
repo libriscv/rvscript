@@ -85,25 +85,25 @@ void Script::gdb_remote_debugging(std::string message, bool one_up, uint16_t por
 	gdb_remote_finish(*this);
 }
 
-void setup_debugging_system(Script& script)
+void setup_debugging_system()
 {
-	script.set_dynamic_call(
-	"Debug::breakpoint", [] (Script& script) {
-		auto& machine = script.machine();
-		if (script.is_debug()) {
-			// We have to pre-emptively skip over the breakpoint instruction
-			machine.cpu.jump(machine.cpu.pc() + 4);
-			// Wait for someone to connect:
-			auto [port, info] = machine.sysargs<uint16_t, std::string> ();
-			auto message = fmt::format("Breakpoint in {}:0x{:X}.\t{}\t\t",
-				script.name(), machine.cpu.pc(), info);
-			script.gdb_remote_debugging(message, true, port);
-			// XXX: Return back(??)
-			if (!machine.stopped())
-				machine.cpu.jump(machine.cpu.pc() - 4);
-		} else {
-			fmt::print("Skipped over breakpoint in {}:0x{:X}. Break here with DEBUG=1.\n",
-				script.name(), machine.cpu.pc());
-		}
-	});
+	Script::set_dynamic_call(
+		"Debug::breakpoint", [] (Script& script) {
+			auto& machine = script.machine();
+			if (script.is_debug()) {
+				// We have to pre-emptively skip over the breakpoint instruction
+				machine.cpu.jump(machine.cpu.pc() + 4);
+				// Wait for someone to connect:
+				auto [port, info] = machine.sysargs<uint16_t, std::string> ();
+				auto message = fmt::format("Breakpoint in {}:0x{:X}.\t{}\t\t",
+					script.name(), machine.cpu.pc(), info);
+				script.gdb_remote_debugging(message, true, port);
+				// XXX: Return back(??)
+				if (!machine.stopped())
+					machine.cpu.jump(machine.cpu.pc() - 4);
+			} else {
+				fmt::print("Skipped over breakpoint in {}:0x{:X}. Break here with DEBUG=1.\n",
+					script.name(), machine.cpu.pc());
+			}
+		});
 }

@@ -26,22 +26,18 @@ int main()
 #endif
 
 	Script::setup_syscall_interface();
-	Scripts::load_binary("test",
-		"mods/hello_world/scripts/gameplay.elf",
-		"../programs/symbols.map");
+	// Dynamically extend the functionality available
+	// See: timers_setup.cpp
+	extern void setup_timer_system();
+	setup_timer_system();
+	// See: debugging.cpp
+	extern void setup_debugging_system();
+	setup_debugging_system();
 
 	/* Naming the machines allows us to call into one machine from another
 	   using this name (hashed). These machines will be fully intialized. */
 	for (int n = 1; n <= 100; n++) {
-		auto& script = Scripts::create(
-			"gameplay" + std::to_string(n), "gameplay", debug);
-		// Dynamically extend the functionality available
-		// See: timers_setup.cpp
-		extern void setup_timer_system(Script&);
-		setup_timer_system(script);
-		// See: debugging.cpp
-		extern void setup_debugging_system(Script&);
-		setup_debugging_system(script);
+		Scripts::create("gameplay" + std::to_string(n), "gameplay", debug);
 	}
 
 	/* The event_loop function can be resumed later, and can execute work
@@ -58,6 +54,7 @@ int main()
 	/* This is the main start function, which would be something like the
 	   starting function for the current levels script. You can find the
 	   implementation in mods/hello_world/scripts/src/gameplay.cpp. */
+	fmt::print("Calling start in script of size {} bytes\n", sizeof(gameplay1));
 	gameplay1.call("start");
 
 	fmt::print("...\n");
@@ -184,8 +181,6 @@ void do_nim_testing(bool debug)
 		auto& nim_machine = Scripts::create("nim", "micronim", debug);
 		if (nim_machine.address_of("hello_nim")) {
 			fmt::print("...\n");
-			extern void setup_debugging_system(Script&);
-			setup_debugging_system(nim_machine);
 			/* This call sets a breakpoint, which if you don't connect in
 			   time will be skipped over, and execution continues. */
 			nim_machine.call("hello_nim");

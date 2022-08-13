@@ -15,4 +15,4 @@ proc hello_nim() =
     print "Hello Nim World!\n" & j.pretty() & "\n"
 
 proc bench_nim() =
-    print "Hello Nim World!\n" & j.pretty() & "\n"
+    discard j.pretty()

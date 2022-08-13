@@ -275,4 +275,6 @@ void Script::setup_syscall_interface()
 		{ECALL_VEC_ROTATE,  api_vector_rotate_around},
 		{ECALL_VEC_NORMALIZE, api_vector_normalize},
 	});
+	// Add a few Newlib system calls (just in case)
+	machine_t::setup_newlib_syscalls();
 }
