@@ -1,9 +1,10 @@
 #!/bin/bash
 set -e
-GCC_TRIPLE="riscv64-unknown-elf"
+ARCH=64
+GCC_TRIPLE="riscv$ARCH-unknown-elf"
 export CC=$GCC_TRIPLE-gcc
 export CXX=$GCC_TRIPLE-g++
-NIMCPU="--cpu=riscv64"
+NIMCPU="--cpu=riscv$ARCH"
 NIMLIST=$PWD/files.txt
 TOOLCHAIN="$PWD/../micro/toolchain.cmake"
 FILEDIR=$PWD
@@ -30,7 +31,7 @@ CMAKE_LIST=$PWD/files.cmake
 nimbuild() {
   nim c --nimcache:$NIMCACHE $NIMCPU --colors:on --os:linux --gc:arc -d:useMalloc --noMain --app:lib $DMODE -c $FILEDIR/$file
   jq '.compile[] [0]' $NIMCACHE/*.json > $NIMCACHE/buildfiles.txt
-  rm -f $NIMCACHE/*.json
+  #rm -f $NIMCACHE/*.json
 }
 
 # run nim on each file asynchronously
@@ -50,7 +51,7 @@ wait
 # create CMake build scripts
 while read file; do
   FILEBASE=`basename --suffix=.nim $file`
-  echo "add_micronim_binary($FILEBASE" >> "$CMAKE_LIST"
+  echo "add_micronim_binary($FILEBASE 0x400000" >> "$CMAKE_LIST"
   echo " src/default.symbols" >> "$CMAKE_LIST"
   cat "$NIMCACHE/buildfiles.txt" >> "$CMAKE_LIST"
   echo ")" >> "$CMAKE_LIST"

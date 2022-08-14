@@ -23,7 +23,6 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 	set(DEBUGGING TRUE)
 endif()
 set(CMAKE_CXX_FLAGS "${WARNINGS} ${RISCV_ABI} -std=c++20 ${COMMON}")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Ttext-segment=0x400000")
 
 if (LTO)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto -ffat-lto-objects")
@@ -52,7 +51,7 @@ function (add_verfile NAME VERFILE)
 	target_link_libraries(${NAME} "-Wl,--retain-symbols-file=${VERFILE}")
 endfunction()
 
-function (add_micro_binary NAME)
+function (add_micro_binary NAME ORG)
 	# Find dyncall API and mark the files as generated
 	set(DYNCALL_API
 		${CMAKE_BINARY_DIR}/dyncalls/dyncall_api.cpp
@@ -65,6 +64,7 @@ function (add_micro_binary NAME)
 	# Add the whole libc directly as source files
 	target_link_libraries(${NAME} -static -Wl,--whole-archive libc -Wl,--no-whole-archive)
 	target_link_libraries(${NAME} frozen::frozen)
+	target_link_libraries(${NAME} "-Wl,-Ttext-segment=${ORG}")
 	# place ELF into the sub-projects source folder
 	set_target_properties(${NAME}
 		PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"

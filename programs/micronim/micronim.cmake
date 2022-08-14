@@ -25,7 +25,6 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 	set (DEBUGGING TRUE)
 endif()
 set(FLAGS "${WARNINGS} ${RISCV_ABI} ${COMMON}")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Ttext-segment=0x400000")
 
 if (LTO AND NOT DEBUGGING)
 	set(FLAGS "${FLAGS} -flto -ffat-lto-objects")
@@ -57,7 +56,7 @@ endfunction()
 
 set(CHPERM  ${CMAKE_CURRENT_LIST_DIR}/chperm)
 
-function (add_micronim_binary NAME VERFILE)
+function (add_micronim_binary NAME ORG VERFILE)
 	# Find dyncall API and mark the files as generated
 	set(DYNCALL_API
 		${CMAKE_BINARY_DIR}/dyncalls/dyncall_api.c
@@ -74,6 +73,7 @@ function (add_micronim_binary NAME VERFILE)
 	set_source_files_properties(env/libc.c env/heap.c
 		PROPERTIES COMPILE_FLAGS -fno-builtin)
 	target_link_libraries(${NAME} -static -static-libgcc)
+	target_link_libraries(${NAME} "-Wl,-Ttext-segment=${ORG}")
 	target_include_directories(${NAME} PUBLIC "${APIPATH}")
 	target_include_directories(${NAME} PRIVATE "env")
 	target_include_directories(${NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/dyncalls")
