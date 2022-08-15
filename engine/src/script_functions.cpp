@@ -176,7 +176,7 @@ APICALL(api_multiprocess_fork)
 	//printf("Multiprocessing (forked) stack: 0x%lX size: 0x%lX  SP=0x%lX\n",
 	//	thread->stack_base, thread->stack_size, machine.cpu.reg(riscv::REG_SP));
 	machine.multiprocess(vcpus, Script::MAX_INSTRUCTIONS,
-		thread->stack_base, thread->stack_size, true);
+		thread->stack_base, thread->stack_size);
 	machine.set_result(0);
 }
 APICALL(api_multiprocess_wait)
@@ -185,7 +185,6 @@ APICALL(api_multiprocess_wait)
 		machine.set_result(machine.multiprocess_wait());
 	} else {
 		machine.stop();
-		machine.set_result(0);
 	}
 }
 
