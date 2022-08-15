@@ -3,9 +3,9 @@ project(builder C)
 #set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(LTO         "Link-time optimizations" ON)
-option(GCSECTIONS  "Garbage collect empty sections" OFF)
+option(GCSECTIONS  "Garbage collect empty sections" ON)
 set(VERSION_FILE   "symbols.map" CACHE STRING "Retained symbols file")
-option(STRIP_SYMBOLS "Remove all symbols except the public API" OFF)
+option(STRIP_SYMBOLS "Remove all symbols except the public API" ON)
 
 #
 # Build configuration
@@ -83,8 +83,7 @@ function (add_micronim_binary NAME ORG VERFILE)
 		PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
 	)
 	# strip symbols but keep public API
-	if (TRUE)
-		if (NOT DEBUGGING)
+	if (STRIP_SYMBOLS AND NOT DEBUGGING)
 		set(VERFILE "${CMAKE_CURRENT_SOURCE_DIR}/${VERFILE}")
 		if (EXISTS "${VERFILE}")
 			add_verfile(${NAME} ${VERFILE})
@@ -93,6 +92,5 @@ function (add_micronim_binary NAME ORG VERFILE)
 		endif()
 		add_custom_command(TARGET ${NAME} POST_BUILD
 		COMMAND ${CMAKE_STRIP} --strip-debug -R .note -R .comment -- ${CMAKE_BINARY_DIR}/${NAME})
-		endif()
 	endif()
 endfunction()
