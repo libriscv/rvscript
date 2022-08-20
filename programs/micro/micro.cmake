@@ -77,7 +77,6 @@ function (add_micro_binary NAME ORG)
 		else()
 			add_verfile(${NAME} ${CMAKE_SOURCE_DIR}/${VERSION_FILE})
 		endif()
-		add_custom_command(TARGET ${NAME} POST_BUILD
-		COMMAND ${CMAKE_STRIP} --strip-debug -R .note -R .comment -- ${CMAKE_CURRENT_SOURCE_DIR}/${NAME})
+		target_link_libraries(${NAME} "-Wl,-x,-S")
 	endif()
 endfunction()

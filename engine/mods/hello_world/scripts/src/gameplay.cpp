@@ -94,7 +94,6 @@ static void vectorized_multiprocessing_function(int cpu, MultiprocessWork<WORK_S
 {
 	union alignas(32) v256 {
 		float  f[8];
-		double d[4];
 
 		__attribute__((naked))
 		static inline void zero_v1()
