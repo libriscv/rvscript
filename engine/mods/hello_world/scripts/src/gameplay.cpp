@@ -98,18 +98,13 @@ static void vectorized_multiprocessing_function(int cpu, MultiprocessWork<WORK_S
 		__attribute__((naked))
 		static inline void zero_v1()
 		{
-			asm("vxor.vv v1, v1, v1");
+			asm("vmv.v.i v1, 0");
 			asm("ret");
 		}
 		__attribute__((naked))
 		inline float sum_v1() {
 			asm("vfredusum.vs v1, v0, v1");
-
-			asm("vse32.v v1, %1"
-				: "=m"(this->f[0])
-				: "m"(this->f[0]));
-
-			asm("flw fa0, %0" : : "m"(f[0]) : "fa0");
+			asm("vfmv.f.s     fa0, v1");
 			asm("ret");
 		}
 	};
@@ -132,8 +127,7 @@ static void vectorized_multiprocessing_function(int cpu, MultiprocessWork<WORK_S
 			:
 			: "r"(b->f), "m"(b->f[0]));
 
-		asm("vfmul.vv v2, v2, v3");
-		asm("vfadd.vv v1, v1, v2");
+		asm("vfmadd.vv v1, v2, v3");
 
 		asm("vle32.v v2, %1"
 			:
@@ -142,8 +136,7 @@ static void vectorized_multiprocessing_function(int cpu, MultiprocessWork<WORK_S
 			:
 			: "r"(d->f), "m"(d->f[0]));
 
-		asm("vfmul.vv v2, v2, v3");
-		asm("vfadd.vv v1, v1, v2");
+		asm("vfmadd.vv v1, v2, v3");
 	}
 	// Sum elements
 	v256 vsum;

@@ -54,7 +54,6 @@ int main()
 	/* This is the main start function, which would be something like the
 	   starting function for the current levels script. You can find the
 	   implementation in mods/hello_world/scripts/src/gameplay.cpp. */
-	fmt::print("Calling start in script of size {} bytes\n", sizeof(gameplay1) + sizeof(gameplay1.machine()));
 	gameplay1.call("start");
 
 	fmt::print("...\n");
