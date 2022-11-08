@@ -107,7 +107,8 @@ static void test_singleprocessing()
 
 	const float sum = mp_work.final_sum();
 	if (work_output)
-		print("Single-process sum = ", sum, "\n");
+		print("Single-process sum = ", sum, " (",
+			(sum == WORK_SIZE) ? "good" : "bad", ")\n");
 }
 static void test_multiprocessing()
 {
@@ -136,8 +137,10 @@ static void test_multiprocessing()
 	// Sum the work together
 	const float sum = mp_work.final_sum();
 	if (work_output) {
-		print("Multi-process sum = ", sum, "\n");
-		print("Multi-process counter = ", mp_work.counter, "\n");
+		print("Multi-process sum = ", sum, " (",
+			(sum == WORK_SIZE) ? "good" : "bad", ")\n");
+		print("Multi-process counter = ", mp_work.counter, " (",
+			(mp_work.counter == MP_WORKERS) ? "good" : "bad", ")\n");
 		print("Multi-process result = ", strf::bin(result >> 1), " (",
 			(result == 0) ? "good" : "bad", ")\n");
 	}
@@ -202,8 +205,7 @@ PUBLIC(void start())
 
 	measure("Multi-processing overhead", multiprocessing_overhead);
 	measure("Multi-processing dotprod", test_multiprocessing);
-	/* Takes a long time. Disabled (for now). */
-	//measure("Single-processing dotprod", test_singleprocessing);
+	measure("Single-processing dotprod", test_singleprocessing);
 
 	int a = 1, b = 2, c = 3;
 	microthread::oneshot([] (int a, int b, int c) {
