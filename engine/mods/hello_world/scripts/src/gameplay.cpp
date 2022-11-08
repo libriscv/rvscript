@@ -48,11 +48,11 @@ static void farcall_lookup_testcall() {
 	fc();
 }
 template <size_t SIZE>
-struct MultiprocessWork {
-	unsigned workers = 1;
+struct alignas(32) MultiprocessWork {
 	std::array<float, SIZE> data_a;
 	std::array<float, SIZE> data_b;
 	float result[16] = {0};
+	unsigned workers = 1;
 	int counter = 0;
 
 	inline size_t work_size() const noexcept {
@@ -64,7 +64,7 @@ struct MultiprocessWork {
 		return sum;
 	}
 };
-static constexpr size_t WORK_SIZE = 2048;
+static constexpr size_t WORK_SIZE = 4096;
 static constexpr size_t MP_WORKERS = 4;
 static bool work_output = false;
 static MultiprocessWork<WORK_SIZE> mp_work;
