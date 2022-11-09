@@ -8,9 +8,9 @@ using gaddr_t = Script::gaddr_t;
 #include <sstream>
 #include "machine/include_api.hpp"
 // the shared area is read-write for the guest
-static const uint64_t STACK_BASE = 0xffffffffc0000000;
-static const uint64_t SHM_BASE   = 0x2000;
-static const uint64_t SHM_SIZE   = 2 * riscv::Page::size();
+static constexpr gaddr_t STACK_BASE = (gaddr_t)0xffffffffc0000000;
+static constexpr gaddr_t SHM_BASE   = 0x2000;
+static constexpr gaddr_t SHM_SIZE   = 2 * riscv::Page::size();
 static const int HEAP_SYSCALLS_BASE   = 570;
 static const int MEMORY_SYSCALLS_BASE = 575;
 static const int THREADS_SYSCALL_BASE = 590;

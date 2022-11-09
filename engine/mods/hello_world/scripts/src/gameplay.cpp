@@ -90,6 +90,61 @@ static void multiprocessing_function(int cpu, void* vdata)
 	work.result[cpu] = sum;
 	__sync_fetch_and_add(&work.counter, 1);
 }
+static void vectorized_multiprocessing_function(int cpu, MultiprocessWork<WORK_SIZE>& work)
+{
+	union alignas(32) v256 {
+		float  f[8];
+
+		__attribute__((naked))
+		static inline void zero_v1()
+		{
+			asm("vmv.v.i v1, 0");
+			asm("ret");
+		}
+		__attribute__((naked))
+		inline float sum_v1() {
+			asm("vfredusum.vs v1, v0, v1");
+			asm("vfmv.f.s     fa0, v1");
+			asm("ret");
+		}
+	};
+
+	const size_t start = (cpu + 0) * work.work_size();
+	const size_t end   = (cpu + 1) * work.work_size();
+
+	v256::zero_v1();
+	// Vectorized dot product
+	for (size_t i = start; i < end; i += 16) {
+		v256 *a = (v256 *)&work.data_a[i];
+		v256 *b = (v256 *)&work.data_b[i];
+		v256 *c = (v256 *)&work.data_a[i + 8];
+		v256 *d = (v256 *)&work.data_b[i + 8];
+
+		asm("vle32.v v2, %1"
+			:
+			: "r"(a->f), "m"(a->f[0]));
+		asm("vle32.v v3, %1"
+			:
+			: "r"(b->f), "m"(b->f[0]));
+
+		asm("vfmadd.vv v1, v2, v3");
+
+		asm("vle32.v v2, %1"
+			:
+			: "r"(c->f), "m"(c->f[0]));
+		asm("vle32.v v3, %1"
+			:
+			: "r"(d->f), "m"(d->f[0]));
+
+		asm("vfmadd.vv v1, v2, v3");
+	}
+	// Sum elements
+	v256 vsum;
+	const float sum = vsum.sum_v1();
+
+	work.result[cpu] = sum;
+	__sync_fetch_and_add(&work.counter, 1);
+}
 static void multiprocessing_dummy(int, void*)
 {
 }
@@ -107,12 +162,12 @@ static void test_singleprocessing()
 
 	const float sum = mp_work.final_sum();
 	if (work_output)
-		print("Single-process sum = ", sum, " (",
-			(sum == WORK_SIZE) ? "good" : "bad", ")\n");
+		print("Single-process sum = ", sum, "\n");
 }
 static void test_multiprocessing()
 {
 	mp_work.workers = MP_WORKERS;
+	mp_work.counter = 0;
 
 	// Start N extra vCPUs and execute the function
 #define MULTIPROCESS_FORK
@@ -138,11 +193,45 @@ static void test_multiprocessing()
 	const float sum = mp_work.final_sum();
 	if (work_output) {
 		print("Multi-process sum = ", sum, " (",
-			(sum == WORK_SIZE) ? "good" : "bad", ")\n");
+			  (sum == WORK_SIZE) ? "good" : "bad", ")\n");
 		print("Multi-process counter = ", mp_work.counter, " (",
-			(mp_work.counter == MP_WORKERS) ? "good" : "bad", ")\n");
+			  (mp_work.counter == MP_WORKERS) ? "good" : "bad", ")\n");
 		print("Multi-process result = ", strf::bin(result >> 1), " (",
-			(result == 0) ? "good" : "bad", ")\n");
+			  (result == 0) ? "good" : "bad", ")\n");
+	}
+}
+static void test_vectorized_singleprocessing()
+{
+	mp_work.workers = 1;
+
+	vectorized_multiprocessing_function(0, mp_work);
+
+	// Sum the work together
+	const float sum = mp_work.final_sum();
+	if (work_output) {
+		print("Vectorized sum = ", sum, "\n");
+	}
+}
+static void test_vectorized_multiprocessing()
+{
+	mp_work.workers = MP_WORKERS;
+	mp_work.counter = 0;
+
+	// Start N extra vCPUs and execute the function
+	const unsigned cpu = multiprocess(mp_work.workers);
+	if (cpu != 0) {
+		vectorized_multiprocessing_function(cpu-1, mp_work);
+	}
+	// Wait and stop workers here
+	const auto result = multiprocess_wait();
+
+	// Sum the work together
+	const float sum = mp_work.final_sum();
+	if (work_output) {
+		print("Vectorized Multi-process sum = ", sum, "\n");
+		print("Vectorized Multi-process counter = ", mp_work.counter, "\n");
+		print("Vectorized Multi-process result = ", strf::bin(result >> 1), " (",
+			  (result == 0) ? "good" : "bad", ")\n");
 	}
 }
 static void test_multiprocessing_forever()
@@ -182,7 +271,10 @@ PUBLIC(void start())
 	initialize_work(mp_work);
 	work_output = true;
 	test_multiprocessing();
+	test_vectorized_multiprocessing();
 	test_multiprocessing_forever();
+	test_vectorized_singleprocessing();
+	test_vectorized_singleprocessing();
 	test_singleprocessing();
 	work_output = false;
 
@@ -205,6 +297,9 @@ PUBLIC(void start())
 
 	measure("Multi-processing overhead", multiprocessing_overhead);
 	measure("Multi-processing dotprod", test_multiprocessing);
+	measure("RVV 4x-processing dotprod", test_vectorized_multiprocessing);
+	measure("RVV 1x-processing dotprod", test_vectorized_singleprocessing);
+	/* Takes a long time. Disabled (for now). */
 	measure("Single-processing dotprod", test_singleprocessing);
 
 	int a = 1, b = 2, c = 3;

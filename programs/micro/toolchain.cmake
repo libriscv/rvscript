@@ -5,7 +5,7 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
 if (NOT GCC_TRIPLE)
 	set(GCC_TRIPLE "riscv32-unknown-elf")
 endif()
-set(GCC_VERSION 11.1.0)
+set(GCC_VERSION 13.0.0)
 set(COMPILER_DIR $ENV{HOME}/riscv/${GCC_TRIPLE})
 set(LIBRARY_DIR $ENV{HOME}/riscv/lib/gcc/${GCC_TRIPLE}/${GCC_VERSION} CACHE STRING "GCC libraries")
 
