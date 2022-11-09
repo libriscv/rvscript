@@ -64,7 +64,7 @@ struct alignas(32) MultiprocessWork {
 		return sum;
 	}
 };
-static constexpr size_t WORK_SIZE = 4096;
+static constexpr size_t WORK_SIZE = 8192;
 static constexpr size_t MP_WORKERS = 4;
 static bool work_output = false;
 static MultiprocessWork<WORK_SIZE> mp_work;
