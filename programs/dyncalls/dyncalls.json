@@ -3,6 +3,7 @@
 	"Timer::stop": "void sys_timer_stop (int)",
 	"Timer::periodic": "int sys_timer_periodic (float, float, timer_callback, void*, size_t)",
 	"Debug::breakpoint": "void sys_breakpoint (uint16_t, const char*)",
+	"Debug::is_debug": "int sys_is_debug ()",
 
 	"empty":      "void sys_empty ()",
 	"testing":    "void sys_testing ()",

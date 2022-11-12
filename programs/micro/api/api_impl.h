@@ -166,6 +166,10 @@ inline void Game::breakpoint(std::source_location sl)
 	strf::to(buffer)(sl.file_name(), ", ", sl.function_name(), ", line ", sl.line());
 	sys_breakpoint(0, buffer);
 }
+inline bool Game::is_debugging()
+{
+	return sys_is_debug();
+}
 
 using timer_callback = void (*) (int, void*);
 inline Timer timer_periodic(float time, float period, timer_callback callback, void* data, size_t size)

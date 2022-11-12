@@ -1,6 +1,7 @@
 
 # libriscv
 option(RISCV_EXPERIMENTAL "" ON)
+option(RISCV_EXT_V "" ON)
 option(RISCV_MULTIPROCESS "" ON)
 
 add_subdirectory(libriscv/lib)

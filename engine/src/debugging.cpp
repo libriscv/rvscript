@@ -25,7 +25,7 @@ static void gdb_remote_finish(Script& script)
 	auto& machine = script.machine();
 	if (!machine.stopped()) {
 		// resume until stopped
-		machine.simulate(machine.max_instructions());
+		machine.cpu.simulate_precise(machine.max_instructions());
 	}
 }
 void Script::gdb_remote_debugging(std::string message, bool one_up, uint16_t port)
@@ -87,8 +87,8 @@ void Script::gdb_remote_debugging(std::string message, bool one_up, uint16_t por
 
 void setup_debugging_system()
 {
-	Script::set_dynamic_call(
-		"Debug::breakpoint", [] (Script& script) {
+	Script::set_dynamic_calls({
+		{"Debug::breakpoint", [] (Script& script) {
 			auto& machine = script.machine();
 			if (script.is_debug()) {
 				// We have to pre-emptively skip over the breakpoint instruction
@@ -105,5 +105,10 @@ void setup_debugging_system()
 				fmt::print("Skipped over breakpoint in {}:0x{:X}. Break here with DEBUG=1.\n",
 					script.name(), machine.cpu.pc());
 			}
-		});
+		}},
+		{"Debug::is_debug", [] (Script& script) {
+			auto& machine = script.machine();
+			machine.set_result(script.is_debug());
+		}}
+	});
 }

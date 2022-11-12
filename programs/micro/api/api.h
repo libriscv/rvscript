@@ -16,6 +16,7 @@ template <typename... Args> void print(Args&&... args);
 struct Game {
 	static void exit();
 	static void breakpoint(std::source_location sl = std::source_location::current());
+	static bool is_debugging();
 };
 uint32_t current_machine();
 

@@ -295,12 +295,15 @@ PUBLIC(void start())
 	measure("Farcall lookup", farcall_lookup_testcall);
 	measure("Farcall direct", direct_farcall_testcall);
 
+	if (Game::is_debugging() == false)
+	{
 	measure("Multi-processing overhead", multiprocessing_overhead);
 	measure("Multi-processing dotprod", test_multiprocessing);
 	measure("RVV 4x-processing dotprod", test_vectorized_multiprocessing);
 	measure("RVV 1x-processing dotprod", test_vectorized_singleprocessing);
 	/* Takes a long time. Disabled (for now). */
 	measure("Single-processing dotprod", test_singleprocessing);
+	}
 
 	int a = 1, b = 2, c = 3;
 	microthread::oneshot([] (int a, int b, int c) {
