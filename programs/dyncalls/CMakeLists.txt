@@ -1,6 +1,6 @@
 
+set(JSON_FILE "${CMAKE_SOURCE_DIR}/dynamic_calls.json")
 set(PYPROGRAM "${CMAKE_CURRENT_LIST_DIR}/generate.py")
-set(JSON_FILE "${CMAKE_CURRENT_LIST_DIR}/dyncalls.json")
 set(GEN_FILES "${CMAKE_CURRENT_BINARY_DIR}/dyncall_api")
 
 add_custom_command(
