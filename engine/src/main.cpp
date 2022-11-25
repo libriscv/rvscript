@@ -5,26 +5,6 @@
 int main()
 {
 	const bool debug = getenv("DEBUG") != nullptr;
-#ifndef EMBEDDED_MODE
-	/* A single program that will be shared among all the machines, for convenience */
-	Scripts::load_binary("gameplay",
-		"mods/hello_world/scripts/gameplay.elf",
-		"../programs/symbols.map");
-#else
-	/* "gameplay.elf" program embedded into the engine (by the build system) */
-	extern char _binary_gameplay_elf_start;
-	extern char _binary_gameplay_elf_end;
-	extern char _binary_symbols_map_start;
-	extern char _binary_symbols_map_end;
-	const size_t binary_size = &_binary_gameplay_elf_end - &_binary_gameplay_elf_start;
-	const size_t symbols_size = &_binary_symbols_map_end - &_binary_symbols_map_start;
-	/* For the purposes of debugging we supply the origin filename, however it
-	   is not used for anything other than automating GDB remote debugging. */
-	Scripts::embedded_binary("gameplay", "mods/hello_world/scripts/gameplay.elf",
-		std::string_view{&_binary_gameplay_elf_start, binary_size},
-		std::string_view{&_binary_symbols_map_start, symbols_size});
-#endif
-
 	Script::setup_syscall_interface();
 	// Dynamically extend the functionality available
 	// See: timers_setup.cpp
@@ -34,11 +14,16 @@ int main()
 	extern void setup_debugging_system();
 	setup_debugging_system();
 
-	/* Naming the machines allows us to call into one machine from another
-	   using this name (hashed). These machines will be fully intialized. */
-	for (int n = 1; n <= 100; n++) {
-		Scripts::create("gameplay" + std::to_string(n), "gameplay", debug);
-	}
+	/* A single program that will be used as shared mutable
+	   storage among all the level programs. */
+	Scripts::load_binary("gameplay",
+		"mods/hello_world/scripts/gameplay.elf", "../programs/symbols.map");
+	Scripts::create("gameplay", "gameplay", debug);
+
+	/* A single level. */
+	Scripts::load_binary("level1",
+		"mods/hello_world/scripts/level1.elf", "../programs/symbols.map");
+	Scripts::create("level1", "level1", debug);
 
 	/* The event_loop function can be resumed later, and can execute work
 	   that has been preemptively handed to it from other machines. */
@@ -46,20 +31,22 @@ int main()
 	/* A VM function call. The function must be public (listed in the symbols file). */
 	events.call("event_loop");
 
-	/* Get one of our gameplay machines */
-	auto& gameplay1 = SCRIPT("gameplay1");
-	/* Create an dynamic function for benchmarking */
-	gameplay1.set_dynamic_call("empty", [] (auto&) {});
+	/* Get the gameplay machine */
+	auto& gameplay = SCRIPT("gameplay");
 
 	/* This is the main start function, which would be something like the
 	   starting function for the current levels script. You can find the
 	   implementation in mods/hello_world/scripts/src/gameplay.cpp. */
-	gameplay1.call("start");
+	auto& level1 = SCRIPT("level1");
+
+	level1.setup_remote_calls_to(gameplay);
+
+	level1.call("start");
 
 	fmt::print("...\n");
 	/* Simulate some physics ticks */
 	for (int n = 0; n < 3; n++)
-		gameplay1.each_tick_event();
+		level1.each_tick_event();
 
 	fmt::print("...\n");
 	/* Ordinarily a game engine has a physics loop that ticks regularly,
@@ -74,13 +61,11 @@ int main()
 		events.resume(5'000);
 	});
 
-	/* Pass some non-trivial parameters to a VM function call.
-	   Also call gameplay2 instead of gameplay1. */
+	/* Pass some non-trivial parameters to a VM function call. */
 	struct C {
 		char c = 'C';
 	};
-	auto& another_machine = SCRIPT("gameplay2");
-	another_machine.call("cpp_function", "Hello", C{}, "World");
+	gameplay.call("cpp_function", "Hello", C{}, "World");
 
 	fmt::print("...\n");
 
@@ -97,14 +82,14 @@ int main()
 	/* Insert objects into memory.
 	   This allows zero-copy sharing of game state. */
 	static constexpr Script::gaddr_t OBJECT_AREA = 0xC000000;
-	another_machine.machine().memory.insert_non_owned_memory(
+	gameplay.machine().memory.insert_non_owned_memory(
 		OBJECT_AREA, objects, sizeof(objects) & ~4095);
 
 	/* Initialize object */
 	auto& obj = objects[0];
 	obj.alive = true;
 	fmt::format_to(obj.name, "{}", "myobject");
-	obj.onDeath = Event(another_machine, "myobject_death");
+	obj.onDeath = Event(gameplay, "myobject_death");
 
 	/* Simulate object dying */
 	fmt::print("Calling '{}' in '{}'\n",
@@ -117,11 +102,11 @@ int main()
 
 	/* Test dynamic functions */
 	int called = 0x0;
-	gameplay1.set_dynamic_call("testing",
+	gameplay.set_dynamic_call("testing",
 		[&] (auto&) {
 			called |= 0x1;
 		});
-	gameplay1.set_dynamic_call("testing123",
+	gameplay.set_dynamic_call("testing123",
 		[&] (auto& s) {
 			const auto [arg1, arg2, arg3] =
 				s.machine().template sysargs <int, int, int> ();
@@ -129,25 +114,31 @@ int main()
 				called |= 0x2;
 			}
 		});
-	gameplay1.call("test_dynamic_functions");
+	gameplay.call("test_dynamic_functions");
 	// All the functions should have been called
 	if (called != 0x3) exit(1);
 	// INVALID (Duplicate hash):
-	//gameplay1.set_dynamic_call("empty", [] (auto&) {});
+	//gameplay.set_dynamic_call("empty", [] (auto&) {});
 	// This will replace the function:
-	gameplay1.reset_dynamic_call("empty", [] (auto&) {});
+	gameplay.reset_dynamic_call("empty", [] (auto&) {});
 	// This will remove the function:
-	gameplay1.reset_dynamic_call("empty");
+	gameplay.reset_dynamic_call("empty");
+
+	/* Create an dynamic function for benchmarking */
+	gameplay.set_dynamic_call("empty", [](auto &) {});
+
+	// Benchmarks of various features
+	gameplay.call("benchmarks");
 
 	// (Full) Fork benchmark
 	fmt::print("Benchmarking full fork:\n");
 	Script::benchmark(
-		[&gameplay1] {
-			Script {gameplay1.machine(), nullptr, "name", "file"};
+		[&gameplay] {
+			Script {gameplay.machine(), nullptr, "name", "file"};
 		});
 	// Reset benchmark
 	fmt::print("Benchmarking reset:\n");
-	Script uhh {gameplay1.machine(), nullptr, "name", "file"};
+	Script uhh {gameplay.machine(), nullptr, "name", "file"};
 	Script::benchmark(
 		[&uhh] {
 			uhh.reset();

@@ -79,4 +79,26 @@ function (add_micro_binary NAME ORG)
 		endif()
 		target_link_libraries(${NAME} "-Wl,-x,-S")
 	endif()
+
+endfunction()
+
+# The shared program produces symbols used by --just-symbols
+# in order to provide public addresses
+function (add_shared_program NAME ORG WILDCARD)
+	add_micro_binary(${NAME} ${ORG} ${ARGN})
+	add_custom_command(
+		TARGET ${NAME} POST_BUILD
+		COMMAND ${CMAKE_OBJCOPY} -w --extract-symbol --strip-symbol=!${WILDCARD} --strip-symbol=* ${CMAKE_CURRENT_SOURCE_DIR}/${NAME} ${NAME}.syms
+	)
+endfunction()
+
+function (add_level NAME ORG)
+	add_micro_binary(${NAME} ${ORG} ${ARGN})
+endfunction()
+
+function (attach_program NAME PROGRAM)
+	set(SYMFILE ${PROGRAM}.syms)
+	add_dependencies(${NAME} ${PROGRAM})
+	set_property(TARGET ${NAME} PROPERTY LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${PROGRAM})
+	target_link_libraries(${NAME} -Wl,--just-symbols=${SYMFILE})
 endfunction()

@@ -71,6 +71,8 @@ public:
 	void add_shared_memory();
 	gaddr_t heap_area() const noexcept { return m_heap_area; }
 
+	void setup_remote_calls_to(Script&);
+
 	/* The guest heap is managed outside using system calls. */
 	gaddr_t guest_alloc(gaddr_t bytes);
 	void    guest_free(gaddr_t addr);
@@ -102,6 +104,7 @@ private:
 	bool        m_stdout = true;
 	bool        m_last_newline = true;
 	int         m_budget_overruns = 0;
+	Script*     m_call_dest = nullptr;
 	// hash to public API direct function map
 	std::unordered_map<uint32_t, gaddr_t> m_public_api;
 	// map of functions that extend engine using string hashes
@@ -112,6 +115,7 @@ static_assert(RISCV_ARCH == 32 || RISCV_ARCH == 64, "Architecture must be 32- or
 template <typename... Args>
 inline long Script::call(gaddr_t address, Args&&... args)
 {
+	machine().reset_instruction_counter();
 	try {
 		return machine().vmcall<MAX_INSTRUCTIONS>(
 			address, std::forward<Args>(args)...);

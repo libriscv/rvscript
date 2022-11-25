@@ -13,7 +13,14 @@
 # that we call into can have other base addresses.
 # 3. The remaining arguments are source files.
 
-add_micro_binary(gameplay.elf 0x400000
+add_shared_program(gameplay.elf 0x50000000
+	*gameplay*
 	"src/gameplay.cpp"
 	"src/events.cpp"
 )
+
+add_level(level1.elf 0x400000
+	"src/level1.cpp"
+	"src/events.cpp"
+)
+attach_program(level1.elf gameplay.elf)
