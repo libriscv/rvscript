@@ -125,6 +125,10 @@ void Script::machine_setup()
 			auto& script = *machine.template get_userdata<Script> ();
 			fmt::print(stderr, "{}: Unhandled CSR: {}\n", script.name(), csr);
 		};
+	// Allocate heap area using mmap
+	if (m_heap_area == 0x0) {
+		this->m_heap_area = machine().memory.mmap_allocate(MAX_HEAP);
+	}
 	// Add native system call interfaces
 	machine().setup_native_heap(HEAP_SYSCALLS_BASE, heap_area(), MAX_HEAP);
 	machine().setup_native_memory(MEMORY_SYSCALLS_BASE);

@@ -107,33 +107,13 @@ inline uint32_t current_machine()
 }
 #define RUNNING_ON(mach) (api::current_machine() == crc32(mach))
 
-extern "C" long sys_multiprocess(unsigned, void*, size_t, multiprocess_func_t, void*);
-inline unsigned multiprocess(unsigned cpus, multiprocess_func_t func, void* data)
-{
-	constexpr size_t STACK_SIZE = 512 * 1024u;
-	static uint64_t* mp_stack = nullptr;
-	if (mp_stack  == nullptr) {
-		mp_stack = new uint64_t[STACK_SIZE / sizeof(uint64_t)];
-	}
-
-	return sys_multiprocess(cpus, mp_stack, STACK_SIZE, func, data);
-}
-__attribute__((always_inline))
 inline unsigned multiprocess(unsigned cpus)
 {
-	register unsigned a0 asm("a0") = cpus;
-	register int     sid asm("a7") = ECALL_MULTIPROCESS_FORK;
-
-	asm volatile ("ecall" : "+r"(a0) : "r"(sid));
-	return a0;
+	return sys_multiprocess(cpus);
 }
 inline uint32_t multiprocess_wait()
 {
-	register unsigned a0 asm("a0");
-	register int     sid asm("a7") = ECALL_MULTIPROCESS_WAIT;
-
-	asm volatile ("ecall" : "=r"(a0) : "r"(sid) : "memory");
-	return a0;
+	return sys_multiprocess_wait();
 }
 
 inline void each_frame_helper(int count, int reason)

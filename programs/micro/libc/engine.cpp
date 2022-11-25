@@ -45,19 +45,6 @@ asm(".global sys_interrupt\n"
 
 asm(".global sys_multiprocess\n"
 "sys_multiprocess:\n"
-"	li a7, " STRINGIFY(ECALL_MULTIPROCESS) "\n"
-"	ecall\n"
-"   beqz a0, sys_multiprocess_ret\n" // Early return for vCPU 0
-// Otherwise, create a function call
-"   addi a0, a0, -1\n" // Subtract 1 from vCPU ID, making it 0..N-1
-"   mv a1, a4\n"       // Move work data to argument 1
-"   jalr ra, a3\n"     // Direct jump to work function
-"   wfi\n"             // Stop machine directly
-"sys_multiprocess_ret:\n"
-"   ret\n");           // Return to caller
-
-asm(".global sys_multiprocess_fork\n"
-"sys_multiprocess_fork:\n"
 "	li a7, " STRINGIFY(ECALL_MULTIPROCESS_FORK) "\n"
 "	ecall\n"
 "   ret\n");           // Return to caller

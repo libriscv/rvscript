@@ -69,9 +69,7 @@ public:
 	gaddr_t api_function_from_hash(uint32_t);
 
 	void add_shared_memory();
-	gaddr_t heap_area() const noexcept {
-		return m_is_debug ? 0x80000000 : 0x40000000;
-	}
+	gaddr_t heap_area() const noexcept { return m_heap_area; }
 
 	/* The guest heap is managed outside using system calls. */
 	gaddr_t guest_alloc(gaddr_t bytes);
@@ -93,6 +91,7 @@ private:
 	std::unique_ptr<machine_t> m_machine = nullptr;
 	const machine_t& m_source_machine;
 	void*       m_userptr;
+	gaddr_t     m_heap_area = 0;
 	gaddr_t     m_tick_event = 0;
 	int         m_tick_block_reason = 0;
 	std::string m_name;

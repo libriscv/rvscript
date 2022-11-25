@@ -145,13 +145,6 @@ static void vectorized_multiprocessing_function(int cpu, MultiprocessWork<WORK_S
 	work.result[cpu] = sum;
 	__sync_fetch_and_add(&work.counter, 1);
 }
-static void multiprocessing_dummy(int, void*)
-{
-}
-static void multiprocessing_forever(int, void*)
-{
-	while (true);
-}
 
 static void test_singleprocessing()
 {
@@ -169,15 +162,8 @@ static void test_multiprocessing()
 	mp_work.workers = MP_WORKERS;
 	mp_work.counter = 0;
 
-	// Start N extra vCPUs and execute the function
-#define MULTIPROCESS_FORK
-#ifndef MULTIPROCESS_FORK
-	// Method 1: Start new workers, each with their own stacks
-	// then call the given function. Most of this is handled
-	// in RISC-V assembly.
-	multiprocess(mp_work.workers, multiprocessing_function, &mp_work);
-#else
-	// Method 2: Fork this machine and wait until multiprocessing
+	// -- Start N extra vCPUs and execute the function --
+	// Fork this machine and wait until multiprocessing
 	// ends, by calling multiprocess_wait() on all workers. Each
 	// worker uses the current stack, copy-on-write. No need for
 	// hand-written assembly to handle this variant.
@@ -185,7 +171,7 @@ static void test_multiprocessing()
 	if (cpu != 0) {
 		multiprocessing_function(cpu-1, &mp_work);
 	}
-#endif
+
 	// Wait and stop workers here
 	const auto result = multiprocess_wait();
 
@@ -236,7 +222,8 @@ static void test_vectorized_multiprocessing()
 }
 static void test_multiprocessing_forever()
 {
-	multiprocess(4, multiprocessing_forever);
+	unsigned cpu = multiprocess(4);
+	if (cpu != 0) while (true);
 	auto res = multiprocess_wait();
 	print("Forever multiprocessing result: ", strf::bin(res >> 1),
 		" (", (res == 0) ? "good" : "bad", ")\n");
@@ -246,18 +233,11 @@ static void multiprocessing_overhead()
 	mp_work.workers = MP_WORKERS;
 
 	// Start the vCPUs
-#ifndef MULTIPROCESS_FORK
-	multiprocess(MP_WORKERS, multiprocessing_dummy, nullptr);
-	// Wait for all multiprocessing workers
-	multiprocess_wait();
-#else
 	unsigned cpu = multiprocess(MP_WORKERS);
 	if (cpu != 0) {
-		multiprocessing_dummy (cpu-1, &mp_work);
 		// Finish multiprocessing here
 		multiprocess_wait();
 	}
-#endif
 }
 
 /* This is the function that gets called at the start */

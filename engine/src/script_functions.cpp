@@ -162,13 +162,6 @@ APICALL(api_machine_hash)
 	machine.set_result(script(machine).hash());
 }
 
-APICALL(api_multiprocess)
-{
-	auto [vcpus, stk, stksize] = machine.sysargs <unsigned, gaddr_t, gaddr_t> ();
-	machine.multiprocess(vcpus, Script::MAX_INSTRUCTIONS,
-		(gaddr_t)stk, (gaddr_t)stksize);
-	machine.set_result(0);
-}
 APICALL(api_multiprocess_fork)
 {
 	auto [vcpus] = machine.sysargs <unsigned> ();
@@ -261,7 +254,6 @@ void Script::setup_syscall_interface()
 		{ECALL_INTERRUPT,   api_interrupt},
 		{ECALL_MACHINE_HASH, api_machine_hash},
 		{ECALL_EACH_FRAME,  api_each_frame},
-		{ECALL_MULTIPROCESS, api_multiprocess},
 		{ECALL_MULTIPROCESS_FORK, api_multiprocess_fork},
 		{ECALL_MULTIPROCESS_WAIT, api_multiprocess_wait},
 
