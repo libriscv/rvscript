@@ -8,7 +8,7 @@ using gaddr_t = Script::gaddr_t;
 #include <sstream>
 #include "machine/include_api.hpp"
 // the shared area is read-write for the guest
-static constexpr gaddr_t STACK_BASE = (gaddr_t)0xffffffffc0000000;
+static constexpr size_t  STACK_SIZE = 0x100000;
 static constexpr gaddr_t SHM_BASE   = 0x2000;
 static constexpr gaddr_t SHM_SIZE   = 2 * riscv::Page::size();
 static constexpr gaddr_t REMOTE_IMG_BASE = 0x50000000;
@@ -35,13 +35,12 @@ bool Script::reset()
 		// Fork the source machine into m_machine */
 		riscv::MachineOptions<MARCH> options {
 			.memory_max = MAX_MEMORY,
+			.stack_size = STACK_SIZE
 		};
 		m_machine.reset(new machine_t(m_source_machine, options));
 
 		// setup system calls and traps
 		this->machine_setup();
-		// ensures new stack pointer is set
-		machine().cpu.reset_stack_pointer();
 		// setup program argv *after* setting new stack pointer
 		machine().setup_argv({name()});
 	} catch (std::exception& e) {
@@ -55,25 +54,18 @@ bool Script::reset()
 void Script::add_shared_memory()
 {
 	auto& mem = machine().memory;
-	const auto stack_pageno = (mem.stack_initial() / riscv::Page::size()) - 1;
-	const auto stack_baseno = STACK_BASE / riscv::Page::size();
-
-	const auto stack_addr = stack_pageno * riscv::Page::size();
-	mem.set_stack_initial(stack_addr);
+	const auto stack_addr = mem.stack_initial();
+	const auto stack_base = stack_addr - STACK_SIZE;
 
 	// Each thread should have its own stack, but the boundaries are
 	// usually not known. To help out things like forked multiprocessing
 	// we will add the boundaries for the main thread manually.
 	auto* main_thread = machine().threads().get_thread();
-	main_thread->stack_size = stack_addr - STACK_BASE;
-	main_thread->stack_base = STACK_BASE;
+	main_thread->stack_size = stack_addr - stack_base;
+	main_thread->stack_base = stack_base;
 
 	// Shared memory area between all programs
 	mem.insert_non_owned_memory(SHM_BASE, &shared_memory[0], SHM_SIZE);
-
-	// This separates the program, stack and shared memory areas
-	mem.install_shared_page(stack_pageno,   riscv::Page::guard_page());
-	mem.install_shared_page(stack_baseno-1, riscv::Page::guard_page());
 }
 
 bool Script::initialize()
@@ -134,6 +126,47 @@ void Script::machine_setup()
 	machine().setup_native_heap(HEAP_SYSCALLS_BASE, heap_area(), MAX_HEAP);
 	machine().setup_native_memory(MEMORY_SYSCALLS_BASE);
 	machine().setup_native_threads(THREADS_SYSCALL_BASE);
+
+	if (heap_area() < REMOTE_IMG_BASE)
+	{
+		constexpr gaddr_t pages_max = MAX_MEMORY / riscv::Page::size();
+		machine().memory.set_page_fault_handler(
+		[this, pages_max] (auto& mem, const auto page, bool init) -> riscv::Page&
+		{
+			if (page * riscv::Page::size() < REMOTE_IMG_BASE)
+			{
+				// Normal path: Create and insert new page
+				if (mem.pages_active() < pages_max)
+				{
+					return mem.allocate_page(page,
+						init ? riscv::PageData::INITIALIZED : riscv::PageData::UNINITIALIZED);
+				}
+				throw riscv::MachineException(riscv::OUT_OF_MEMORY, "Out of memory", pages_max);
+			}
+			else if (this->m_call_dest != nullptr) {
+				// Remote path: Create page on remote and use it here
+				return this->m_call_dest->machine().memory.create_writable_pageno(page);
+			}
+			throw std::runtime_error("No script for remote page fault");
+		});
+		machine().memory.set_page_readf_handler(
+		[&] (auto&, auto pageno) -> const riscv::Page&
+		{
+			// In order to differentiate between normal
+			// execution and remote calls we will compare
+			// PC against REMOTE_IMG_BASE here:
+			const auto pc = this->machine().cpu.pc();
+
+			if (this->m_call_dest != nullptr &&
+				pc < REMOTE_IMG_BASE &&
+				pageno * riscv::Page::size() >= REMOTE_IMG_BASE)
+			{
+				return m_call_dest->machine().memory.get_pageno(pageno);
+			}
+
+			return riscv::Page::cow_page();
+		});
+	}
 
 	// Install shared memory area and guard pages
 	this->add_shared_memory();
@@ -299,9 +332,12 @@ void Script::setup_remote_calls_to(Script& dest)
 
 			// Read faults happen when there is a read on a missing
 			// page. It returns a zero CoW page normally.
-			m.memory.set_page_readf_handler(
+			riscv::Memory<MARCH>::page_readf_cb_t old_read_handler;
+			old_read_handler = m.memory.set_page_readf_handler(
 			[&] (auto&, auto pageno) -> const riscv::Page& {
 				if (pageno * riscv::Page::size() < REMOTE_IMG_BASE) {
+					// The page is in the callers image space
+					// so get the page from the caller:
 					return cpu.machine().memory.get_pageno(pageno);
 				}
 				return riscv::Page::cow_page();
@@ -323,7 +359,7 @@ void Script::setup_remote_calls_to(Script& dest)
 			dest_script->call(cpu.pc());
 
 			// Restore read/fault handlers
-			m.memory.reset_page_readf_handler();
+			m.memory.set_page_readf_handler(std::move(old_read_handler));
 			m.memory.set_page_fault_handler(std::move(old_fault_handler));
 			// Invalidate all cached pages, just in case any
 			// of them belong to the caller Script.

@@ -1,4 +1,5 @@
 #include <api.h>
+#include "interface.hpp"
 #include "events.hpp"
 using namespace api;
 
@@ -48,8 +49,12 @@ PUBLIC(void start())
 	auto retval = microthread::join(thread);
 	print("Full thread exited, return value: ", retval, "\n");
 
+	gameplay_state.set_action(true);
+	print("Action: ", gameplay_state.get_action(), "\n");
+	gameplay_state.set_action(false);
+	print("Action: ", gameplay_state.get_action(), "\n");
 
-    SomeStruct ss {
+	SomeStruct ss {
         .string = "Hello",
         .value  = 42
     };

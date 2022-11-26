@@ -1,10 +1,23 @@
 #include <api.h>
+#include "interface.hpp"
 #include "events.hpp"
 using namespace api;
 struct SomeStruct {
 	std::string string;
 	int value;
 };
+
+KEEP() Gameplay gameplay_state;
+
+KEEP() void Gameplay::set_action(bool a)
+{
+	print("Setting action to ", a, "\n");
+	this->action = a;
+}
+KEEP() bool Gameplay::get_action()
+{
+	return this->action;
+}
 
 int main()
 {

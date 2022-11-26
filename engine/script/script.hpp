@@ -11,7 +11,6 @@ public:
 	using ghandler_t = std::function<void(Script&)>;
 	static constexpr gaddr_t MAX_MEMORY    = 1024*1024 * 16ul;
 	static constexpr gaddr_t MAX_HEAP      = 1024*1024 * 256ul;
-	static constexpr gaddr_t HEAP_BASE     = 0x40000000;
 	static constexpr uint64_t MAX_INSTRUCTIONS = 32'000'000;
 
 	// Call any script function, with any parameters

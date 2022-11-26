@@ -54,3 +54,4 @@ uint32_t multiprocess_wait();
 }
 
 #define PUBLIC(x) extern "C" __attribute__((used, retain)) x
+#define KEEP() __attribute__((used, retain))

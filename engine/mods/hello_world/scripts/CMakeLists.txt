@@ -14,7 +14,7 @@
 # 3. The remaining arguments are source files.
 
 add_shared_program(gameplay.elf 0x50000000
-	*gameplay*
+	*[Gg]ameplay*
 	"src/gameplay.cpp"
 	"src/events.cpp"
 )
