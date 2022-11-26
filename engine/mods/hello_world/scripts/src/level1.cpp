@@ -13,6 +13,9 @@ extern "C" void gameplay_empty();
 static void call_remotely() {
     gameplay_empty();
 }
+static void call_remote_member() {
+    gameplay_state.do_nothing();
+}
 
 /* This is the function that gets called at the start.
    See: engine/src/main.cpp */
@@ -58,7 +61,6 @@ PUBLIC(void start())
         .string = "Hello",
         .value  = 42
     };
-	ss.string.resize(256);
 	ss.string = "Hello";
     long r = gameplay_function(1234.5, ss);
 
@@ -106,6 +108,7 @@ PUBLIC(void start())
 	// RA is loaded from stack, and becomes 0x0
 
     measure("Call remote function", call_remotely);
+	measure("Call remote C++ member function", call_remote_member);
 }
 
 int main()

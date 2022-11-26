@@ -87,6 +87,7 @@ private:
 	void handle_timeout(gaddr_t);
 	bool install_binary(const std::string& file, bool shared = true);
 	void machine_setup();
+	void machine_remote_setup();
 	static long finish_benchmark(std::vector<long>&);
 
 	std::unique_ptr<machine_t> m_machine = nullptr;

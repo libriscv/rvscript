@@ -6,7 +6,6 @@ struct SomeStruct {
 	std::string string;
 	int value;
 };
-
 KEEP() Gameplay gameplay_state;
 
 KEEP() void Gameplay::set_action(bool a)
@@ -17,6 +16,10 @@ KEEP() void Gameplay::set_action(bool a)
 KEEP() bool Gameplay::get_action()
 {
 	return this->action;
+}
+
+KEEP() void Gameplay::do_nothing()
+{
 }
 
 int main()
