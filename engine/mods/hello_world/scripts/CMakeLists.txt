@@ -16,11 +16,14 @@
 add_shared_program(gameplay.elf 0x50000000
 	*[Gg]ameplay*
 	"src/gameplay.cpp"
+	"src/gameplay_remote.cpp"
 	"src/events.cpp"
 )
 
 add_level(level1.elf 0x400000
 	"src/level1.cpp"
+	"src/level1_remote.cpp"
+	"src/level1_threads.cpp"
 	"src/events.cpp"
 )
 attach_program(level1.elf gameplay.elf)

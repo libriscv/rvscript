@@ -104,7 +104,7 @@ private:
 	bool        m_stdout = true;
 	bool        m_last_newline = true;
 	int         m_budget_overruns = 0;
-	Script*     m_call_dest = nullptr;
+	Script*     m_remote_script = nullptr;
 	// hash to public API direct function map
 	std::unordered_map<uint32_t, gaddr_t> m_public_api;
 	// map of functions that extend engine using string hashes

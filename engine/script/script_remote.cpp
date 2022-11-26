@@ -22,9 +22,9 @@ void Script::machine_remote_setup()
 				}
 				throw riscv::MachineException(riscv::OUT_OF_MEMORY, "Out of memory", pages_max);
 			}
-			else if (this->m_call_dest != nullptr) {
+			else if (this->m_remote_script != nullptr) {
 				// Remote path: Create page on remote and use it here
-				return this->m_call_dest->machine().memory.create_writable_pageno(page);
+				return this->m_remote_script->machine().memory.create_writable_pageno(page);
 			}
 			throw std::runtime_error("No script for remote page fault");
 		});
@@ -36,51 +36,62 @@ void Script::machine_remote_setup()
 			// PC against REMOTE_IMG_BASE here:
 			const auto pc = this->machine().cpu.pc();
 
-			if (this->m_call_dest != nullptr &&
+			if (this->m_remote_script != nullptr &&
 				pc < REMOTE_IMG_BASE &&
 				pageno * riscv::Page::size() >= REMOTE_IMG_BASE)
 			{
-				return m_call_dest->machine().memory.get_pageno(pageno);
+				return m_remote_script->machine().memory.get_pageno(pageno);
 			}
 
 			return riscv::Page::cow_page();
 		});
+	} // level machine
 
-		// ** Trap failed calls to free **
-		// It is OK to free pointers from the remote machine
-		// because the remote exists at all times, and there
-		// is no conflict here. It is not possible the other
-		// way around, because levels come and go.
-		auto& arena = machine().arena();
-		arena.on_unknown_free(
-		[this] (auto address, auto*) {
-			if (this->m_call_dest != nullptr &&
-				address >= REMOTE_IMG_BASE)
-			{
-				//fmt::print("freeing remote pointer: {:x}\n", address);
-				return m_call_dest->machine().arena().free(address);
-			}
-			return -1;
-		});
-	}
+	// ** Trap failed calls to free and realloc **
+	auto& arena = machine().arena();
+	arena.on_unknown_free(
+	[this] (auto address, auto*) {
+		// We don't care who we are connected to, as long
+		// as there is someone. Since we already failed to
+		// deallocate locally (as the image spaces are
+		// completely separate), we can just try again on
+		// the remote, without worries.
+		if (this->m_remote_script != nullptr)
+		{
+			//fmt::print("freeing remote pointer: {:x}\n", address);
+			return m_remote_script->machine().arena().free(address);
+		}
+		return -1;
+	});
+	arena.on_unknown_realloc(
+	[this] (auto address, size_t newsize) {
+		if (this->m_remote_script != nullptr)
+		{
+			//fmt::print("reallocing remote pointer: {:x}\n", address);
+			return m_remote_script->machine().arena().realloc(address, newsize);
+		}
+		return riscv::Arena::ReallocResult{0, 0};
+	});
+
 } // Script::machine_remote_setup()
 
 void Script::setup_remote_calls_to(Script& dest)
 {
 	// Allow calling another pre-determined machine
 	// by jumping directly to its functions.
-	this->m_call_dest = &dest;
+	this->m_remote_script = &dest;
 
 	machine().cpu.set_fault_handler(
 	[] (auto& cpu, auto&)
 	{
 		auto* this_script = cpu.machine().template get_userdata<Script>();
-		auto* dest_script = this_script->m_call_dest;
+		auto* dest_script = this_script->m_remote_script;
 
 		// Check if jump is inside the remote machines space
 		if (dest_script != nullptr && cpu.pc() >= REMOTE_IMG_BASE)
 		{
 			auto& m = dest_script->machine();
+			dest_script->m_remote_script = this_script;
 
 		#if 0
 			// Copy all registers to destination
@@ -124,6 +135,9 @@ void Script::setup_remote_calls_to(Script& dest)
 
 			// Start executing (on the remote)
 			dest_script->call(cpu.pc());
+
+			// No longer connected
+			dest_script->m_remote_script = nullptr;
 
 			// Restore read/fault handlers
 			m.memory.set_page_readf_handler(std::move(old_read_handler));
