@@ -16,3 +16,7 @@ struct Gameplay {
     void do_nothing();
 };
 extern Gameplay gameplay_state;
+
+#include <include/function.hpp>
+extern void gameplay_exec(const Function<void()>& func);
+extern void gameplay_exec_ptr(void (*func) ());

@@ -46,6 +46,34 @@ void Script::machine_remote_setup()
 			return riscv::Page::cow_page();
 		});
 	} // level machine
+	else
+	{ // shared machine
+		// Override the way we build new execute segments
+		// on this machine.
+		// If the segment is obviously outside of the image
+		// space we can look for an existing alternative in
+		// a potential connected remote script.
+		this->machine().cpu.set_override_new_execute_segment(
+		[] (auto& cpu) -> riscv::DecodedExecuteSegment<MARCH>*
+		{
+			auto* this_script = cpu.machine().template get_userdata<Script>();
+			auto* remote_script = this_script->m_remote_script;
+
+			if (remote_script != nullptr
+				&& cpu.pc() < REMOTE_IMG_BASE)
+			{
+				auto& remote_machine = remote_script->machine();
+				auto* seg = remote_machine.memory.exec_segment_for(cpu.pc());
+				if (seg != nullptr) {
+					//fmt::print("Loaning out execute segment to remote at PC={:x}\n", cpu.pc());
+					return seg;
+				}
+				cpu.trigger_exception(riscv::EXECUTION_SPACE_PROTECTION_FAULT, cpu.pc());
+			}
+
+			return nullptr;
+		});
+	}
 
 	// ** Trap failed calls to free and realloc **
 	auto& arena = machine().arena();
@@ -88,10 +116,9 @@ void Script::setup_remote_calls_to(Script& dest)
 		auto* dest_script = this_script->m_remote_script;
 
 		// Check if jump is inside the remote machines space
-		if (dest_script != nullptr && cpu.pc() >= REMOTE_IMG_BASE)
+		if (dest_script != nullptr) // && cpu.pc() >= REMOTE_IMG_BASE)
 		{
 			auto& m = dest_script->machine();
-			dest_script->m_remote_script = this_script;
 
 		#if 0
 			// Copy all registers to destination
@@ -133,11 +160,16 @@ void Script::setup_remote_calls_to(Script& dest)
 				return old_fault_handler(mem, pageno, init);
 			});
 
+			// Allow remote execution back in the caller
+			auto* old_remote_script = dest_script->m_remote_script;
+			//dest_script->setup_remote_calls_to(*this_script);
+			dest_script->m_remote_script = this_script;
+
 			// Start executing (on the remote)
 			dest_script->call(cpu.pc());
 
 			// No longer connected
-			dest_script->m_remote_script = nullptr;
+			dest_script->m_remote_script = old_remote_script;
 
 			// Restore read/fault handlers
 			m.memory.set_page_readf_handler(std::move(old_read_handler));
@@ -146,14 +178,16 @@ void Script::setup_remote_calls_to(Script& dest)
 			// of them belong to the caller Script.
 			m.memory.invalidate_reset_cache();
 
-			// Penalize by reducing max instructions
+			// Penalize caller script by reducing max instructions
 			cpu.machine().penalize(m.instruction_counter());
-			// Return to caller, with return regs 0 and 1
+
+			// Return to calling function, with return regs 0 and 1
 			cpu.reg(riscv::REG_ARG0) = m.cpu.reg(riscv::REG_ARG0);
 			cpu.reg(riscv::REG_ARG1) = m.cpu.reg(riscv::REG_ARG1);
 			cpu.jump(cpu.reg(riscv::REG_RA));
 			return;
 		}
+		fmt::print("Custom fault handler failed for PC={:x}\n", cpu.pc());
 		cpu.trigger_exception(riscv::EXECUTION_SPACE_PROTECTION_FAULT, cpu.pc());
 	});
 } // Script::setup_remote_calls_to()

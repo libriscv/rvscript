@@ -49,3 +49,12 @@ extern KEEP() void gameplay_empty()
 {
 	// Do nothing
 }
+
+extern KEEP() void gameplay_exec(const Function<void()>& func)
+{
+	func();
+}
+extern KEEP() void gameplay_exec_ptr(void (*func) ())
+{
+	func();
+}
