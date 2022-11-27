@@ -18,6 +18,15 @@ KEEP() bool Gameplay::get_action()
 	return this->action;
 }
 
+KEEP() void Gameplay::set_string(unsigned key, const std::string& val)
+{
+	this->strings[key] = val;
+}
+KEEP() void Gameplay::print_string(unsigned key)
+{
+	print("Key ", key, " has value: ", this->strings[key], "\n");
+}
+
 KEEP() void Gameplay::do_nothing()
 {
 }

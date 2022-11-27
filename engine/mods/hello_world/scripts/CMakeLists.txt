@@ -27,3 +27,8 @@ add_level(level1.elf 0x400000
 	"src/events.cpp"
 )
 attach_program(level1.elf gameplay.elf)
+
+add_level(level2.elf 0x400000
+	"src/level2.cpp"
+)
+attach_program(level2.elf gameplay.elf)

@@ -12,10 +12,12 @@ PUBLIC(void start())
        call into the engine, which then writes to the terminal. */
     print("Hello world!\n\n");
 
+    print("** Remote **\n");
+
     /* Do some remote function calls. */
     do_remote_stuff();
 
-    print("\n");
+    print("** Threads **\n");
 
     /* Test-run some micro-threads. */
     do_threads_stuff();

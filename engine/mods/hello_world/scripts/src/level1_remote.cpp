@@ -27,6 +27,9 @@ void do_remote_stuff()
 	print("Back again in the start() function! Return value: ", r, "\n");
 	print("Some struct string: ", ss.string, "\n");
 
+    gameplay_state.set_string(123, "Hello from level");
+    gameplay_state.print_string(123);
+
     measure("Call remote function", call_remotely);
     measure("Call remote C++ member function", call_remote_member);
 }

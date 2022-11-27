@@ -20,10 +20,14 @@ int main()
 		"mods/hello_world/scripts/gameplay.elf", "../programs/symbols.map");
 	Scripts::create("gameplay", "gameplay", debug);
 
-	/* A single level. */
+	/* A few levels. */
 	Scripts::load_binary("level1",
 		"mods/hello_world/scripts/level1.elf", "../programs/symbols.map");
 	Scripts::create("level1", "level1", debug);
+
+	Scripts::load_binary("level2",
+		"mods/hello_world/scripts/level2.elf", "../programs/symbols.map");
+	Scripts::create("level2", "level2", debug);
 
 	/* The event_loop function can be resumed later, and can execute work
 	   that has been preemptively handed to it from other machines. */
@@ -38,10 +42,14 @@ int main()
 	   starting function for the current levels script. You can find the
 	   implementation in mods/hello_world/scripts/src/gameplay.cpp. */
 	auto& level1 = SCRIPT("level1");
-
 	level1.setup_remote_calls_to(gameplay);
 
 	level1.call("start");
+
+	auto& level2 = SCRIPT("level2");
+	level2.setup_remote_calls_to(gameplay);
+
+	level2.call("start");
 
 	fmt::print("...\n");
 	/* Simulate some physics ticks */
