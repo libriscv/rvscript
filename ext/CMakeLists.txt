@@ -1,8 +1,10 @@
 
 # libriscv
 option(RISCV_EXPERIMENTAL "" ON)
+option(RISCV_EXT_C "" OFF)
 option(RISCV_EXT_V "" ON)
 option(RISCV_MULTIPROCESS "" ON)
+option(RISCV_MEMORY_TRAPS "" OFF)
 
 add_subdirectory(libriscv/lib)
 # We need to make room for our own system calls, as well as
