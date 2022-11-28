@@ -80,7 +80,7 @@ bool Script::initialize()
 #endif
 		machine().simulate(MAX_INSTRUCTIONS);
 
-		if (UNLIKELY(machine().instruction_counter() >= MAX_INSTRUCTIONS)) {
+		if (UNLIKELY(machine().instruction_limit_reached())) {
 			fmt::print(stderr, ">>> Exception: Ran out of instructions\n");
 			return false;
 		}

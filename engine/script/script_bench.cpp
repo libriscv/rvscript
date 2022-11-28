@@ -29,8 +29,7 @@ inline long perform_test(Script::machine_t& machine, gaddr_t func)
 		asm("" : : : "memory");
 	} catch (...) {}
 	machine.cpu.registers() = regs;
-	machine.reset_instruction_counter();
-	machine.increment_counter(counter);
+	machine.set_instruction_counter(counter);
 	machine.set_max_instructions(max_counter);
 	machine.memory.set_stack_initial(old_stack);
 	return nanodiff(t0, t1);
