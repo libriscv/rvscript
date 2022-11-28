@@ -14,17 +14,12 @@ option(STRIP_SYMBOLS "Remove all symbols except the public API" ON)
 set (BINPATH "${CMAKE_SOURCE_DIR}")
 set (APIPATH "${CMAKE_CURRENT_LIST_DIR}/../micro/api")
 
-if (GCC_TRIPLE STREQUAL "riscv32-unknown-elf")
-	set(RISCV_ABI "-march=rv32g -mabi=ilp32d")
-else()
-	set(RISCV_ABI "-march=rv64g -mabi=lp64d")
-endif()
 set(WARNINGS  "-Wall -Wextra -Werror=return-type -Wno-unused")
 set(COMMON    "-fno-math-errno -fno-stack-protector")
 if (DEBUGGING)
 	set (COMMON "${COMMON} -ggdb3 -O0")
 endif()
-set(FLAGS "${WARNINGS} ${RISCV_ABI} ${COMMON}")
+set(FLAGS "${WARNINGS} ${COMMON}")
 
 if (LTO AND NOT DEBUGGING)
 	set(FLAGS "${FLAGS} -flto -ffat-lto-objects")
@@ -54,8 +49,6 @@ function (add_verfile NAME VERFILE)
 	endif()
 endfunction()
 
-set(CHPERM  ${CMAKE_CURRENT_LIST_DIR}/chperm)
-
 function (add_nelua_binary NAME VERFILE)
 	# Find dyncall API and mark the files as generated
 	set(DYNCALL_API
@@ -72,7 +65,7 @@ function (add_nelua_binary NAME VERFILE)
 	)
 	set_source_files_properties(env/libc.c env/heap.c
 		PROPERTIES COMPILE_FLAGS -fno-builtin)
-	target_link_libraries(${NAME} -static -static-libgcc)
+	target_link_libraries(${NAME} -static)
 	target_include_directories(${NAME} PUBLIC "${APIPATH}")
 	target_include_directories(${NAME} PRIVATE "env")
 	target_include_directories(${NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/dyncalls")
