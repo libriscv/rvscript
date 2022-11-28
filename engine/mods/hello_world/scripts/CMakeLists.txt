@@ -16,6 +16,7 @@
 add_shared_program(gameplay.elf 0x50000000
 	*[Gg]ameplay*
 	"src/gameplay.cpp"
+	"src/gameplay_multiprocess.cpp"
 	"src/gameplay_remote.cpp"
 	"src/events.cpp"
 )

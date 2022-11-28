@@ -1,11 +1,14 @@
 #pragma once
 #include <map>
 #include <string>
+#include <vector>
+#include <include/function.hpp>
 
 struct Gameplay {
     bool action = false;
 
     std::map<unsigned, std::string> strings;
+    std::vector<Function<void()>> functions;
 
     void set_action(bool a);
     bool get_action();
@@ -17,6 +20,5 @@ struct Gameplay {
 };
 extern Gameplay gameplay_state;
 
-#include <include/function.hpp>
 extern void gameplay_exec(const Function<void()>& func);
 extern void gameplay_exec_ptr(void (*func) ());

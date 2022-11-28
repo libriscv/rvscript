@@ -13,6 +13,8 @@ struct SomeStruct
 };
 extern long gameplay_function(float, SomeStruct&);
 
+static int local_value = 5678;
+
 void do_remote_stuff()
 {
 	gameplay_state.set_action(true);
@@ -34,10 +36,22 @@ void do_remote_stuff()
 			"This is a remotely allocated string, "
 			"with value = " + std::to_string(ss.value);
 	});
-	gameplay_state.print_string(123);
 
-	gameplay_exec_ptr([] {
-		print("I'm printing this from the remote machine. Why does this work?\n");
+	gameplay_exec([] {
+		unsigned key = 123;
+		print("Key ", key, " has value: ", gameplay_state.strings[key], "\n");
+		print("Local value: ", local_value, "\n");
+	});
+
+	gameplay_exec([] {
+		gameplay_state.functions.push_back(
+			[] {
+				print("This is a callback function!\n");
+			});
+	});
+	gameplay_exec([] {
+		auto& func = gameplay_state.functions.at(0);
+		func();
 	});
 
 	measure("Call remote function", call_remotely);
