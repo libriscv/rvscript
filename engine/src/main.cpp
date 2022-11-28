@@ -80,7 +80,7 @@ int main()
 	/* Call events of a shared game object */
 	struct GameObject {
 		bool alive = false;
-		char name[30] = {0};
+		std::array<char, 30> name {};
 
 		Event onDeath;
 		Event onAction;
@@ -91,12 +91,12 @@ int main()
 	   This allows zero-copy sharing of game state. */
 	static constexpr Script::gaddr_t OBJECT_AREA = 0xC000000;
 	gameplay.machine().memory.insert_non_owned_memory(
-		OBJECT_AREA, objects, sizeof(objects) & ~4095);
+		OBJECT_AREA, objects, sizeof(objects) & ~4095UL);
 
 	/* Initialize object */
 	auto& obj = objects[0];
 	obj.alive = true;
-	fmt::format_to(obj.name, "{}", "myobject");
+	fmt::format_to(obj.name.data(), "{}", "myobject");
 	obj.onDeath = Event(gameplay, "myobject_death");
 
 	/* Simulate object dying */
