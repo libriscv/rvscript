@@ -50,7 +50,7 @@ add_executable(engine
 )
 
 target_include_directories(engine PUBLIC .)
-target_link_libraries(engine script fmt -static-libstdc++ -static-libgcc)
+target_link_libraries(engine script fmt)
 set_target_properties(engine PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
