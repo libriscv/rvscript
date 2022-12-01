@@ -1,5 +1,6 @@
 
 # libriscv
+option(RISCV_THREADED "" ON)
 option(RISCV_EXPERIMENTAL "" ON)
 option(RISCV_EXT_C "" OFF)
 option(RISCV_EXT_V "" ON)
