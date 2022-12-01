@@ -28,91 +28,107 @@ All the host-side code is in the engine folder, and is written as if it was runn
 The output from the program should look like this after completion:
 
 ```
+>>> [level1] says: Hello from Level 1 main()
 >>> [events] says: Entering event loop...
->>> [gameplay1] says: Hello world!
->>> [gameplay1] says: Multi-process sum = 8192
->>> [gameplay1] says: Multi-process counter = 4
->>> [gameplay1] says: Multi-process result = 0 (good)
->>> [gameplay1] says: Forever multiprocessing result: 1111 (bad)
->>> [gameplay1] says: Single-process sum = 8192
->>> [gameplay1] says: Exception caught: This is a test!!
->>> [gameplay1] says: Exception thrown from: void start(), line 186
-> median 7ns  		lowest: 7ns     	highest: 7ns
->>> Measurement "VM function call overhead" median: 7 nanos
+>>> [level1] says: Hello world!
 
-> median 223ns  		lowest: 218ns     	highest: 226ns
->>> Measurement "Full thread creation overhead" median: 223 nanos
+>>> [level1] says: ** Remote **
+>>> [gameplay] says: Setting action to true
+>>> [level1] says: Action: true
+>>> [gameplay] says: Setting action to false
+>>> [level1] says: Action: false
+>>> [gameplay] says: Hello Remote World! value = 1234.5!
+>>> [gameplay] says: Some struct string: Hello this string avoids SSO
+>>> [gameplay] says: Some struct value: 42
+>>> [level1] says: Back again in the start() function! Return value: 2469
+>>> [level1] says: Some struct string: Hello 456! This string is very long!
+>>> [gameplay] says: Key 123 has value: This is a remotely allocated string, with value = 42
+>>> [gameplay] says: Local value: 5678
+>>> [gameplay] says: This is a callback function!
+>>> [gameplay] says: I'm printing this from the remote machine. Why does this work?
+> median 33ns  		lowest: 33ns     	highest: 36ns
+>>> Measurement "Call remote function" median: 33 nanos
 
-> median 231ns  		lowest: 230ns     	highest: 232ns
->>> Measurement "Oneshot thread creation overhead" median: 231 nanos
+> median 36ns  		lowest: 35ns     	highest: 38ns
+>>> Measurement "Call remote C++ member function" median: 36 nanos
 
-> median 109ns  		lowest: 109ns     	highest: 130ns
->>> Measurement "Direct thread creation overhead" median: 109 nanos
+> median 48ns  		lowest: 47ns     	highest: 50ns
+>>> Measurement "Call remote function ptr" median: 48 nanos
 
-> median 20ns  		lowest: 20ns     	highest: 29ns
->>> Measurement "Dynamic call handler" median: 20 nanos
+> median 93ns  		lowest: 92ns     	highest: 97ns
+>>> Measurement "Call remote std::function" median: 93 nanos
 
-> median 47ns  		lowest: 46ns     	highest: 66ns
->>> Measurement "Farcall lookup" median: 47 nanos
-
-> median 43ns  		lowest: 43ns     	highest: 61ns
->>> Measurement "Farcall direct" median: 43 nanos
-
-> median 10421ns  		lowest: 9521ns     	highest: 12746ns
->>> Measurement "Multi-processing overhead" median: 10421 nanos
-
-> median 57843ns  		lowest: 57471ns     	highest: 59969ns
->>> Measurement "Multi-processing dotprod" median: 57843 nanos
-
-> median 168105ns  		lowest: 167496ns     	highest: 171445ns
->>> Measurement "Single-processing dotprod" median: 168105 nanos
-
->>> [gameplay1] says: Hello from thread 1! a = 1, b = 2, c = 3
->>> [gameplay1] says: Back in the main thread .. going back!
->>> [gameplay1] says: And we're back! a = 1, b = 2, c = 3
->>> [gameplay1] says: Hello from thread 2! a = 2, b = 4, c = 6
->>> [gameplay1] says: Joining the thread any time now...
->>> [gameplay1] says: Anyone going to join us? Returning 666.
->>> [gameplay1] says: Full thread exited, return value: 666
->>> [gameplay2] says: Hello Remote World! value = 1234!
->>> [gameplay2] says: Some struct string: Hello 123!
->>> [gameplay2] says: Some struct value: 42
->>> [gameplay1] says: Back again in the start() function! Return value: 1234
->>> [gameplay1] says: Some struct string: Hello 456!
-Skipped over breakpoint in gameplay1:0x10A5C. Break here with DEBUG=1.
->>> [gameplay1] says: Hello Microthread World!
->>> [gameplay1] says: Back again in the start() function!
+>>> [level1] says: ** Threads **
+>>> [level1] says: Hello from thread 1! a = 1, b = 2, c = 3
+>>> [level1] says: Back in the main thread .. going back!
+>>> [level1] says: And we're back! a = 1, b = 2, c = 3
+>>> [level1] says: Hello from thread 2! a = 2, b = 4, c = 6
+>>> [level1] says: Joining the thread any time now...
+>>> [level1] says: Anyone going to join us? Returning 666.
+>>> [level1] says: Full thread exited, return value: 666
+Skipped over breakpoint in level1:0x40055C. Break here with DEBUG=1.
+>>> [level1] says: Hello Microthread World!
+>>> [level1] says: Back again in the start() function!
+>>> [level2] says: Hello from Level 2!
+>>> [gameplay] says: Key 123 has value: This is a remotely allocated string, with value = 42
 ...
->>> [gameplay1] says: Tick 0!
->>> [gameplay1] says: I have a 44!
->>> [gameplay1] says: Tick 1!
->>> [gameplay1] says: I have a 45!
->>> [gameplay1] says: Tick 2!
->>> [gameplay1] says: I have a 46!
+>>> [level1] says: Tick 0!
+>>> [level1] says: I have a 44!
+>>> [level1] says: Tick 1!
+>>> [level1] says: I have a 45!
+>>> [level1] says: Tick 2!
+>>> [level1] says: I have a 46!
 ...
->>> [gameplay1] says: Hello Belated Microthread World! 1 second passed.
->>> [events] says: I am being run on another machine!
->>> [gameplay2] says: Hello C++ World
+>>> [level1] says: Hello Belated Microthread World! 1 second passed.
+>>> [gameplay] says: Hello C++ World
 ...
-Calling 'myobject_death' in 'gameplay2'
->>> [gameplay2] says: Object 'myobject' is dying!
+Calling 'myobject_death' in 'gameplay'
+>>> [gameplay] says: Object 'myobject' is dying!
 ...
+>>> [gameplay] says: Exception caught: This is a test!!
+>>> [gameplay] says: Exception thrown from: void benchmarks(), line 49
+> median 11ns  		lowest: 11ns     	highest: 11ns
+>>> Measurement "VM function call overhead" median: 11 nanos
+
+> median 176ns  		lowest: 169ns     	highest: 180ns
+>>> Measurement "Full thread creation overhead" median: 176 nanos
+
+> median 177ns  		lowest: 173ns     	highest: 179ns
+>>> Measurement "Oneshot thread creation overhead" median: 177 nanos
+
+> median 107ns  		lowest: 106ns     	highest: 109ns
+>>> Measurement "Direct thread creation overhead" median: 107 nanos
+
+> median 21ns  		lowest: 21ns     	highest: 21ns
+>>> Measurement "Dynamic call handler" median: 21 nanos
+
+> median 22ns  		lowest: 22ns     	highest: 23ns
+>>> Measurement "Farcall lookup" median: 22 nanos
+
+> median 22ns  		lowest: 22ns     	highest: 24ns
+>>> Measurement "Farcall direct" median: 22 nanos
+
+>>> [gameplay] says: Multi-process sum = 8192 (good)
+>>> [gameplay] says: Multi-process counter = 4 (good)
+>>> [gameplay] says: Multi-process result = 0 (good)
+>>> [gameplay] says: Vectorized Multi-process sum = 8192
+>>> [gameplay] says: Vectorized Multi-process counter = 4
+>>> [gameplay] says: Vectorized Multi-process result = 0 (good)
+>>> [gameplay] says: Forever multiprocessing result: 1111 (bad)
+>>> [gameplay] says: Vectorized sum = 8192
+>>> [gameplay] says: Vectorized sum = 8192
+>>> [gameplay] says: Single-process sum = 8192
 Benchmarking full fork:
-> median 1331ns  		lowest: 1300ns     	highest: 1451ns
+> median 1131ns  		lowest: 1056ns     	highest: 1139ns
 Benchmarking reset:
-> median 1349ns  		lowest: 1303ns     	highest: 1434ns
+> median 1052ns  		lowest: 1046ns     	highest: 1120ns
+>>> [nelua] says: fib(10) = 	55
+>>> [nelua] says: fib(10) = 	55
+>>> [nelua] says: fib(10) = 	55
+>>> [nelua] says: fib(10) = 	55
 ...
->>> [nim] says: Before debugging>>> [nim] says:
-Skipped over breakpoint in nim:0x10334. Break here with DEBUG=1.
->>> [nim] says: Hello Nim World!
-{
-  "name": "Hello",
-  "email": "World",
-  "books": [
-    "Foundation"
-  ]
-}
-> median 19290ns  		lowest: 19175ns     	highest: 19849ns
+>>> [nelua] says: Hello from Nelua
+> nelua returned 666
 ```
 
 
