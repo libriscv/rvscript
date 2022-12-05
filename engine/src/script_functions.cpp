@@ -148,7 +148,7 @@ APICALL(api_interrupt)
 		script->machine().memory.memcpy(alloc.addr, machine, data, size);
 		// interrupt the machine
 		machine.set_result(
-			script->preempt(faddr, (gaddr_t)alloc.addr, (gaddr_t)alloc.size));
+			script->preempt(faddr, alloc.addr, alloc.size));
 		return;
 	}
 	fmt::print(stderr,
@@ -184,7 +184,7 @@ APICALL(api_multiprocess_wait)
 APICALL(api_each_frame)
 {
 	auto [addr, reason] = machine.sysargs <gaddr_t, int> ();
-	script(machine).set_tick_event((gaddr_t) addr, (int) reason);
+	script(machine).set_tick_event(addr, reason);
 	machine.set_result(0);
 }
 

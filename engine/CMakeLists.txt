@@ -9,7 +9,7 @@ option(EMBEDDED_MODE "Embed programs in binary" OFF)
 option(USE_MOLD      "Use Mold linker" OFF)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -march=native")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -march=native -ggdb3")
 
 if (SANITIZE)
  	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=undefined")
