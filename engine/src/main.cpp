@@ -177,11 +177,9 @@ int main()
 static Script* do_nim_load_and_create(const std::string& name, bool debug)
 {
 	/* If the nim program exists, load it */
-#if RISCV_ARCH == 32
-#   define NIMPATH  "../programs/micronim/riscv32-unknown-elf/"
-#else
-#   define NIMPATH  "../programs/micronim/riscv64-unknown-elf/"
-#endif
+	#define STRFY_HELP(x) #x
+	#define STRFY(x) STRFY_HELP(x)
+#define NIMPATH "../programs/micronim/riscv" STRFY(RISCV_ARCH) "-unknown-elf/"
 	const std::string filename = NIMPATH + name;
 	if (access(filename.c_str(), F_OK) == 0)
 	{
@@ -212,11 +210,7 @@ void do_nim_testing(bool debug)
 void do_nelua_testing(bool debug)
 {
 	/* If the nelua program was built, we can run nelua_sum */
-#if RISCV_ARCH == 32
-#   define NELUAPATH  "../programs/nelua/riscv32-unknown-elf"
-#else
-#   define NELUAPATH  "../programs/nelua/riscv64-unknown-elf"
-#endif
+#define NELUAPATH "../programs/nelua/riscv" STRFY(RISCV_ARCH) "-unknown-elf"
 	const char* filename = NELUAPATH "/hello_nelua";
 	if (access(filename, F_OK) == 0)
 	{
