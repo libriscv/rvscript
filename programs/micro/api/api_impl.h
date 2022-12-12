@@ -286,7 +286,7 @@ void dynamic_call(const uint32_t hash, const char* name, Args&&... args)
 	for (unsigned i = 0; i < argc; i++)
 	{
 		if (type[i] == 0b001) {
-			if ((int64_t)gpr[i] > -4096 && (int64_t)gpr[i] < 4095) {
+			if ((int64_t)gpr[i] >= -4096 && (int64_t)gpr[i] < 4096) {
 				asm(".insn i 0b0001011, 0, x0, x0, %0" :: "I"(gpr[i]));
 			} else {
 				a0 = gpr[i];
