@@ -14,9 +14,9 @@ https://gist.github.com/fwsGonzo/2f4518b66b147ee657d64496811f9edb
 
 Note that I update the gist now and then as I make improvements. The key benchmark is showing the low overhead to calling into the script.
 
-The overhead of a system call is around 5ns last time I measured it, so keep that in mind. The threshold for benefiting from using a dedicated system call is so low that anything that falls into the used-often category could have its own system call.
+The overhead of a system call is around 1ns last time I measured it, so you can basically pick and choose what kind of overhead you are comfortable with. Raw system calls are harder to maintain, but faster, while dynamic calls have slight overheads in lookups.
 
-For generally extending the API there is dynamic calls, which have an overhead of around 20ns. Dynamic calls require looking up a hash value in a hash map, and is backed by a std::function with capture storage.
+For generally extending the API there is dynamic calls, which have an overhead of around 14ns (on my laptop). Dynamic calls require looking up a hash value, and is backed by a std::function with capture storage. See eg. [timers](/engine/src/timers_setup.cpp).
 
 
 ## Demonstration
@@ -142,7 +142,7 @@ Run [setup.sh](/setup.sh) to make sure that libriscv is initialized properly. Th
 bash build.sh
 ```
 
-The engine itself should have no external dependencies outside of libriscv and libfmt.
+This project has no external dependencies outside of libriscv and libfmt. libriscv has no dependencies.
 
 Running the engine is only half the equation as you will also want to be able to modify the scripts themselves. To do that you need a RISC-V compiler. However, the gameplay binary is provided with the repo so that you can run the engine demonstration without having to download and build a RISC-V compiler.
 
@@ -150,7 +150,7 @@ While you can technically install the `g++-10-riscv64-linux-gnu` package and use
 
 ## Getting a RISC-V compiler
 
-There are several ways to do this. However for now one requirement is to install the riscv-gnu-toolchains GCC 11 for RISC-V. Install it like this:
+There are several ways to do this. However for now one requirement is to build the newlib variant in the riscv-gnu-toolchain for RISC-V. Install it like this:
 
 ```sh
 git clone https://github.com/riscv/riscv-gnu-toolchain.git
@@ -173,6 +173,8 @@ This compiler will be used by the CMake script in the micro folder. Check out `m
 $ riscv64-unknown-elf-g++ --version
 riscv64-unknown-elf-g++ (g5964b5cd7) 11.1.0
 ```
+
+While 32-bit RISC-V is faster to emulate than 64-bit, I prefer it when the sizes match between the address spaces.
 
 ## Building script files
 
