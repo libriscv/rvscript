@@ -13,6 +13,9 @@ int main()
 	// See: debugging.cpp
 	extern void setup_debugging_system();
 	setup_debugging_system();
+	// See test_dynamic.cpp
+	extern void setup_dynamic_calls();
+	setup_dynamic_calls();
 
 	/* A single program that will be used as shared mutable
 	   storage among all the level programs. */
@@ -77,19 +80,28 @@ int main()
 
 	fmt::print("...\n");
 
-	/* Call events of a shared game object */
+	/* ** Call events of a shared game object **
+	   1. Share memory with the guest
+	   2. Set up the objects
+	   3. Call with address as offset from shared area
+	*/
+	static constexpr Script::gaddr_t OBJECT_AREA = 0xC000000;
 	struct GameObject {
+
 		bool alive = false;
 		std::array<char, 30> name {};
 
 		Event onDeath;
 		Event onAction;
+
+		static Script::gaddr_t address(size_t i) {
+			return OBJECT_AREA + i * sizeof(GameObject);
+		}
 	};
 	GameObject objects[200]; // Page worth of objects
 
 	/* Insert objects into memory.
 	   This allows zero-copy sharing of game state. */
-	static constexpr Script::gaddr_t OBJECT_AREA = 0xC000000;
 	gameplay.machine().memory.insert_non_owned_memory(
 		OBJECT_AREA, objects, sizeof(objects) & ~4095UL);
 
@@ -103,7 +115,7 @@ int main()
 	fmt::print("Calling '{}' in '{}'\n",
 		obj.onDeath.function(), obj.onDeath.script().name());
 	assert(obj.alive == true);
-	obj.onDeath.call(OBJECT_AREA + 0 * sizeof(GameObject));
+	obj.onDeath.call(GameObject::address(0));
 	assert(obj.alive == false);
 
 	fmt::print("...\n");

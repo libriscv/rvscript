@@ -1,5 +1,6 @@
 #include "script_functions.hpp"
 #include <libriscv/threads.hpp>
+#include <libriscv/rv32i_instr.hpp>
 #include <script/machine/include_api.hpp>
 #include <cmath>
 #include <fmt/core.h>
@@ -94,6 +95,28 @@ APICALL(api_dyncall)
 	// skip return since PC is only allowed to change
 	// for normal system calls
 	machine.cpu.jump(regs.get(riscv::REG_RA) - 4);
+}
+
+APICALL(api_dyncall_args)
+{
+	const auto [g_name, len] = machine.sysargs<gaddr_t, gaddr_t>();
+	// This is faster than reading the string first,
+	// then hashing the string. Instead, we calculate
+	// the hash piecewise from memory, and then pass
+	// along the address to the string too.
+	uint32_t hash = 0xFFFFFFFF;
+	machine.memory.foreach(g_name, len,
+		[&] (auto&, auto, const uint8_t* d, size_t l) {
+			hash = riscv::crc32(hash, d, l);
+		});
+	hash ^= 0xFFFFFFFF;
+
+	auto& scr = script(machine);
+	// Perform a dynamic call, which takes no arguments
+	// Instead, the caller must check the dynargs() vector.
+	scr.dynamic_call(hash, g_name);
+	// After the call we can clear dynargs.
+	scr.dynargs().clear();
 }
 
 APICALL(api_farcall)
@@ -249,6 +272,7 @@ void Script::setup_syscall_interface()
 		{ECALL_WRITE,       api_write},
 		{ECALL_MEASURE,     api_measure},
 		{ECALL_DYNCALL,     api_dyncall},
+		{ECALL_DYNCALL2,    api_dyncall_args},
 		{ECALL_FARCALL,     api_farcall},
 		{ECALL_FARCALL_DIRECT, api_farcall_direct},
 		{ECALL_INTERRUPT,   api_interrupt},
@@ -268,4 +292,46 @@ void Script::setup_syscall_interface()
 	});
 	// Add a few Newlib system calls (just in case)
 	machine_t::setup_newlib_syscalls();
+
+	// A custom intruction used to handle dynamic arguments
+	// to the dynamic system call.
+	using namespace riscv;
+	static const Instruction<MARCH> custom_instruction_handler
+	{
+		[] (CPU<MARCH>& cpu, rv32i_instruction instr) {
+			auto& scr = script(cpu.machine());
+			// Select type and retrieve value from argument registers
+			switch (instr.Itype.funct3)
+			{
+			case 0b001: // 64-bit signed integer
+				scr.dynargs().emplace_back(
+					(int64_t)cpu.reg(riscv::REG_ARG0));
+				break;
+			case 0b010: // 32-bit floating point
+				scr.dynargs().emplace_back(
+					cpu.registers().getfl(riscv::REG_FA0).f32[0]);
+				break;
+			case 0b111: // std::string
+				scr.dynargs().emplace_back(
+					cpu.machine().memory.memstring(cpu.reg(riscv::REG_ARG0)));
+				break;
+			default:
+				throw "Implement me";
+			}
+		},
+		[] (char* buffer, size_t len, auto&, rv32i_instruction instr) {
+			return snprintf(buffer, len, "CUSTOM: 4-byte 0x%X (0x%X)",
+							instr.opcode(), instr.whole);
+		}
+	};
+	// Override the machines unimplemented instruction handling,
+	// in order to use the custom instruction instead.
+	CPU<MARCH>::on_unimplemented_instruction =
+	[] (rv32i_instruction instr) -> const Instruction<MARCH>& {
+		if (instr.opcode() == 0b0001011) {
+			return custom_instruction_handler;
+		}
+		return CPU<MARCH>::get_unimplemented_instruction();
+	};
+
 }

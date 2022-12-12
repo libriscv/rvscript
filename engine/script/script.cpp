@@ -315,6 +315,18 @@ void Script::dynamic_call(uint32_t hash, gaddr_t straddr)
 		throw std::runtime_error("Unable to find dynamic function: " + name);
 	}
 }
+void Script::dynamic_call(const std::string& name)
+{
+	const uint32_t hash = crc32(name.c_str(), name.size());
+	auto it = m_dynamic_functions.find(hash);
+	if (LIKELY(it != m_dynamic_functions.end())) {
+		it->second(*this);
+	} else {
+		fmt::print("Unable to find dynamic function '{}' with hash: {:#08x}\n",
+			name, hash);
+		throw std::runtime_error("Unable to find dynamic function: " + name);
+	}
+}
 
 gaddr_t Script::guest_alloc(gaddr_t bytes) {
 	return machine().arena().malloc(bytes);

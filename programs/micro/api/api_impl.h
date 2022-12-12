@@ -237,3 +237,67 @@ inline void vec2::normalize()
 {
 	*this = api::normalize(this->x, this->y);
 }
+
+template<class T>
+struct is_stdstring : public std::is_same<T, std::basic_string<char>> {};
+
+template<typename T>
+struct is_string : public std::disjunction<
+	std::is_same<char *, typename std::decay<T>::type>,
+	std::is_same<const char *, typename std::decay<T>::type>> {};
+
+template <typename... Args> inline constexpr
+void dynamic_call(const std::string& name, Args&&... args)
+{
+	[[maybe_unused]] unsigned argc = 0;
+	std::array<uint8_t, 8> type {};
+	std::array<uintptr_t, 8> gpr {};
+	std::array<float, 8>     fpr {};
+
+	([&] {
+		if constexpr (std::is_integral_v<std::remove_reference_t<Args>>) {
+			gpr[argc] = args;
+			type[argc] = 0b001;
+			argc++;
+		}
+		else if constexpr (std::is_floating_point_v<std::remove_reference_t<Args>>) {
+			fpr[argc] = args;
+			type[argc] = 0b010;
+			argc++;
+		}
+		else if constexpr (is_stdstring<std::remove_cvref_t<Args>>::value)
+		{
+			gpr[argc] = (uintptr_t)args.data();
+			type[argc] = 0b111;
+			argc++;
+		}
+		else if constexpr (is_string<Args>::value)
+		{
+			gpr[argc] = (uintptr_t)const_cast<const char *>(args);
+			type[argc] = 0b111;
+			argc++;
+		}
+	}(), ...);
+
+	register long  a0  asm("a0");
+	register float fa0 asm("fa0");
+	register long  syscall_id asm("a7") = ECALL_DYNCALL2;
+
+	for (unsigned i = 0; i < argc; i++)
+	{
+		if (type[i] == 0b001) {
+			a0 = gpr[i];
+			asm(".word 0b001000000001011" :  : "r"(a0));
+		} else if (type[i] == 0b010) {
+			fa0 = fpr[i];
+			asm(".word 0b010000000001011" :  : "f"(fa0));
+		} else if (type[i] == 0b111) {
+			a0 = gpr[i];
+			asm(".word 0b111000000001011" :  : "r"(a0));
+		}
+	}
+
+	register const char * name_ptr  asm("a0") = name.data();
+	register const size_t name_len  asm("a1") = name.size();
+	asm("ecall" : : "m"(*name_ptr), "r"(name_ptr), "r"(name_len), "r"(syscall_id));
+}

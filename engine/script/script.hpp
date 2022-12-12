@@ -1,4 +1,5 @@
 #pragma once
+#include <any>
 #include <functional>
 #include <fmt/core.h>
 #include <libriscv/machine.hpp>
@@ -42,7 +43,9 @@ public:
 	static void set_dynamic_call(const std::string& name, ghandler_t);
 	static void set_dynamic_calls(std::vector<std::pair<std::string, ghandler_t>>);
 	static void reset_dynamic_call(const std::string& name, ghandler_t = nullptr);
+	void dynamic_call(const std::string&);
 	void dynamic_call(uint32_t hash, gaddr_t strname);
+	auto& dynargs() { return m_arguments; }
 
 	auto& machine() { return *m_machine; }
 	const auto& machine() const { return *m_machine; }
@@ -105,6 +108,8 @@ private:
 	bool        m_last_newline = true;
 	int         m_budget_overruns = 0;
 	Script*     m_remote_script = nullptr;
+	// dynamic call arguments
+	std::vector<std::any> m_arguments;
 	// hash to public API direct function map
 	std::unordered_map<uint32_t, gaddr_t> m_public_api;
 	// map of functions that extend engine using string hashes

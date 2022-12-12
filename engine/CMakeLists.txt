@@ -45,6 +45,7 @@ add_executable(engine
     src/script_functions.cpp
 	src/manage_scripts.cpp
     src/debugging.cpp
+    src/test_dynamic.cpp
     src/timers.cpp
     src/timers_setup.cpp
 )
