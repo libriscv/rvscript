@@ -80,7 +80,7 @@ add_micro_binary(gameplay.elf
 )
 ```
 
-It only builds one binary currently, however that binary is used for many purposes.
+It only builds three programs currently, all used for demonstration purposes.
 
 If you want to build more binaries you can edit `CMakeLists.txt` and add a new binary like so:
 
