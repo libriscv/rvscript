@@ -99,17 +99,7 @@ APICALL(api_dyncall)
 
 APICALL(api_dyncall_args)
 {
-	const auto [g_name, len] = machine.sysargs<gaddr_t, gaddr_t>();
-	// This is faster than reading the string first,
-	// then hashing the string. Instead, we calculate
-	// the hash piecewise from memory, and then pass
-	// along the address to the string too.
-	uint32_t hash = 0xFFFFFFFF;
-	machine.memory.foreach(g_name, len,
-		[&] (auto&, auto, const uint8_t* d, size_t l) {
-			hash = riscv::crc32(hash, d, l);
-		});
-	hash ^= 0xFFFFFFFF;
+	const auto [hash, g_name] = machine.sysargs<uint32_t, gaddr_t>();
 
 	auto& scr = script(machine);
 	// Perform a dynamic call, which takes no arguments
@@ -303,6 +293,10 @@ void Script::setup_syscall_interface()
 			// Select type and retrieve value from argument registers
 			switch (instr.Itype.funct3)
 			{
+			case 0b000: // 32-bit signed integer immediate
+				scr.dynargs().emplace_back(
+					(int64_t)instr.Itype.signed_imm());
+				break;
 			case 0b001: // 64-bit signed integer
 				scr.dynargs().emplace_back(
 					(int64_t)cpu.reg(riscv::REG_ARG0));

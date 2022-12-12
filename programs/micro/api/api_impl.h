@@ -247,7 +247,7 @@ struct is_string : public std::disjunction<
 	std::is_same<const char *, typename std::decay<T>::type>> {};
 
 template <typename... Args> inline constexpr
-void dynamic_call(const std::string& name, Args&&... args)
+void dynamic_call(const uint32_t hash, const char* name, Args&&... args)
 {
 	[[maybe_unused]] unsigned argc = 0;
 	std::array<uint8_t, 8> type {};
@@ -286,8 +286,12 @@ void dynamic_call(const std::string& name, Args&&... args)
 	for (unsigned i = 0; i < argc; i++)
 	{
 		if (type[i] == 0b001) {
-			a0 = gpr[i];
-			asm(".word 0b001000000001011" :  : "r"(a0));
+			if ((int64_t)gpr[i] > -4096 && (int64_t)gpr[i] < 4095) {
+				asm(".insn i 0b0001011, 0, x0, x0, %0" :: "I"(gpr[i]));
+			} else {
+				a0 = gpr[i];
+				asm(".word 0b001000000001011" :  : "r"(a0));
+			}
 		} else if (type[i] == 0b010) {
 			fa0 = fpr[i];
 			asm(".word 0b010000000001011" :  : "f"(fa0));
@@ -297,7 +301,9 @@ void dynamic_call(const std::string& name, Args&&... args)
 		}
 	}
 
-	register const char * name_ptr  asm("a0") = name.data();
-	register const size_t name_len  asm("a1") = name.size();
-	asm("ecall" : : "m"(*name_ptr), "r"(name_ptr), "r"(name_len), "r"(syscall_id));
+	register const size_t name_hash asm("a0") = hash;
+	register const char * name_ptr  asm("a1") = name;
+	asm("ecall" : : "r"(name_hash), "m"(*name_ptr), "r"(name_ptr), "r"(syscall_id));
 }
+#define DYNCALL(name, ...) \
+	dynamic_call(crc32(name), name, ##__VA_ARGS__)

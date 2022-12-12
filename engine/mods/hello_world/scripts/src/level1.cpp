@@ -7,7 +7,7 @@ extern void do_remote_stuff();
 
 static inline void my_dynamic_call(long val, float fval, const std::string& str)
 {
-	dynamic_call("Test::my_dynamic_call", val, fval, str);
+	DYNCALL("Test::my_dynamic_call", val, fval, str);
 }
 
 /* This is the function that gets called at the start.
@@ -25,11 +25,11 @@ PUBLIC(void start())
 	measure("Benchmark overhead", [] {});
 
 	measure("Dynamic call (no arguments)", [] {
-		dynamic_call("Test::void");
+		DYNCALL("Test::void");
 	});
 
 	measure("Dynamic call (4x arguments)", [] {
-		dynamic_call("Test::void", 1234, 5678.0, 4321, 8765.0);
+		DYNCALL("Test::void", 1234, 5678.0, 4321, 8765.0);
 	});
 
 	print("** Remote **\n");
