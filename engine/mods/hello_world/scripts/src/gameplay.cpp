@@ -79,15 +79,16 @@ PUBLIC(void cpp_function(const char* a, const C& c, const char* b))
 }
 
 /* Example game object logic */
+#include <embedded_string.hpp>
 struct GameObject {
+	EmbeddedString<32> name;
 	bool alive;
-	char name[30];
 };
 
 PUBLIC(void myobject_death(GameObject& object))
 {
 	EXPECT(object.alive);
-	print("Object '", object.name, "' is dying!\n");
+	print("Object '", object.name.to_string(), "' is dying!\n");
 	/* SFX: Ugh... */
 	object.alive = false;
 }

@@ -1,6 +1,7 @@
 #include "manage_scripts.hpp"
 #include <script/event.hpp>
 #include <fmt/core.h>
+#include <api/embedded_string.hpp>
 
 int main()
 {
@@ -87,9 +88,8 @@ int main()
 	*/
 	static constexpr Script::gaddr_t OBJECT_AREA = 0xC000000;
 	struct GameObject {
-
+		EmbeddedString<32> name;
 		bool alive = false;
-		std::array<char, 30> name {};
 
 		Event onDeath;
 		Event onAction;
@@ -108,7 +108,7 @@ int main()
 	/* Initialize object */
 	auto& obj = objects[0];
 	obj.alive = true;
-	fmt::format_to(obj.name.data(), "{}", "myobject");
+	obj.name = "myobject";
 	obj.onDeath = Event(gameplay, "myobject_death");
 
 	/* Simulate object dying */
