@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.0.2)
 cmake_policy(SET CMP0069 NEW)
-project (hubris C CXX)
+project (engine C CXX)
 
 option(FLTO          "Enable LTO builds" OFF)
 option(SANITIZE      "Enable sanitizers" OFF)
@@ -46,7 +46,7 @@ endif()
 add_subdirectory(../ext ext)
 add_subdirectory(src/script script)
 
-add_executable(hubris
+add_executable(engine
 	src/main.cpp
 	src/main_screen.cpp
 	src/manage_scripts.cpp
@@ -57,9 +57,9 @@ add_executable(hubris
 	src/setup_timers.cpp
 )
 
-target_include_directories(hubris PUBLIC .)
-target_link_libraries(hubris script nanogui library)
-set_target_properties(hubris PROPERTIES
+target_include_directories(engine PUBLIC .)
+target_link_libraries(engine script nanogui library)
+set_target_properties(engine PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 ## embedding programs into executable ##
@@ -78,13 +78,13 @@ function (embed_file NAME PATH BINARY)
 endfunction()
 
 if (EMBEDDED_MODE)
-	embed_file(hubris "${CMAKE_SOURCE_DIR}/mods/hello_world/scripts" "gameplay.elf")
-	embed_file(hubris "${CMAKE_SOURCE_DIR}/../programs" "symbols.map")
-	target_compile_definitions(hubris PUBLIC EMBEDDED_MODE=1)
+	embed_file(engine "${CMAKE_SOURCE_DIR}/mods/hello_world/scripts" "gameplay.elf")
+	embed_file(engine "${CMAKE_SOURCE_DIR}/../programs" "symbols.map")
+	target_compile_definitions(engine PUBLIC EMBEDDED_MODE=1)
 endif()
 
 if (SANITIZE)
 	if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-		target_link_libraries(hubris --rtlib=compiler-rt -lgcc_s)
+		target_link_libraries(engine --rtlib=compiler-rt -lgcc_s)
 	endif()
 endif()

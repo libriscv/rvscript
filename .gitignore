@@ -4,4 +4,4 @@
 **/riscv64-unknown-elf/
 *.elf
 .vscode/
-engine/hubris
+engine/engine
