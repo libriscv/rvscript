@@ -20,5 +20,5 @@ struct EphemeralAlloc
 	const size_t size;
 };
 
-#include "machine/api_structs.h"
-#include "machine/syscalls.h"
+#include "../../api/api_structs.h"
+#include "../../api/syscalls.h"

@@ -13,7 +13,7 @@ add_subdirectory(libriscv/lib)
 target_compile_definitions(riscv PUBLIC RISCV_SYSCALLS_MAX=600)
 
 add_subdirectory(strf)
-target_compile_definitions(strf-header-only INTERFACE STRF_HAS_STD_STRING_VIEW=1)
+#target_compile_definitions(strf-header-only INTERFACE STRF_HAS_STD_STRING_VIEW=1)
 
 add_subdirectory(library)
 

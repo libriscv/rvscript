@@ -1,7 +1,8 @@
 #include "script.hpp"
 using gaddr_t = Script::gaddr_t;
 
-#include "machine/include_api.hpp"
+#include "../../api/api_structs.h"
+#include "../../api/syscalls.h"
 #include <fstream> // Windows doesn't implement C getline()
 #include <libriscv/native_heap.hpp>
 #include <libriscv/threads.hpp>

@@ -1,5 +1,5 @@
 #include "manage_scripts.hpp"
-#include <script/machine/blackbox.hpp>
+#include <script/blackbox.hpp>
 Blackbox<Script::MARCH> blackbox;
 
 /* List of initialized machines ready to go. The Script class
