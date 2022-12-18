@@ -1,0 +1,7 @@
+**/build/
+**/build_*/
+**/riscv32-unknown-elf/
+**/riscv64-unknown-elf/
+*.elf
+.vscode/
+engine/hubris

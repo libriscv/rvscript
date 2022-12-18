@@ -1,0 +1,21 @@
+[submodule "ext/libriscv"]
+	path = ext/libriscv
+	url = https://github.com/fwsGonzo/libriscv.git
+[submodule "ext/fmt"]
+	path = ext/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "micro/ext/frozen"]
+	path = programs/micro/ext/frozen
+	url = https://github.com/serge-sans-paille/frozen.git
+[submodule "micro/ext/strf"]
+	path = programs/micro/ext/strf
+	url = https://github.com/robhz786/strf.git
+[submodule "ext/nanogui"]
+	path = ext/nanogui
+	url = https://github.com/mitsuba-renderer/nanogui.git
+[submodule "tests/Catch2"]
+	path = tests/Catch2
+	url = https://github.com/catchorg/Catch2.git
+[submodule "ext/library"]
+	path = ext/library
+	url = https://github.com/fwsGonzo/library.git
