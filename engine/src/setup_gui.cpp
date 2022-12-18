@@ -54,6 +54,28 @@ void setup_gui_system(MainScreen& screen)
 
 			 script.machine().set_result(idx);
 		 }},
+		{"GUI::label",
+		 [&screen](Script& script)
+		 {
+			 const auto [widx, text]
+				 = script.machine().sysargs<size_t, std::string>();
+
+			 auto* parent = screen.getw(widx);
+
+			 auto* label = new Label(parent, text);
+			 auto idx	 = screen.managew(label);
+
+			 script.machine().set_result(idx);
+		 }},
+		{"GUI::widget_set_pos",
+		 [&screen](Script& script)
+		 {
+			 const auto [widx, x, y]
+				 = script.machine().sysargs<size_t, int, int>();
+
+			 nanogui::Widget* widget = screen.getw(widx);
+			 widget->set_position({x, y});
+		 }},
 		{"GUI::widget_callback",
 		 [&screen](Script& script)
 		 {

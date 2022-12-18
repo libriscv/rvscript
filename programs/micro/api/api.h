@@ -32,6 +32,7 @@ namespace api
 		struct Widget
 		{
 			guidx_t idx;
+			void set_position(int x, int y);
 			void set_callback(Function<void()> callback);
 		};
 
@@ -43,13 +44,21 @@ namespace api
 		{
 		};
 
+		struct Label : public Widget
+		{
+		};
+
 		// Find a window based on title
 		static guidx_t find(const std::string& title);
 
 		// Create a new window
 		static Window window(const std::string& title);
+		// Create a new widget
+		static Widget widget(Widget& parent);
 		// Create a new button
 		static Button button(Widget& parent, const std::string& caption);
+		// Create a new label
+		static Label label(Widget& parent, const std::string& text);
 	};
 
 	/** Events **/

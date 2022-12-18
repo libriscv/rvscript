@@ -10,8 +10,11 @@
 
 	"GUI::find":   "unsigned sys_gui_find   (const char *)",
 	"GUI::window": "unsigned sys_gui_window (const char *)",
+	"GUI::widget": "unsigned sys_gui_widget (unsigned)",
 	"GUI::button": "unsigned sys_gui_button (unsigned, const char *)",
+	"GUI::label": "unsigned sys_gui_label (unsigned, const char *)",
 
+	"GUI::widget_set_pos": "void sys_gui_widget_set_pos (unsigned, int, int)",
 	"GUI::widget_callback": "void sys_gui_widget_callback (unsigned, gui_callback, void *, size_t)",
 
 	"empty":      "void sys_empty ()",
