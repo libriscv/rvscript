@@ -37,9 +37,7 @@ bash build.sh
 
 This project has no external dependencies outside of libriscv and libfmt. libriscv has no dependencies.
 
-Running the engine is only half the equation as you will also want to be able to modify the scripts themselves. To do that you need a RISC-V compiler. However, the gameplay binary is provided with the repo so that you can run the engine demonstration without having to download and build a RISC-V compiler.
-
-While you can technically install the `g++-10-riscv64-linux-gnu` package and use that to compile your scripts, keep in mind that it will use glibc and compressed instructions are enabled. Especially compressed instructions are less efficient when emulating RISC-V. Newlib is generally preferred as the libc because it doesn't bloat the binaries.
+Running the engine is only half the equation as you will also want to be able to modify the scripts themselves. To do that you need a RISC-V compiler.
 
 ## Getting a RISC-V compiler
 
@@ -71,23 +69,11 @@ While 32-bit RISC-V is faster to emulate than 64-bit, I prefer it when the sizes
 
 ## Building script files
 
-If you have installed the RISC-V compiler above, the rest should be simple enough. Just run `build.sh` in the programs folder. It will create a new folder simply called `build` and build all the programs that are defined in `engine/mods/hello_world/scripts/CMakeLists.txt`:
+If you have installed the RISC-V compiler above, the rest should be simple enough. Just run `build.sh` in the programs folder. It will create a new folder simply called `build` and build all the programs that are defined in `engine/scripts/CMakeLists.txt`:
 
 ```
-add_micro_binary(gameplay.elf
-	"src/gameplay.cpp"
-	"src/events.cpp"
-)
-```
-
-It only builds three programs currently, all used for demonstration purposes.
-
-If you want to build more binaries you can edit `CMakeLists.txt` and add a new binary like so:
-
-```
-add_micro_binary(my.elf
-	"src/mycode.cpp"
-	"src/morecode.cpp"
+add_level(hello.elf 0x400000
+	"src/hello.cpp"
 )
 ```
 
@@ -256,9 +242,8 @@ See `libriscv/memory.hpp` for a list of helper functions, each with a specific p
 - How do I allow non-technical people to compile script?
 	- Hard question. If they are only going to write scripts for the actual levels it might be good enough to use a web API endpoint to compile these simpler binaries. You don't have to do the compilation in a Docker container, so it should be fairly straight-forward for a dedicated server. You could also have an editor in the browser, and when you press Save or Compile the resulting binary is sent to you. They can then move it to the folder it's supposed to be in, and restart the level. Something like that. I'm sure something that is even higher iteration can be done with some thought put into it.
 - Will you add support for SIMD-like instructions for RISC-V?
-	- Definitely. The extension has been finalized, but there is no real implementation that outputs these vector instructions presently. Because of this, it's on hold. I will very likely support 256-bit lanes only.
-	- Heavy compute operations is probably best left implemented as specialized system calls or dynamic function calls.
+	- Definitely. I already support a few 256-bit operations, but it is not near completion.
 - I have real-time requirements.
 	- As long as pausing the script to continue later is an option, you will not have any trouble. Just don't pause the script while it's in a thread and then accidentally vmcall into it from somewhere else. This will clobber all registers and you will have trouble later. You can use preempt provided that it returns to the same thread again (although you are able to yield back to a thread manually). There are many options where things will be OK. In my own engine all long-running tasks are running on separate machines to simplify things.
 - My program is jumping to a misaligned instruction. Something is very wrong!
-	- Try enabling the RISCV_EXT_C CMake option and see if perhaps your RISC-V programs are built with compressed instructions enabled. They are not very performant in libriscv, but they are pretty standard. For example the standard 64-bit RISC-V architecture is RV64GC, while the most performant in libriscv is RV64G.
+	- Try enabling the RISCV_EXT_C CMake option and see if perhaps your RISC-V programs are built with compressed instructions enabled. They are the most performant in libriscv, but they are pretty standard. For example the standard 64-bit RISC-V architecture is RV64GC, while the most performant in libriscv is RV64G.
