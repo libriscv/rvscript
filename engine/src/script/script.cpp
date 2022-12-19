@@ -16,7 +16,7 @@ static constexpr gaddr_t SHM_SIZE	  = 2 * riscv::Page::size();
 static const int HEAP_SYSCALLS_BASE	  = 570;
 static const int MEMORY_SYSCALLS_BASE = 575;
 static const int THREADS_SYSCALL_BASE = 590;
-// Memory area used by remote function calls and such
+// Memory area shared between all script instances
 static std::array<uint8_t, SHM_SIZE> shared_memory {};
 std::map<uint32_t, Script::ghandler_t> Script::m_dynamic_functions {};
 using riscv::crc32;
@@ -27,6 +27,11 @@ Script::Script(
   : m_source_machine(smach), m_userptr(userptr), m_name(name),
 	m_filename(filename), m_hash(crc32(name.c_str())), m_is_debug(debug)
 {
+	static bool init = false;
+	if (!init) {
+		init = true;
+		Script::setup_syscall_interface();
+	}
 	this->reset();
 }
 

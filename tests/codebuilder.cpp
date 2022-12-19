@@ -6,18 +6,43 @@
 #include <libriscv/machine.hpp>
 #include "crc32.hpp"
 static constexpr bool VERBOSE_COMPILER = true;
-static const std::string DEFAULT_CXX_COMPILER = "riscv64-unknown-elf-g++";
 
-std::string cpp_compile_command(const std::string& cxx,
-	const std::string& args, const std::string& outfile)
-{
-	return cxx + " -std=c++17 -x c++ -o " + outfile + " " + args;
-}
 std::string env_with_default(const char* var, const std::string& defval) {
 	std::string value = defval;
 	if (const char* envval = getenv(var); envval) value = std::string(envval);
 	return value;
 }
+
+struct TemporaryFile
+{
+	TemporaryFile(std::string contents)
+	{
+		// Create temporary filenames for code and binary
+		this->filename = "/tmp/builder-XXXXXX";
+		// Open temporary code file with owner privs
+		this->fd = mkstemp(&filename[0]);
+		if (this->fd < 0)
+		{
+			throw std::runtime_error(
+				"Unable to create temporary file: " + this->filename);
+		}
+
+		// Write code to temp code file
+		const ssize_t len = write(this->fd, contents.c_str(), contents.size());
+		if (len < (ssize_t)contents.size())
+		{
+			throw std::runtime_error("Unable to write to temporary file");
+		}
+	}
+	~TemporaryFile()
+	{
+		if (fd > 0)
+			unlink(this->filename.c_str());
+	}
+
+	int fd;
+	std::string filename;
+};
 
 std::vector<uint8_t> load_file(const std::string& filename)
 {
@@ -45,20 +70,7 @@ riscv::Machine<riscv::RISCV64>
 	build_and_load(const std::string& code, const std::string& args)
 {
 	// Create temporary filenames for code and binary
-	char code_filename[64];
-	strncpy(code_filename, "/tmp/builder-XXXXXX", sizeof(code_filename));
-	// Open temporary code file with owner privs
-	const int code_fd = mkstemp(code_filename);
-	if (code_fd < 0) {
-		throw std::runtime_error(
-			"Unable to create temporary file for code: " + std::string(code_filename));
-	}
-	// Write code to temp code file
-	const ssize_t code_len = write(code_fd, code.c_str(), code.size());
-	if (code_len < (ssize_t) code.size()) {
-		unlink(code_filename);
-		throw std::runtime_error("Unable to write to temporary file");
-	}
+	TemporaryFile code_tmpfile { code };
 	// Compile code to binary file
 	char bin_filename[256];
 	const uint32_t code_checksum = crc32((const uint8_t *)code.c_str(), code.size());
@@ -66,22 +78,36 @@ riscv::Machine<riscv::RISCV64>
 	(void)snprintf(bin_filename, sizeof(bin_filename),
 		"/tmp/binary-%08X", final_checksum);
 
-	auto cxx = env_with_default("RCXX", DEFAULT_CXX_COMPILER);
-	std::string command = cpp_compile_command(cxx,
-		args + " " + std::string(code_filename), bin_filename);
+	char current_dir[256];
+	getcwd(current_dir, sizeof(current_dir));
+
+	char command[1024];
+	snprintf(command, sizeof(command),
+		"exec ./codebuilder.sh \"%s/..\" %s %s",
+		current_dir,
+		code_tmpfile.filename.c_str(),
+		bin_filename);
+
 	if constexpr (VERBOSE_COMPILER) {
-		printf("Command: %s\n", command.c_str());
+		printf("Command: %s\n", command);
 	}
 	// Compile program
-	FILE* f = popen(command.c_str(), "r");
+	FILE* f = popen(command, "r");
 	if (f == nullptr) {
-		unlink(code_filename);
 		throw std::runtime_error("Unable to compile code");
 	}
+	ssize_t r = 0;
+	do {
+		r = fread(command, 1, sizeof(command), f);
+		if (r > 0)
+		{
+			printf("Compilation:\n%.*s\n", (int)r, command);
+		}
+	} while (r > 0);
 	pclose(f);
-	unlink(code_filename);
 
 	binaries.push_back(load_file(bin_filename));
+	unlink(bin_filename);
 
 	riscv::Machine<riscv::RISCV64> machine { binaries.back() };
 	riscv::Machine<riscv::RISCV64>::setup_newlib_syscalls();

@@ -1,5 +1,6 @@
 #pragma once
 #include <include/libc.hpp>
+#include <cassert>
 #include <string>
 #include <type_traits>
 #define SHM_GCC_BUGFIX() __attribute__ ((noinline))

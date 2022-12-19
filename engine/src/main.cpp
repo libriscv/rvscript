@@ -8,7 +8,6 @@
 int main()
 {
 	const bool debug = getenv("DEBUG") != nullptr;
-	Script::setup_syscall_interface();
 	// Dynamically extend the functionality available
 	// See: setup_timers.cpp
 	extern void setup_timer_system();

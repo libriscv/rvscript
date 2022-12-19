@@ -6,6 +6,7 @@
 #include "api_structs.h"
 #include <dyncall_api.h>
 #include <engine.hpp>
+#include <strf.hpp>
 
 namespace api
 {

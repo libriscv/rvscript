@@ -6,18 +6,18 @@ option(STRIP_SYMBOLS "Remove all symbols except the public API" OFF)
 #
 # Build configuration
 #
-set (ENGINE_PATH "${CMAKE_SOURCE_DIR}/../engine")
+set (ENGINE_PATH "${CMAKE_CURRENT_LIST_DIR}/../../engine")
 set (APIPATH "${ENGINE_PATH}/api")
 set (UTILPATH "${ENGINE_PATH}/src/util")
 
-set(WARNINGS  "-Wall -Wextra -ggdb3 -include strf.hpp")
+set(WARNINGS  "-Wall -Wextra -ggdb3")
 set(COMMON    "-fno-math-errno -fno-threadsafe-statics")
-set(COMMON    "-O2 -fno-stack-protector ${COMMON}")
+set(COMMON    "-fno-stack-protector ${COMMON}")
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 	set (COMMON "${COMMON} -ggdb3 -O0 -fstack-protector")
 	set(DEBUGGING TRUE)
 endif()
-set(CMAKE_CXX_FLAGS "${WARNINGS} -std=gnu++20 ${COMMON}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNINGS} -std=gnu++20 ${COMMON}")
 
 if (LTO)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto -ffat-lto-objects")
@@ -33,7 +33,7 @@ set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "") # remove -rdynamic
 
 # enforce correct global include order for our tiny libc
 include_directories(libc)
-set (BBLIBCPATH "${CMAKE_SOURCE_DIR}/../ext/libriscv/binaries/barebones/libc")
+set (BBLIBCPATH "${CMAKE_CURRENT_LIST_DIR}/../../ext/libriscv/binaries/barebones/libc")
 include_directories(${BBLIBCPATH})
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/ext  ext)
