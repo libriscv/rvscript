@@ -227,9 +227,9 @@ void Script::handle_timeout(gaddr_t address)
 	if (thread->tid != 0)
 	{
 		// try to do the right thing here
-		if (thread->block_reason != 0)
+		if (thread->block_word != 0)
 		{
-			thread->block(thread->block_reason);
+			thread->block(thread->block_word);
 		}
 		else
 		{
@@ -327,11 +327,11 @@ void Script::each_tick_event()
 	int count = 0;
 	for (auto* thread : mt.blocked_threads())
 	{
-		if (thread->block_reason == this->m_tick_block_reason)
+		if (thread->block_word == this->m_tick_block_word)
 			count++;
 	}
 	this->preempt(
-		this->m_tick_event, (int)count, (int)this->m_tick_block_reason);
+		this->m_tick_event, (int)count, (int)this->m_tick_block_word);
 	assert(mt.get_thread()->tid == 0 && "Avoid clobbering regs");
 }
 

@@ -37,8 +37,8 @@ struct Script
 
 	void set_tick_event(gaddr_t addr, int reason)
 	{
-		this->m_tick_event		  = addr;
-		this->m_tick_block_reason = reason;
+		this->m_tick_event		= addr;
+		this->m_tick_block_word = reason;
 	}
 
 	void each_tick_event();
@@ -150,9 +150,9 @@ struct Script
 	std::unique_ptr<machine_t> m_machine = nullptr;
 	const machine_t& m_source_machine;
 	void* m_userptr;
-	gaddr_t m_heap_area		= 0;
-	gaddr_t m_tick_event	= 0;
-	int m_tick_block_reason = 0;
+	gaddr_t m_heap_area		   = 0;
+	gaddr_t m_tick_event	   = 0;
+	uint32_t m_tick_block_word = 0;
 	std::string m_name;
 	std::string m_filename;
 	uint32_t m_hash;
