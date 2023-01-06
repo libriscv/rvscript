@@ -43,7 +43,10 @@ bool Script::reset()
 	{
 		// Fork the source machine into m_machine */
 		riscv::MachineOptions<MARCH> options {
-			.memory_max = MAX_MEMORY, .stack_size = STACK_SIZE};
+			.memory_max = MAX_MEMORY,
+			.stack_size = STACK_SIZE,
+			.use_memory_arena = false
+		};
 		m_machine.reset(new machine_t(m_source_machine, options));
 
 		// setup system calls and traps

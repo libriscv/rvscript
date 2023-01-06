@@ -5,17 +5,21 @@
 
 template <int W> struct MachineData
 {
+	static inline const riscv::MachineOptions<W> options {
+		.use_memory_arena = false};
+
 	MachineData(
 		std::vector<uint8_t> b, const std::string& fn, const std::string& syms)
-	  : binary {std::move(b)}, machine {binary}, filename {fn}, sympath {syms}
+	  : binary {std::move(b)}, machine {binary, options}, filename {fn},
+		sympath {syms}
 	{
 	}
 
 	MachineData(
 		std::vector<uint8_t> b, const std::string& fn, bool,
 		std::string_view syms)
-	  : binary {std::move(b)}, machine {binary}, filename {fn}, sympath {},
-		symbols(syms)
+	  : binary {std::move(b)}, machine {binary, options}, filename {fn},
+		sympath {}, symbols(syms)
 	{
 	}
 
