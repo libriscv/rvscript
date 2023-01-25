@@ -45,3 +45,15 @@ inline constexpr auto crc32(const void* vdata, const size_t len)
 	}
 	return ~crc;
 }
+
+template <size_t Len, uint32_t POLYNOMIAL = 0xEDB88320>
+inline consteval auto crc32ct(const char (&data)[Len])
+{
+	constexpr auto crc32_table = gen_crc32_table<POLYNOMIAL>();
+
+	auto crc = 0xFFFFFFFFu;
+	for (auto i = 0u; i < Len-1; ++i) {
+	    crc = crc32_table[(crc ^ data[i]) & 0xFF] ^ (crc >> 8);
+	}
+	return ~crc;
+}

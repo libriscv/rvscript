@@ -93,12 +93,14 @@ bool Script::initialize()
 		if (getenv("DEBUG"))
 			machine().verbose_instructions = true;
 #endif
-		machine().simulate(MAX_INSTRUCTIONS);
+		machine().simulate<false>(MAX_INSTRUCTIONS);
 
 		if (UNLIKELY(machine().instruction_limit_reached()))
 		{
 			strf::to(stderr)(
-				">>> Exception: Instruction limit reached on ", name(), "\n");
+				">>> Exception: Instruction limit reached on ", name(), "\n",
+				"Instruction count: ", machine().instruction_counter(), "/", machine().max_instructions(), "\n"
+			);
 			return false;
 		}
 	}
@@ -121,6 +123,8 @@ bool Script::initialize()
 		strf::to(stderr)(">>> Exception: ", e.what(), "\n");
 		return false;
 	}
+	strf::to(stderr)(
+		">>> ", name(), " initialized.\n");
 	return true;
 }
 
@@ -166,6 +170,14 @@ void Script::could_not_find(std::string_view func)
 
 void Script::handle_exception(gaddr_t address)
 {
+	auto callsite = machine().memory.lookup(address);
+	strf::to(stderr)(
+		"[", name(), "] Exception when calling:\n  ",
+		callsite.name, " (0x", strf::hex(callsite.address), ")\n",
+		"Backtrace:\n"
+	);
+	this->print_backtrace(address);
+
 	try
 	{
 		throw; // re-throw
@@ -177,13 +189,14 @@ void Script::handle_exception(gaddr_t address)
 	}
 	catch (const riscv::MachineException& e)
 	{
-		/*		fmt::print(stderr, "Script::call exception: {} (data:
-		   {:#x})\n", e.what(), e.data()); const auto instruction =
-		   machine().cpu.current_instruction_to_string(); fmt::print(stderr,
-		   ">>> {}\n", instruction); fmt::print(stderr, ">>> Machine
-		   registers:\n[PC\t{:08x}] {}\n", (long) machine().cpu.pc(),
-					machine().cpu.registers().to_string());
-		*/
+		strf::to(stderr)(
+			"\nException: ", e.what(), "  (data: ", strf::hex(e.data()), ")\n",
+			">>> ", machine().cpu.current_instruction_to_string(), "\n",
+			">>> Machine registers:\n[PC\t",
+				strf::hex(machine().cpu.pc()) > 8, "] ",
+				machine().cpu.registers().to_string(), "\n"
+		);
+
 		// Remote debugging with DEBUG=1 ./engine
 		if (getenv("DEBUG"))
 			gdb_remote_debugging("", false);
@@ -191,8 +204,7 @@ void Script::handle_exception(gaddr_t address)
 	catch (const std::exception& e)
 	{
 		strf::to(stderr)(
-			"Script::call exception on ", strf::hex(address), ": ", e.what(),
-			"\n");
+			"\nMessage: ", e.what(), "\n\n");
 	}
 	strf::to(stderr)(
 		"Program page: ", machine().memory.get_page_info(machine().cpu.pc()),
@@ -209,12 +221,6 @@ void Script::handle_exception(gaddr_t address)
 			"Script::call: Closing running thread: ", thread->tid, "\n");
 		thread->exit();
 	}
-
-	auto callsite = machine().memory.lookup(address);
-	strf::to(stderr)(
-		"Function call '", callsite.name,
-		"', addr=", strf::hex(callsite.address), "\n");
-	this->print_backtrace(address);
 }
 
 void Script::handle_timeout(gaddr_t address)

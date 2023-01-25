@@ -126,8 +126,8 @@ int main()
 
 	/* Simulate object dying */
 	strf::to(stdout)(
-		"Calling '{}' in '{}'\n", obj.onDeath.function(),
-		obj.onDeath.script().name());
+		"Calling '", obj.onDeath.function(), "' in '",
+		obj.onDeath.script().name(), "'\n");
 	assert(obj.alive == true);
 	obj.onDeath.call(GameObject::address(0));
 	assert(obj.alive == false);

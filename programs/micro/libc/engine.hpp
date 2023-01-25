@@ -20,22 +20,27 @@ inline auto hart_id()
 }
 inline auto rdcycle()
 {
-	union {
-		uint64_t whole;
-		uint32_t word[2];
-	};
-	asm ("rdcycleh %0\n rdcycle %1\n" : "=r"(word[1]), "=r"(word[0]) :: "memory");
-	return whole;
+	uint64_t cycles;
+	asm ("rdcycle %0" : "=r"(cycles) :: "memory");
+	return cycles;
 }
 inline auto rdtime()
 {
-	union {
-		uint64_t whole;
-		uint32_t word[2];
-	};
-	asm ("rdtimeh %0\n rdtime %1\n" : "=r"(word[1]), "=r"(word[0]) :: "memory");
-	return whole;
+	uint64_t val;
+	asm ("rdtime %0" : "=r"(val) :: "memory");
+	return val;
 }
+
+struct HashedValue {
+	template <size_t N>
+	consteval HashedValue(const char (&str)[N])
+		: hash(crc32ct<N>(str))
+	{
+		static_assert(N > 0, "String must be non-empty");
+	}
+
+	const uint32_t hash;
+};
 
 extern "C" long sys_write(const void*, size_t);
 extern "C" void (*farcall_helper) ();

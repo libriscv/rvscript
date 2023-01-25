@@ -12,7 +12,7 @@ struct Script
 	using ghandler_t						   = std::function<void(Script&)>;
 	static constexpr gaddr_t MAX_MEMORY		   = 1024 * 1024 * 16ul;
 	static constexpr gaddr_t MAX_HEAP		   = 1024 * 1024 * 256ul;
-	static constexpr uint64_t MAX_INSTRUCTIONS = 32000000;
+	static constexpr uint64_t MAX_INSTRUCTIONS = 8000000;
 
 	// Call any script function, with any parameters
 	template <typename... Args>
