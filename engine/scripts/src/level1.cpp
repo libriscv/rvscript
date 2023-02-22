@@ -22,13 +22,14 @@ PUBLIC(void start())
 
 	my_dynamic_call(1234, 5678.0, "nine-ten-eleven-twelve!");
 
-	measure("Benchmark overhead", [] {});
+	measure("Benchmark overhead", [] { return_fast(); });
 
 	measure(
 		"Dynamic call (no arguments)",
 		[]
 		{
 			DYNCALL("Test::void");
+			return_fast();
 		});
 
 	measure(
@@ -36,6 +37,7 @@ PUBLIC(void start())
 		[]
 		{
 			DYNCALL("Test::void", 1234, 5678.0, 4321, 8765.0);
+			return_fast();
 		});
 
 	print("** Remote **\n");

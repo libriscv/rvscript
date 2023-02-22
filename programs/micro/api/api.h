@@ -94,3 +94,26 @@ namespace api
 
 #define PUBLIC(x) extern "C" __attribute__((used, retain)) x
 #define KEEP() __attribute__((used, retain))
+
+#define ENABLE_EXPERIMENTAL_FAST_RETURNS 1
+
+#if ENABLE_EXPERIMENTAL_FAST_RETURNS > 0
+#define FPUB extern "C" __attribute__((noreturn, used, retain))
+
+inline __attribute__((noreturn)) void return_fast()
+{
+	asm volatile(".insn i SYSTEM, 0, x0, x0, 0x7ff");
+	__builtin_unreachable();
+}
+template <typename T>
+inline __attribute__((noreturn)) void return_fast(T t)
+{
+	register T a0 asm("a0") = t;
+	asm volatile(".insn i SYSTEM, 0, x0, x0, 0x7ff" :: "r"(a0));
+	__builtin_unreachable();
+}
+#else
+#define FPUB extern "C" __attribute__((used, retain))
+#define return_fast() return
+#define return_fast(x) return x
+#endif

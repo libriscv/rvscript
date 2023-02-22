@@ -1,10 +1,10 @@
 #include "interface.hpp"
 #include <api.h>
 using namespace api;
-static void call_remotely();
-static void call_remote_member();
-static void call_remote_function();
-static void call_remote_std_function();
+static __attribute__((noreturn)) void call_remotely();
+static __attribute__((noreturn)) void call_remote_member();
+static __attribute__((noreturn)) void call_remote_function();
+static __attribute__((noreturn)) void call_remote_std_function();
 
 struct SomeStruct
 {
@@ -75,22 +75,26 @@ void call_remotely()
 	// A do-nothing function used for benchmarking
 	extern void gameplay_empty();
 	gameplay_empty();
+	return_fast();
 }
 
 void call_remote_member()
 {
 	// A do-nothing member function used for benchmarking
 	gameplay_state.do_nothing();
+	return_fast();
 }
 
 void call_remote_function()
 {
 	// A remotely executed lambda used for benchmarking
 	gameplay_exec_ptr([] {});
+	return_fast();
 }
 
 void call_remote_std_function()
 {
 	// A remotely executed std::function used for benchmarking
 	gameplay_exec([] {});
+	return_fast();
 }
