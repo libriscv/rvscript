@@ -1,6 +1,7 @@
 #include "script.hpp"
 
 #include <libriscv/native_heap.hpp>
+#include <stdexcept>
 
 using gaddr_t							 = Script::gaddr_t;
 static constexpr gaddr_t REMOTE_IMG_BASE = 0x50000000;
@@ -188,6 +189,96 @@ void Script::setup_remote_calls_to(Script& dest)
 
 				// No longer connected
 				dest_script->m_remote_script = old_remote_script;
+
+				// Restore read/fault handlers
+				m.memory.set_page_readf_handler(std::move(old_read_handler));
+				m.memory.set_page_fault_handler(std::move(old_fault_handler));
+				// Invalidate all cached pages, just in case any
+				// of them belong to the caller Script.
+				m.memory.invalidate_reset_cache();
+
+				// Penalize caller script by reducing max instructions
+				cpu.machine().penalize(m.instruction_counter());
+
+				// Return to calling function, with return regs 0 and 1
+				cpu.reg(riscv::REG_ARG0) = m.cpu.reg(riscv::REG_ARG0);
+				cpu.reg(riscv::REG_ARG1) = m.cpu.reg(riscv::REG_ARG1);
+				cpu.jump(cpu.reg(riscv::REG_RA));
+				return;
+			}
+			cpu.trigger_exception(
+				riscv::EXECUTION_SPACE_PROTECTION_FAULT, cpu.pc());
+		});
+} // Script::setup_remote_calls_to()
+
+void Script::setup_strict_remote_calls_to(Script& dest)
+{
+	// Allow calling another pre-determined machine
+	// by jumping directly to its functions. However, access to the other
+	// machine is limited to making calls into its public functions. This
+	// can be enforced by using the remote machines public symbol list and
+	// match it against something like syscall_XXX.
+	this->m_remote_script = &dest;
+
+	machine().cpu.set_fault_handler(
+		[](auto& cpu, auto&)
+		{
+			auto* this_script = cpu.machine().template get_userdata<Script>();
+			auto* dest_script = this_script->m_remote_script;
+
+			// Check if jump is inside the remote machines space
+			if (dest_script != nullptr) // && cpu.pc() >= REMOTE_IMG_BASE)
+			{
+				auto& m = dest_script->machine();
+				// Lookup into unordered_map in order to validate the system call
+				if (UNLIKELY(dest_script->m_remote_access.count(cpu.pc()) == 0))
+					cpu.trigger_exception(
+						riscv::EXECUTION_SPACE_PROTECTION_FAULT, cpu.pc());
+
+				// Copy only argument registers to destination
+				for (int i = 0; i < 8; i++)
+				{
+					m.cpu.reg(10 + i) = cpu.reg(10 + i);
+				}
+				for (int i = 0; i < 4; i++)
+				{
+					m.cpu.registers().getfl(10 + i)
+						= cpu.registers().getfl(10 + i);
+				}
+
+				// Read faults happen when there is a read on a missing
+				// page. It returns a zero CoW page normally.
+				riscv::Memory<MARCH>::page_readf_cb_t old_read_handler;
+				old_read_handler = m.memory.set_page_readf_handler(
+					[&](auto&, auto pageno) -> const riscv::Page&
+					{
+						if (pageno * riscv::Page::size() < REMOTE_IMG_BASE)
+						{
+							// The page is in the callers image space
+							// so get the page from the caller:
+							return cpu.machine().memory.get_pageno(pageno);
+						}
+						return riscv::Page::cow_page();
+					});
+
+				riscv::Memory<MARCH>::page_fault_cb_t old_fault_handler;
+				// This handler makes writes to below the remote machines
+				// image base become writes to this Script machine instead.
+				// If they are larger than its base, they become normal pages.
+				old_fault_handler = m.memory.set_page_fault_handler(
+					[&](auto& mem, const auto pageno,
+						bool init) -> riscv::Page&
+					{
+						if (pageno * riscv::Page::size() < REMOTE_IMG_BASE)
+						{
+							return cpu.machine().memory.create_writable_pageno(
+								pageno, init);
+						}
+						return old_fault_handler(mem, pageno, init);
+					});
+
+				// Start executing (on the remote)
+				dest_script->call(cpu.pc());
 
 				// Restore read/fault handlers
 				m.memory.set_page_readf_handler(std::move(old_read_handler));

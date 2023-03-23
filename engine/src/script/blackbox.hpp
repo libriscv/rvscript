@@ -9,41 +9,34 @@ template <int W> struct MachineData
 		.use_memory_arena = false};
 
 	MachineData(
-		std::vector<uint8_t> b, const std::string& fn, const std::string& syms)
-	  : binary {std::move(b)}, machine {binary, options}, filename {fn},
-		sympath {syms}
+		std::vector<uint8_t> b, const std::string& fn)
+	  : binary {std::move(b)}, machine {binary, options}, filename {fn}
 	{
 	}
 
 	MachineData(
-		std::vector<uint8_t> b, const std::string& fn, bool,
-		std::string_view syms)
-	  : binary {std::move(b)}, machine {binary, options}, filename {fn},
-		sympath {}, symbols(syms)
+		std::vector<uint8_t> b, const std::string& fn, bool)
+	  : binary {std::move(b)}, machine {binary, options}, filename {fn}
 	{
 	}
 
 	const std::vector<uint8_t> binary;
 	const riscv::Machine<W> machine;
 	const std::string filename;
-	const std::string sympath;
-	const std::string_view symbols;
 };
 
 template <int W> struct Blackbox
 {
 	void insert_binary(
-		const std::string& name, const std::string& filename,
-		const std::string& sympath);
+		const std::string& name, const std::string& filename);
 
 	void insert_embedded_binary(
 		const std::string& name, const std::string& filename,
-		const std::string_view binary, const std::string_view symbols);
+		const std::string_view binary);
 
 	void insert_embedded_binary(
 		const std::string& name, const std::string& filename,
-		const char* bin_start, const char* bin_end, const char* sym_start,
-		const char* sym_end);
+		const char* bin_start, const char* bin_end);
 
 	const auto& get(const std::string& name) const
 	{
@@ -63,37 +56,34 @@ template <int W> struct Blackbox
 
 template <int W>
 inline void Blackbox<W>::insert_binary(
-	const std::string& name, const std::string& binpath,
-	const std::string& sympath)
+	const std::string& name, const std::string& binpath)
 {
 	const auto binary = load_file(binpath);
 	// insert into map
 	m_data.emplace(
 		std::piecewise_construct, std::forward_as_tuple(name),
-		std::forward_as_tuple(std::move(binary), binpath, sympath));
+		std::forward_as_tuple(std::move(binary), binpath));
 }
 
 template <int W>
 inline void Blackbox<W>::insert_embedded_binary(
 	const std::string& name, const std::string& filename,
-	const std::string_view binary, const std::string_view symbols)
+	const std::string_view binary)
 {
 	const std::vector<uint8_t> binvec {binary.begin(), binary.end()};
 	// insert into map
 	m_data.emplace(
 		std::piecewise_construct, std::forward_as_tuple(name),
-		std::forward_as_tuple(std::move(binvec), filename, true, symbols));
+		std::forward_as_tuple(std::move(binvec), filename, true));
 }
 
 template <int W>
 inline void Blackbox<W>::insert_embedded_binary(
 	const std::string& name, const std::string& filename,
-	const char* bin_start, const char* bin_end, const char* sym_start,
-	const char* sym_end)
+	const char* bin_start, const char* bin_end)
 {
 	this->insert_embedded_binary(
-		name, filename, {bin_start, (size_t)(bin_end - bin_start)},
-		{sym_start, (size_t)(sym_end - sym_start)});
+		name, filename, {bin_start, (size_t)(bin_end - bin_start)});
 }
 
 #include <unistd.h>

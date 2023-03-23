@@ -14,12 +14,11 @@ struct Scripts
 	static Script* get(uint32_t machine_hash);
 
 	static void load_binary(
-		const std::string& name, const std::string& filename,
-		const std::string& symbols);
+		const std::string& name, const std::string& filename);
 
 	static void embedded_binary(
 		const std::string& name, const std::string& filename,
-		std::string_view binary, std::string_view symbols);
+		std::string_view binary);
 };
 
 #define SCRIPT(x) Scripts::get(riscv::crc32(x), x)

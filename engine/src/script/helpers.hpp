@@ -1,6 +1,7 @@
 #pragma once
 #include "script.hpp"
 #include <array>
+#include <stdexcept>
 
 struct CaptureStorage
 {

@@ -1,6 +1,7 @@
 #include "script.hpp"
 
 #include <libriscv/rsp_server.hpp>
+#include <stdexcept>
 #include <strf/to_cfile.hpp>
 #include <strf/to_string.hpp>
 #include <unistd.h>

@@ -31,7 +31,9 @@ KEEP() void Gameplay::print_string(unsigned key)
 	print("Key ", key, " has value: ", this->strings[key], "\n");
 }
 
-KEEP() void Gameplay::do_nothing() {}
+KEEP() void Gameplay::do_nothing() {
+	return_fast();
+}
 
 /* We can only call this function remotely if it's added to "gameplay.symbols",
    because the symbol files are used in the build system to preserve certain
@@ -46,17 +48,35 @@ extern KEEP() long gameplay_function(float value, SomeStruct& some)
 	return value * 2;
 }
 
+KEEP() int gameplay_allowed_function(int value)
+{
+	print("Hello from the Gameplay machine. Value = ", value, "\n");
+	return value * 2;
+}
+
 extern KEEP() void gameplay_empty()
 {
 	// Do nothing
+	return_fast();
 }
+
+extern KEEP() void gameplay_arg1(int) {return_fast();}
+extern KEEP() void gameplay_arg2(int, int) {return_fast();}
+extern KEEP() void gameplay_arg3(int, int, int) {return_fast();}
+extern KEEP() void gameplay_arg4(int, int, int, int) {return_fast();}
+extern KEEP() void gameplay_arg5(int, int, int, int, int) {return_fast();}
+extern KEEP() void gameplay_arg6(int, int, int, int, int, int) {return_fast();}
+extern KEEP() void gameplay_arg7(int, int, int, int, int, int, int) {return_fast();}
+extern KEEP() void gameplay_arg8(int, int, int, int, int, int, int, int) {return_fast();}
 
 extern KEEP() void gameplay_exec(const Function<void()>& func)
 {
 	func();
+	return_fast();
 }
 
 extern KEEP() void gameplay_exec_ptr(void (*func)())
 {
 	func();
+	return_fast();
 }

@@ -59,7 +59,7 @@ long Script::vmbench(gaddr_t address, size_t ntimes)
 long Script::benchmark(std::function<void()> callback, size_t TIMES)
 {
 	std::vector<long> results;
-	for (int i = 0; i < 30; i++)
+	for (int i = 0; i < 50; i++)
 	{
 		callback();
 		asm("" : : : "memory");
@@ -92,6 +92,19 @@ long Script::finish_benchmark(std::vector<long>& results)
 		"ns \t"
 		"highest: ",
 		highest, "ns\n");
+
+	static constexpr bool VERBOSE_BENCHMARKS = false;
+	if constexpr (VERBOSE_BENCHMARKS)
+	{
+		strf::to(stdout)(
+			"> ", results.size(), " samples in nanoseconds:\n");
+		for (auto result : results)
+			strf::to(stdout)(
+				result, "\n");
+		strf::to(stdout)(
+			"<-----\n");
+	}
+
 	return median;
 }
 

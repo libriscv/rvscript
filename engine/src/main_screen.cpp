@@ -16,8 +16,7 @@ void MainScreen::buildInterface()
 {
 	static const int debug = false;
 
-	Scripts::load_binary(
-		"gui", "scripts/gui.elf", "../programs/symbols.map");
+	Scripts::load_binary("gui", "scripts/gui.elf");
 	Scripts::create("gui", "gui", debug);
 }
 

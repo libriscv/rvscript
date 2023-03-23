@@ -28,6 +28,7 @@ attach_program(gui.elf gameplay.elf)
 
 add_level(level1.elf 0x400000
 	"src/level1.cpp"
+	"src/level1_local.cpp"
 	"src/level1_remote.cpp"
 	"src/level1_threads.cpp"
 	"src/events.cpp"

@@ -275,38 +275,6 @@ void Script::print(std::string_view text)
 	this->m_last_newline = (text.back() == '\n');
 }
 
-void Script::hash_public_api_symbols(std::string_view contents)
-{
-	std::stringstream infile {std::string(contents)};
-
-	for (std::string line; infile >> line;)
-	{
-		m_public_api.insert(
-			{crc32(line.c_str()), machine().address_of(line.c_str())});
-	}
-}
-
-void Script::hash_public_api_symbols_file(const std::string& file)
-{
-	/* Ignore symbol file when not specified */
-	if (file.empty())
-		return;
-
-	std::ifstream infile(file);
-	if (!infile)
-	{
-		strf::to(stderr)(
-			">>> Could not find symbols file: ", file, ", ignoring...\n");
-		return;
-	}
-
-	std::string str(
-		(std::istreambuf_iterator<char>(infile)),
-		std::istreambuf_iterator<char>());
-
-	this->hash_public_api_symbols(str);
-}
-
 gaddr_t Script::address_of(const std::string& name) const
 {
 	return machine().address_of(name.c_str());
@@ -318,13 +286,6 @@ std::string Script::symbol_name(gaddr_t address) const
 	return callsite.name;
 }
 
-gaddr_t Script::api_function_from_hash(uint32_t hash)
-{
-	auto it = m_public_api.find(hash);
-	if (it != m_public_api.end())
-		return it->second;
-	return 0;
-}
 
 void Script::each_tick_event()
 {

@@ -1,8 +1,8 @@
 #pragma once
 #include <any>
 #include <functional>
-#include <iostream>
 #include <libriscv/machine.hpp>
+#include <unordered_set>
 
 struct Script
 {
@@ -110,11 +110,8 @@ struct Script
 	long vmbench(gaddr_t address, size_t ntimes = 30);
 	static long benchmark(std::function<void()>, size_t ntimes = 1000);
 
-	void hash_public_api_symbols_file(const std::string& file);
-	void hash_public_api_symbols(std::string_view lines);
 	std::string symbol_name(gaddr_t address) const;
 	gaddr_t address_of(const std::string& name) const;
-	gaddr_t api_function_from_hash(uint32_t);
 
 	void add_shared_memory();
 
@@ -123,7 +120,17 @@ struct Script
 		return m_heap_area;
 	}
 
-	void setup_remote_calls_to(Script&);
+	/// @brief Make it possible to access and make function calls to the given script from with another
+	/// The access is two-way.
+	/// @param remote The remote script
+	void setup_remote_calls_to(Script& remote);
+
+	/// @brief Make it possible make function calls to the given script from with another
+	/// This access is one-way and only the remote can write back results, as if it has a higher privilege level
+	/// @param remote The remote script
+	void setup_strict_remote_calls_to(Script& remote);
+
+	void add_allowed_remote_function(gaddr_t addr) { m_remote_access.insert(addr); }
 
 	/* The guest heap is managed outside using system calls. */
 	gaddr_t guest_alloc(gaddr_t bytes);
@@ -164,8 +171,8 @@ struct Script
 	Script* m_remote_script = nullptr;
 	// dynamic call arguments
 	std::vector<std::any> m_arguments;
-	// hash to public API direct function map
-	std::unordered_map<uint32_t, gaddr_t> m_public_api;
+	/// @brief Functions accessible when remote access is *strict*
+	std::unordered_set<gaddr_t> m_remote_access;
 	// map of functions that extend engine using string hashes
 	static std::map<uint32_t, ghandler_t> m_dynamic_functions;
 };

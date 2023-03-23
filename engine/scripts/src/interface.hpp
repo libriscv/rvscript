@@ -24,3 +24,6 @@ extern Gameplay gameplay_state;
 
 extern void gameplay_exec(const Function<void()>& func);
 extern void gameplay_exec_ptr(void (*func)());
+
+/* A strict function is just a normal function */
+extern int gameplay_allowed_function(int value);

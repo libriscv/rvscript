@@ -18,13 +18,8 @@ Scripts::create(const std::string& name, const std::string& bbname, bool debug)
 		std::forward_as_tuple(riscv::crc32(name.c_str())),
 		std::forward_as_tuple(
 			box.machine, nullptr, name, box.filename, debug));
-	auto& script = it.first->second;
-	/* When embedding a program, the public API symbols are stored in memory */
-	if (!box.symbols.empty())
-		script.hash_public_api_symbols(box.symbols);
-	else
-		script.hash_public_api_symbols_file(box.sympath);
 
+	auto& script = it.first->second;
 	script.initialize();
 	return script;
 }
@@ -53,15 +48,13 @@ Script& Scripts::get(uint32_t machine_hash, const char* name)
 }
 
 void Scripts::load_binary(
-	const std::string& name, const std::string& filename,
-	const std::string& symbols)
+	const std::string& name, const std::string& filename)
 {
-	blackbox.insert_binary(name, filename, symbols);
+	blackbox.insert_binary(name, filename);
 }
 
 void Scripts::embedded_binary(
-	const std::string& name, const std::string& origin_filename,
-	std::string_view binary, std::string_view symbols)
+	const std::string& name, const std::string& origin_filename, std::string_view binary)
 {
-	blackbox.insert_embedded_binary(name, origin_filename, binary, symbols);
+	blackbox.insert_embedded_binary(name, origin_filename, binary);
 }

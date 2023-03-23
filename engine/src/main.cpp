@@ -22,19 +22,16 @@ int main()
 	/* A single program that will be used as shared mutable
 		   storage among all the level programs. */
 	Scripts::load_binary(
-		"gameplay", "scripts/gameplay.elf",
-		"../programs/symbols.map");
+		"gameplay", "scripts/gameplay.elf");
 	Scripts::create("gameplay", "gameplay", debug);
 
 	/* A few levels. */
 	Scripts::load_binary(
-		"level1", "scripts/level1.elf",
-		"../programs/symbols.map");
+		"level1", "scripts/level1.elf");
 	Scripts::create("level1", "level1", debug);
 
 	Scripts::load_binary(
-		"level2", "scripts/level2.elf",
-		"../programs/symbols.map");
+		"level2", "scripts/level2.elf");
 	Scripts::create("level2", "level2", debug);
 
 	/* The event_loop function can be resumed later, and can execute work
@@ -55,8 +52,11 @@ int main()
 
 	level1.call("start");
 
+	/* Use strict remote calls for level2 */
 	auto& level2 = SCRIPT("level2");
-	level2.setup_remote_calls_to(gameplay);
+	level2.setup_strict_remote_calls_to(gameplay);
+	/* Allow calling *only* this function remotely, when in strict mode */
+	gameplay.add_allowed_remote_function(gameplay.address_of("_Z25gameplay_allowed_functioni"));
 
 	level2.call("start");
 
