@@ -109,7 +109,29 @@ int main()
 		}
 	};
 
-	/* Allocate 16 objects on the guest */
+	/** Allocate 16 objects on the guest.
+	   This uses RAII to sequentially allocate a range
+	   for the objects, which is freed on destruction.
+	   If the object range is larger than a page (4k),
+	   the guarantee will no longer hold, and things will
+	   stop working if the pages are not sequential on the
+	   host as well. If the objects are somewhat large or
+	   you need many, simply manage 1 or more objects at a
+	   time. This is a relatively inexpensive abstraction.
+
+	   Example:
+	   gameplay.guest_alloc<GameObject>(16) allocates one
+	   single memory range on the managed heap of size:
+	    sizeof(GameObject) * 16.
+
+	   The returned object manages all the objects, and
+	   on destruction will free all objects. It can be
+	   moved.
+
+	   All objects are potentially uninitialized, like all
+	   heap allocations, and will need to be individually
+	   initialized.
+	**/
 	auto guest_objs = gameplay.guest_alloc<GameObject>(16);
 
 	/* Initialize object at index 0 */
@@ -128,7 +150,7 @@ int main()
 	assert(obj.alive == false);
 
 	/* Guest-allocated objects can be moved */
-	auto other_guest_objs = std::move(guest_objs);
+	auto other_guest_objs		 = std::move(guest_objs);
 	other_guest_objs.at(0).alive = true;
 	other_guest_objs.at(0).onDeath.call(other_guest_objs.address(0));
 	assert(other_guest_objs.at(0).alive == false);

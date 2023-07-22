@@ -142,8 +142,9 @@ struct Script
 	gaddr_t guest_alloc_sequential(gaddr_t bytes);
 	bool guest_free(gaddr_t addr);
 
-	/* Allocate and construct objects in the guest and return the location.
-	   Must be initialized by the caller. */
+	/* Allocate n uninitialized objects in the guest and return the
+	   location. A managing object is returned, which will free all
+	   objects on destruction. The object can be moved. */
 	template <typename T> GuestObjects<T> guest_alloc(size_t n = 1);
 
 	void
@@ -252,6 +253,31 @@ inline void Script::resume(uint64_t cycles)
 	}
 }
 
+/**
+ * This uses RAII to sequentially allocate a range
+ * for the objects, which is freed on destruction.
+ * If the object range is larger than a page (4k),
+ * the guarantee will no longer hold, and things will
+ * stop working if the pages are not sequential on the
+ * host as well. If the objects are somewhat large or
+ * you need many, simply manage 1 or more objects at a
+ * time. This is a relatively inexpensive abstraction.
+ *
+ * Example:
+ * myscript.guest_alloc<GameObject>(16) allocates one
+ * single memory range on the managed heap of size:
+ *  sizeof(GameObject) * 16
+ * The range is properly aligned and holds all objects.
+ * It is heap-allocated inside VM guest virtual memory.
+ *
+ * The returned GuestObjects<T> object manages all the
+ * objects, and on destruction will free all objects.
+ * It can be moved. The moved-from object manages nothing.
+ *
+ * All objects are potentially uninitialized, like all
+ * heap allocations, and will need to be individually
+ * initialized.
+ **/
 template <typename T> struct GuestObjects
 {
 	T& at(size_t n)
