@@ -21,17 +21,14 @@ int main()
 
 	/* A single program that will be used as shared mutable
 		   storage among all the level programs. */
-	Scripts::load_binary(
-		"gameplay", "scripts/gameplay.elf");
+	Scripts::load_binary("gameplay", "scripts/gameplay.elf");
 	Scripts::create("gameplay", "gameplay", debug);
 
 	/* A few levels. */
-	Scripts::load_binary(
-		"level1", "scripts/level1.elf");
+	Scripts::load_binary("level1", "scripts/level1.elf");
 	Scripts::create("level1", "level1", debug);
 
-	Scripts::load_binary(
-		"level2", "scripts/level2.elf");
+	Scripts::load_binary("level2", "scripts/level2.elf");
 	Scripts::create("level2", "level2", debug);
 
 	/* The event_loop function can be resumed later, and can execute work
@@ -56,7 +53,8 @@ int main()
 	auto& level2 = SCRIPT("level2");
 	level2.setup_strict_remote_calls_to(gameplay);
 	/* Allow calling *only* this function remotely, when in strict mode */
-	gameplay.add_allowed_remote_function(gameplay.address_of("_Z25gameplay_allowed_functioni"));
+	gameplay.add_allowed_remote_function(
+		gameplay.address_of("_Z25gameplay_allowed_functioni"));
 
 	level2.call("start");
 
@@ -111,15 +109,11 @@ int main()
 		}
 	};
 
-	GameObject objects[200]; // Page worth of objects
+	/* Allocate 16 objects on the guest */
+	auto guest_objs = gameplay.guest_alloc<GameObject>(16);
 
-	/* Insert objects into memory.
-	   This allows zero-copy sharing of game state. */
-	gameplay.machine().memory.insert_non_owned_memory(
-		OBJECT_AREA, objects, sizeof(objects) & ~4095UL);
-
-	/* Initialize object */
-	auto& obj	= objects[0];
+	/* Initialize object at index 0 */
+	auto& obj	= guest_objs.at(0);
 	obj.alive	= true;
 	obj.name	= "myobject";
 	obj.onDeath = Event(gameplay, "myobject_death");
@@ -127,10 +121,17 @@ int main()
 	/* Simulate object dying */
 	strf::to(stdout)(
 		"Calling '", obj.onDeath.function(), "' in '",
-		obj.onDeath.script().name(), "'\n");
+		obj.onDeath.script().name(), "' for object at 0x",
+		strf::hex(guest_objs.address(0)), "\n");
 	assert(obj.alive == true);
-	obj.onDeath.call(GameObject::address(0));
+	obj.onDeath.call(guest_objs.address(0));
 	assert(obj.alive == false);
+
+	/* Guest-allocated objects can be moved */
+	auto other_guest_objs = std::move(guest_objs);
+	other_guest_objs.at(0).alive = true;
+	other_guest_objs.at(0).onDeath.call(other_guest_objs.address(0));
+	assert(other_guest_objs.at(0).alive == false);
 
 	strf::to(stdout)("...\n");
 
@@ -184,7 +185,6 @@ int main()
 	// See setup_gui.cpp
 	extern void setup_gui_system(MainScreen&);
 	setup_gui_system(screen);
-
 
 	screen.buildInterface();
 

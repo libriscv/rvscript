@@ -28,7 +28,8 @@ Script::Script(
 	m_filename(filename), m_hash(crc32(name.c_str())), m_is_debug(debug)
 {
 	static bool init = false;
-	if (!init) {
+	if (!init)
+	{
 		init = true;
 		Script::setup_syscall_interface();
 	}
@@ -43,10 +44,9 @@ bool Script::reset()
 	{
 		// Fork the source machine into m_machine */
 		riscv::MachineOptions<MARCH> options {
-			.memory_max = MAX_MEMORY,
-			.stack_size = STACK_SIZE,
-			.use_memory_arena = false
-		};
+			.memory_max		  = MAX_MEMORY,
+			.stack_size		  = STACK_SIZE,
+			.use_memory_arena = false};
 		m_machine.reset(new machine_t(m_source_machine, options));
 
 		// setup system calls and traps
@@ -99,8 +99,8 @@ bool Script::initialize()
 		{
 			strf::to(stderr)(
 				">>> Exception: Instruction limit reached on ", name(), "\n",
-				"Instruction count: ", machine().instruction_counter(), "/", machine().max_instructions(), "\n"
-			);
+				"Instruction count: ", machine().instruction_counter(), "/",
+				machine().max_instructions(), "\n");
 			return false;
 		}
 	}
@@ -123,8 +123,7 @@ bool Script::initialize()
 		strf::to(stderr)(">>> Exception: ", e.what(), "\n");
 		return false;
 	}
-	strf::to(stderr)(
-		">>> ", name(), " initialized.\n");
+	strf::to(stderr)(">>> ", name(), " initialized.\n");
 	return true;
 }
 
@@ -172,10 +171,8 @@ void Script::handle_exception(gaddr_t address)
 {
 	auto callsite = machine().memory.lookup(address);
 	strf::to(stderr)(
-		"[", name(), "] Exception when calling:\n  ",
-		callsite.name, " (0x", strf::hex(callsite.address), ")\n",
-		"Backtrace:\n"
-	);
+		"[", name(), "] Exception when calling:\n  ", callsite.name, " (0x",
+		strf::hex(callsite.address), ")\n", "Backtrace:\n");
 	this->print_backtrace(address);
 
 	try
@@ -192,10 +189,8 @@ void Script::handle_exception(gaddr_t address)
 		strf::to(stderr)(
 			"\nException: ", e.what(), "  (data: ", strf::hex(e.data()), ")\n",
 			">>> ", machine().cpu.current_instruction_to_string(), "\n",
-			">>> Machine registers:\n[PC\t",
-				strf::hex(machine().cpu.pc()) > 8, "] ",
-				machine().cpu.registers().to_string(), "\n"
-		);
+			">>> Machine registers:\n[PC\t", strf::hex(machine().cpu.pc()) > 8,
+			"] ", machine().cpu.registers().to_string(), "\n");
 
 		// Remote debugging with DEBUG=1 ./engine
 		if (getenv("DEBUG"))
@@ -203,8 +198,7 @@ void Script::handle_exception(gaddr_t address)
 	}
 	catch (const std::exception& e)
 	{
-		strf::to(stderr)(
-			"\nMessage: ", e.what(), "\n\n");
+		strf::to(stderr)("\nMessage: ", e.what(), "\n\n");
 	}
 	strf::to(stderr)(
 		"Program page: ", machine().memory.get_page_info(machine().cpu.pc()),
@@ -285,7 +279,6 @@ std::string Script::symbol_name(gaddr_t address) const
 	auto callsite = machine().memory.lookup(address);
 	return callsite.name;
 }
-
 
 void Script::each_tick_event()
 {
@@ -378,7 +371,12 @@ gaddr_t Script::guest_alloc(gaddr_t bytes)
 	return machine().arena().malloc(bytes);
 }
 
-void Script::guest_free(gaddr_t addr)
+gaddr_t Script::guest_alloc_sequential(gaddr_t bytes)
 {
-	machine().arena().free(addr);
+	return machine().arena().seq_alloc_aligned(bytes, 8);
+}
+
+bool Script::guest_free(gaddr_t addr)
+{
+	return machine().arena().free(addr) == 0x0;
 }

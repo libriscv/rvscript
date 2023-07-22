@@ -3,6 +3,7 @@
 #include <functional>
 #include <libriscv/machine.hpp>
 #include <unordered_set>
+template <typename T> struct GuestObjects;
 
 struct Script
 {
@@ -120,21 +121,31 @@ struct Script
 		return m_heap_area;
 	}
 
-	/// @brief Make it possible to access and make function calls to the given script from with another
-	/// The access is two-way.
+	/// @brief Make it possible to access and make function calls to the given
+	/// script from with another The access is two-way.
 	/// @param remote The remote script
 	void setup_remote_calls_to(Script& remote);
 
-	/// @brief Make it possible make function calls to the given script from with another
-	/// This access is one-way and only the remote can write back results, as if it has a higher privilege level
+	/// @brief Make it possible make function calls to the given script from
+	/// with another This access is one-way and only the remote can write back
+	/// results, as if it has a higher privilege level
 	/// @param remote The remote script
 	void setup_strict_remote_calls_to(Script& remote);
 
-	void add_allowed_remote_function(gaddr_t addr) { m_remote_access.insert(addr); }
+	void add_allowed_remote_function(gaddr_t addr)
+	{
+		m_remote_access.insert(addr);
+	}
 
 	/* The guest heap is managed outside using system calls. */
 	gaddr_t guest_alloc(gaddr_t bytes);
-	void guest_free(gaddr_t addr);
+	gaddr_t guest_alloc_sequential(gaddr_t bytes);
+	bool guest_free(gaddr_t addr);
+
+	/* Allocate and construct objects in the guest and return the location.
+	   Must be initialized by the caller. */
+	template <typename T> GuestObjects<T> guest_alloc(size_t n = 1);
+
 	void
 	gdb_remote_debugging(std::string message, bool one_up, uint16_t port = 0);
 
@@ -239,4 +250,77 @@ inline void Script::resume(uint64_t cycles)
 		this->handle_exception(machine().cpu.pc());
 		this->m_crashed = true;
 	}
+}
+
+template <typename T> struct GuestObjects
+{
+	T& at(size_t n)
+	{
+		if (n < m_count)
+			return m_object[n];
+		throw riscv::MachineException(
+			riscv::ILLEGAL_OPERATION, "at(): Object is out of range", n);
+	}
+
+	const T& at(size_t n) const
+	{
+		if (n < m_count)
+			return m_object[n];
+		throw riscv::MachineException(
+			riscv::ILLEGAL_OPERATION, "at(): Object is out of range", n);
+	}
+
+	Script::gaddr_t address(size_t n) const
+	{
+		if (n < m_count)
+			return m_address + sizeof(T) * n;
+		throw riscv::MachineException(
+			riscv::ILLEGAL_OPERATION, "address(): Object is out of range", n);
+	}
+
+	GuestObjects(Script& s, Script::gaddr_t a, T* o, size_t c)
+	  : m_script(s), m_address(a), m_object(o), m_count(c)
+	{
+	}
+
+	GuestObjects(GuestObjects&& other)
+	  : m_script(other.m_script), m_address(other.m_address),
+		m_object(other.m_object), m_count(other.m_count)
+	{
+		other.m_address = 0x0;
+		other.m_count	= 0u;
+	}
+
+	~GuestObjects()
+	{
+		if (this->m_address != 0x0)
+		{
+			m_script.guest_free(this->m_address);
+			this->m_address = 0x0;
+		}
+	}
+
+	Script& m_script;
+	Script::gaddr_t m_address;
+	T* m_object;
+	size_t m_count;
+};
+
+template <typename T> inline GuestObjects<T> Script::guest_alloc(size_t n)
+{
+	// XXX: If n is too large, it will always overflow a page,
+	// and we will need another strategy in order to guarantee
+	// sequential memory.
+	auto addr = this->guest_alloc_sequential(sizeof(T) * n);
+	if (addr != 0x0)
+	{
+		const auto pageno	= machine().memory.page_number(addr);
+		const size_t offset = addr & (riscv::Page::size() - 1);
+		// Lazily create zero-initialized page
+		auto& page	 = machine().memory.create_writable_pageno(pageno, true);
+		auto* object = (T*)&page.data()[offset];
+		// Note: this can fail and throw, but we don't care
+		return {*this, addr, object, n};
+	}
+	return {*this, 0x0, nullptr, 0u};
 }
