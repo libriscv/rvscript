@@ -2,7 +2,7 @@
 
 This repository implements a game engine oriented scripting system using [libriscv](https://github.com/fwsGonzo/libriscv) as a backend. By using a fast userspace emulator with low call overhead and memory usage, combined with modern programming techniques we can have a fast budgeted script that lives separately in its own address space.
 
-The guest environment is modern C++20 using GCC 11.1 with RTTI and exceptions enabled. Several CRT functions have been implemented as system calls, and will have good performance. There is also Nim support and some example code.
+The guest environment is modern C++20 using GCC 12.2 with RTTI and exceptions enabled. Several CRT functions have been implemented as system calls, and will have good performance. There is also Nim support and some example code.
 
 The example programs have some basic example timers and threads, as well as multiple machines to call into and between. The repository is a starting point for anyone who wants to try to use this in their game engine.
 
@@ -27,7 +27,7 @@ All the host-side code is in the engine folder, and is written as if it was runn
 
 ## Getting started
 
-Install cmake, git, clang-12, lld-12 or later for your system. You can also use GCC 11.1 or later.
+Install cmake, git, GCC or Clang for your system.
 
 Run [setup.sh](/setup.sh) to make sure that libriscv is initialized properly. Then go into the engine folder and run:
 
@@ -158,9 +158,9 @@ Part 3 is a good introduction that will among other things answer the 'why'.
 
 ## Creating an API
 
-The general API to adding new functionality inside the VM is to add more system calls, or use dynamic calls. System calls can only capture a single pointer, require hard-coding a number (the system call number), and is invoked from inline assembly inside the guest. Performance, but clearly not very conducive to auto-generated APIs or preventing binding bugs.
+The general API to adding new functionality inside the VM is to add more system calls, or use dynamic calls. System calls can only capture a single pointer, require hard-coding a number (the system call number), and is invoked from inline assembly inside the guest. Performant, but clearly not very conducive to auto-generated APIs or preventing binding bugs.
 
-Dynamic calls are string names that when invoked will call a std::function on the host side. An example:
+Dynamic calls are string names that when invoked from inside the script will call a std::function on the host side, outside of the script. An example:
 
 ```
 Script::set_dynamic_call("lazy", [] (auto&) {

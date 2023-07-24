@@ -42,6 +42,62 @@ def crc32(string):
 
     return -1 - value
 
+def find_arguments(string):
+	sfront = string.split('(', 1)
+	retval = [sfront[0].split(' ')[0]]
+	strargs = sfront[1].split(')')[0]
+	# [retval, arg0, arg1, '']
+	fargs = retval + strargs.split(", ")
+	# Remove empty argument lists
+	if fargs[-1] == "":
+		fargs.pop()
+	print(fargs)
+	return fargs
+
+def emit_inline_assembly(header, asmdef, crc, fargs):
+	retval = fargs[0]
+	fargs.pop(0)
+
+	has_output = (retval != "void")
+	inputs = []
+	output = []
+	areg = 0
+	asm_regs = ""
+	asm_in   = []
+	asm_out  = []
+	asm_clob = []
+
+	if has_output:
+		asm_regs += "register " + retval + " ra0 asm(\"a0\");\n"
+		asm_out = ["\"=r\"(ra0)"]
+
+	#asm_regs += "register const char* t0 asm(\"t1\") = \"" + key + "\";\n"
+	asm_regs += "register uint32_t a7 asm(\"a7\") = 0x" + crc + ";\n"
+	asm_clob += []
+
+	for arg in fargs:
+		reg = "a" + str(areg)
+		asm_regs += "register " + arg + " " + reg + " asm(\"" + reg + "\") = arg" + str(areg) + ";\n"
+		# strings
+		if arg == "char*" or arg == "char *" or arg == "const char*" or arg == "const char *":
+			asm_in += ["\"r\"(" + reg + ")"]
+			asm_in += ["\"m\"(*" + reg + ")"]
+		# integrals
+		else:
+			asm_in += ["\"r\"(" + reg + ")"]
+		fargs[areg ] = arg + " arg" + str(areg)
+		areg += 1
+
+	asm_in += ["\"r\"(a7)"]
+
+	header += "static inline " + retval + " i" + asmdef + " (" + ','.join(fargs) + ') {\n'
+	header += asm_regs
+	header += "__asm__(\"ecall\" : " + ",".join(asm_out) + " : " + ",".join(asm_in) + " : " + ",".join(asm_clob) + ");\n"
+	if has_output:
+		header += "return ra0;\n"
+	header += "}" + '\n'
+	return header
+
 # load JSON
 j = {}
 with open(args.jsonfile) as f:
@@ -72,12 +128,28 @@ for key in j:
 	if key != "typedef":
 		asmdef  = j[key]
 		asmname = asmdef.split(' ')[1]
-		crc = '%08x' % (crc32(key) & 0xffffffff)
+
+		fargs = find_arguments(asmdef)
+
+		## CRC32 cannot be < 600, as that would
+		## collide with other system call numbers
+		crcval = crc32(key) & 0xffffffff
+		if crcval < 600:
+			print("ERROR: Dynamic call '" + key + "' has a collision, ignored!")
+			continue
+		crc = '%08x' % crcval
 		if args.verbose:
 			print(key + " dynamic call hash 0x" + crc)
 
 		header += "// " + key + ": 0x" + crc + "\n";
 		header += "extern " + asmdef + ";\n";
+
+		## Given the parsed arguments, starting with
+		## the return value, we can produce perfect
+		## inline assembly that allows the compiler
+		## room to optimize better.
+		header = emit_inline_assembly(header, asmname, crc, fargs)
+
 		source += '__asm__("\\n\\\n'
 		source += '.global ' + asmname + '\\n\\\n'
 		source += '.func ' + asmname + '\\n\\\n'

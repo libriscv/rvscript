@@ -27,17 +27,25 @@ static void direct_thread_function()
 	microthread::direct([] { /* ... */ });
 }
 
-static void dyncall_handler()
+static void opaque_dyncall_handler()
 {
-	DYNCALL("empty");
+	sys_empty();
+	return_fast();
+}
+
+static void inline_dyncall_handler()
+{
+	isys_empty();
+	return_fast();
 }
 
 static void dyncall_handler_x4()
 {
-	DYNCALL("empty");
-	DYNCALL("empty");
-	DYNCALL("empty");
-	DYNCALL("empty");
+	isys_empty();
+	isys_empty();
+	isys_empty();
+	isys_empty();
+	return_fast();
 }
 
 PUBLIC(void public_donothing())
@@ -61,11 +69,15 @@ PUBLIC(void benchmarks())
 
 	/* This function makes thousands of calls into this machine,
 	   while preserving registers, and then prints some statistics. */
-	measure("VM function call overhead", empty_function);
+	measure("VM function call overhead",
+		[] {
+			return_fast();
+		});
 	measure("Full thread creation overhead", full_thread_function);
 	measure("Oneshot thread creation overhead", oneshot_thread_function);
 	measure("Direct thread creation overhead", direct_thread_function);
-	measure("Dynamic call handler", dyncall_handler);
+	measure("Dynamic call handler (inline)", inline_dyncall_handler);
+	measure("Dynamic call handler (call)", opaque_dyncall_handler);
 	measure("Dynamic call handler x4", dyncall_handler_x4);
 
 	//benchmark_multiprocessing();

@@ -144,6 +144,19 @@ void Script::machine_setup()
 		auto& script = *machine.template get_userdata<Script>();
 		strf::to(stderr)(script.name(), ": Unhandled CSR: ", csr, "\n");
 	};
+	machine().on_unhandled_syscall = [](machine_t& machine, size_t num)
+	{
+		auto& script = *machine.get_userdata<Script>();
+		if (UNLIKELY(num < 600))
+		{
+			strf::to(stderr)(script.name(), ": Unhandled system call: ", num, "\n");
+		}
+		else
+		{
+			// call the handler with register A7 as hash
+			script.dynamic_call(num, 0x0);
+		}
+	};
 	// Allocate heap area using mmap
 	if (m_heap_area == 0x0)
 	{
@@ -339,13 +352,20 @@ void Script::dynamic_call(uint32_t hash, gaddr_t straddr)
 	{
 		it->second(*this);
 	}
-	else
+	else if (straddr != 0x0)
 	{
 		auto name = machine().memory.memstring(straddr);
 		strf::to(stderr)(
 			"Unable to find dynamic function '", name, "' with hash ",
 			strf::hex(hash), "\n");
 		throw std::runtime_error("Unable to find dynamic function: " + name);
+	}
+	else
+	{
+		strf::to(stderr)(
+			"Unable to find dynamic function with hash ",
+			strf::hex(hash), " (no name)\n");
+		throw std::runtime_error("Unable to find dynamic function");
 	}
 }
 

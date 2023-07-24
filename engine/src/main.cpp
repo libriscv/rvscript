@@ -178,8 +178,11 @@ int main()
 		});
 	gameplay.call("test_dynamic_functions");
 	// All the functions should have been called
-	if (called != 0x3)
+	if (called != 0x3) {
+		strf::to(stderr)(
+			"Error: Dynamic calls not invoked or did not set locals!?\n");
 		exit(1);
+	}
 	// INVALID (Duplicate hash):
 	// gameplay.set_dynamic_call("empty", [] (auto&) {});
 	// This will replace the function:
