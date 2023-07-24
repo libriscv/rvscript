@@ -30,22 +30,45 @@ static void direct_thread_function()
 static void opaque_dyncall_handler()
 {
 	sys_empty();
-	return_fast();
+	sys_empty();
+	sys_empty();
+	sys_empty();
+	// return_fast();
 }
 
 static void inline_dyncall_handler()
 {
 	isys_empty();
-	return_fast();
+	isys_empty();
+	isys_empty();
+	isys_empty();
+	// return_fast();
 }
 
-static void dyncall_handler_x4()
+static void opaque_dyncall_args_x4()
+{
+	sys_empty();
+	sys_testing123(1, 2, 3);
+	sys_empty();
+	sys_testing123(1, 2, 3);
+	sys_empty();
+	sys_testing123(1, 2, 3);
+	sys_empty();
+	sys_testing123(1, 2, 3);
+	// return_fast();
+}
+
+static void inline_dyncall_args_x4()
 {
 	isys_empty();
+	isys_testing123(1, 2, 3);
 	isys_empty();
+	isys_testing123(1, 2, 3);
 	isys_empty();
+	isys_testing123(1, 2, 3);
 	isys_empty();
-	return_fast();
+	isys_testing123(1, 2, 3);
+	// return_fast();
 }
 
 PUBLIC(void public_donothing())
@@ -71,14 +94,15 @@ PUBLIC(void benchmarks())
 	   while preserving registers, and then prints some statistics. */
 	measure("VM function call overhead",
 		[] {
-			return_fast();
+			//return_fast();
 		});
 	measure("Full thread creation overhead", full_thread_function);
 	measure("Oneshot thread creation overhead", oneshot_thread_function);
 	measure("Direct thread creation overhead", direct_thread_function);
-	measure("Dynamic call handler (inline)", inline_dyncall_handler);
-	measure("Dynamic call handler (call)", opaque_dyncall_handler);
-	measure("Dynamic call handler x4", dyncall_handler_x4);
+	measure("Dynamic call handler x4 (inline)", inline_dyncall_handler);
+	measure("Dynamic call handler x4 (call)", opaque_dyncall_handler);
+	measure("Dynamic call args x4 (inline)", inline_dyncall_args_x4);
+	measure("Dynamic call args x4 (call)", opaque_dyncall_args_x4);
 
 	//benchmark_multiprocessing();
 }

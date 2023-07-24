@@ -18,7 +18,6 @@ static const int MEMORY_SYSCALLS_BASE = 575;
 static const int THREADS_SYSCALL_BASE = 590;
 // Memory area shared between all script instances
 static std::array<uint8_t, SHM_SIZE> shared_memory {};
-std::map<uint32_t, Script::ghandler_t> Script::m_dynamic_functions {};
 using riscv::crc32;
 
 Script::Script(

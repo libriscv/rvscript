@@ -186,7 +186,7 @@ struct Script
 	/// @brief Functions accessible when remote access is *strict*
 	std::unordered_set<gaddr_t> m_remote_access;
 	// map of functions that extend engine using string hashes
-	static std::map<uint32_t, ghandler_t> m_dynamic_functions;
+	static inline std::unordered_map<uint32_t, ghandler_t> m_dynamic_functions;
 };
 
 static_assert(
