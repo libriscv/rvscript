@@ -13,6 +13,7 @@ set (UTILPATH "${ENGINE_PATH}/src/util")
 set(WARNINGS  "-Wall -Wextra -ggdb3")
 set(COMMON    "-fno-math-errno -fno-threadsafe-statics")
 set(COMMON    "-fno-stack-protector ${COMMON}")
+set(COMMON    "-march=rv64g_zba_zbb ${COMMON}")
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 	set (COMMON "${COMMON} -ggdb3 -O0 -fstack-protector")
 	set(DEBUGGING TRUE)
@@ -60,6 +61,7 @@ function (add_micro_binary NAME ORG)
 	target_link_libraries(${NAME} -static -Wl,--whole-archive libc -Wl,--no-whole-archive)
 	target_link_libraries(${NAME} frozen::frozen)
 	target_link_libraries(${NAME} "-Wl,-Ttext-segment=${ORG}")
+	target_link_libraries(${NAME} "-Wl,--undefined=dyncall_hashlist,--undefined=dyncall_hashcnt")
 	# place ELF into the sub-projects source folder
 	set_target_properties(${NAME}
 		PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"

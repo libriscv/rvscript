@@ -1,4 +1,5 @@
 #pragma once
+#define DYNCALL_API_BASE 400
 #define GAME_API_BASE 500
 
 // System calls written in assembly

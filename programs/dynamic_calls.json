@@ -7,6 +7,8 @@
 	"Timer::periodic": "int sys_timer_periodic (float, float, timer_callback, void*, size_t)",
 	"Debug::breakpoint": "void sys_breakpoint (uint16_t, const char*)",
 	"Debug::is_debug": "int sys_is_debug ()",
+	"Test::void":            "void sys_test_void ()",
+	"Test::my_dynamic_call": "void sys_my_dyncall ()",
 
 	"GUI::find":   "unsigned sys_gui_find   (const char *)",
 	"GUI::window": "unsigned sys_gui_window (const char *)",

@@ -237,6 +237,44 @@ void Script::setup_syscall_interface()
 	// Add a few Newlib system calls (just in case)
 	machine_t::setup_newlib_syscalls();
 
+	// Add 70 fast dynamic call handlers that depend
+	// on the lists of hashes (dynamic calls) matching
+	// on both sides.
+	for (int i = 0; i < 70; i++)
+		machine_t::syscall_handlers.at(DYNCALL_API_BASE + i)
+			= [](machine_t& machine)
+		{
+			const auto offset
+				= machine.cpu.reg(riscv::REG_ECALL) - DYNCALL_API_BASE;
+			auto& script	    = *machine.get_userdata<Script>();
+			auto& element	    = script.m_sequential_dyncalls.at(offset);
+
+			// Direct call using vector
+			auto it = m_dynamic_functions.find(element.first);
+			if (it != m_dynamic_functions.end())
+			{
+				// Install an optimized system call handler
+				machine_t::syscall_handlers.at(
+					machine.cpu.reg(riscv::REG_ECALL))
+					= [](machine_t& machine)
+				{
+					auto& script  = *machine.get_userdata<Script>();
+					const auto offset = machine.cpu.reg(riscv::REG_ECALL)
+										- DYNCALL_API_BASE;
+					auto& element = script.m_sequential_dyncalls[offset];
+
+					(*element.second)(script);
+				};
+
+				element.second = &it->second;
+				(*element.second)(script);
+			}
+
+			throw riscv::MachineException(riscv::INVALID_PROGRAM,
+				"Missing hash for inlined dynamic call",
+				element.first);
+		};
+
 	// A custom intruction used to handle dynamic arguments
 	// to the dynamic system call.
 	using namespace riscv;

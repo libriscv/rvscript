@@ -151,6 +151,7 @@ struct Script
 	gdb_remote_debugging(std::string message, bool one_up, uint16_t port = 0);
 
 	static void setup_syscall_interface();
+	void sequentialize_dynamic_calls();
 	bool initialize();
 	Script(
 		const machine_t&, void* userptr, const std::string& name,
@@ -187,6 +188,8 @@ struct Script
 	std::unordered_set<gaddr_t> m_remote_access;
 	// map of functions that extend engine using string hashes
 	static inline std::unordered_map<uint32_t, ghandler_t> m_dynamic_functions;
+	// local translation of hashes to dyncall handlers
+	std::vector<std::pair<uint32_t, ghandler_t*>> m_sequential_dyncalls;
 };
 
 static_assert(

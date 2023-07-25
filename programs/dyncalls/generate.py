@@ -35,6 +35,8 @@ for byte in range(256):
         byte >>= 1
     table.append(crc)
 
+hashlist = []
+
 def crc32(string):
     value = 0xffffffff
     for ch in string:
@@ -54,6 +56,10 @@ def find_arguments(string):
 	print(fargs)
 	return fargs
 
+def hash_index_of(crc):
+	crcval = int(crc, 16)
+	return hashlist.index(crcval)
+
 def emit_inline_assembly(header, asmdef, crc, fargs):
 	retval = fargs[0]
 	fargs.pop(0)
@@ -72,7 +78,9 @@ def emit_inline_assembly(header, asmdef, crc, fargs):
 		asm_out = ["\"=r\"(ra0)"]
 
 	#asm_regs += "register const char* t0 asm(\"t1\") = \"" + key + "\";\n"
-	asm_regs += "register uint32_t a7 asm(\"a7\") = 0x" + crc + ";\n"
+	#asm_regs += "register uint32_t t0 asm(\"t0\") = 0x" + crc + ";\n"
+	#asm_regs += "register uint32_t a7 asm(\"a7\") = 0x" + crc + ";\n"
+	asm_regs += "register int a7 asm(\"a7\") = 400 + " + str(hash_index_of(crc)) + ";\n"
 	asm_clob += []
 
 	for arg in fargs:
@@ -88,7 +96,7 @@ def emit_inline_assembly(header, asmdef, crc, fargs):
 		fargs[areg ] = arg + " arg" + str(areg)
 		areg += 1
 
-	asm_in += ["\"r\"(a7)"]
+	asm_in += ["\"r\"(a7)"] #, "\"r\"(t0)"]
 
 	header += "static inline " + retval + " i" + asmdef + " (" + ','.join(fargs) + ') {\n'
 	header += asm_regs
@@ -119,9 +127,28 @@ for key in j:
 	if key == "typedef":
 		for typedef in j[key]:
 			header += typedef + ";\n"
+	else:
+		crcval = crc32(key) & 0xffffffff
+		hashlist += [crcval]
+
 header += "\n"
 
+# the sorted hashes are used for faster dynamic calls
+# (which has a fallback to normal hash lookup)
+hashlist.sort()		
+
 source = '__asm__(".section .text\\n");\n\n'
+
+hashlist_source = '__asm__("\\n\\\n'
+hashlist_source += '.global dyncall_hashcnt\\n\\\n'
+hashlist_source += '.global dyncall_hashlist\\n\\\n'
+hashlist_source += '.pushsection .rodata\\n\\\n'
+hashlist_source += 'dyncall_hashcnt:\\n\\\n'
+hashlist_source += '  .word ' + str(len(hashlist)) + '\\n\\\n'
+hashlist_source += 'dyncall_hashlist:\\n\\\n'
+for crcval in hashlist:
+	crc = '%08x' % crcval
+	hashlist_source += '  .word 0x' + crc + '\\n\\\n'
 
 # create dyncall prototypes and assembly
 for key in j:
@@ -141,8 +168,8 @@ for key in j:
 		if args.verbose:
 			print(key + " dynamic call hash 0x" + crc)
 
-		header += "// " + key + ": 0x" + crc + "\n";
-		header += "extern " + asmdef + ";\n";
+		header += "// " + key + ": 0x" + crc + "\n"
+		header += "extern " + asmdef + ";\n"
 
 		## Given the parsed arguments, starting with
 		## the return value, we can produce perfect
@@ -173,6 +200,9 @@ header += """
 #endif
 """;
 
+hashlist_source += '.popsection\\n\\\n'
+hashlist_source += '");\n\n'
+
 if (args.print_sources):
 	print(header)
 	print(source)
@@ -182,9 +212,11 @@ if (args.output):
 		hdrfile.write(header)
 	with open(args.output + ".c", "w") as srcfile:
 		srcfile.write(source)
+		srcfile.write(hashlist_source)
 	if args.cpp:
 		with open(args.output + ".cpp", "w") as srcfile:
 			srcfile.write(source)
+			srcfile.write(hashlist_source)
 	exit(0)
 else:
 	exit(1)

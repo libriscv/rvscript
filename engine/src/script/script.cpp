@@ -52,6 +52,8 @@ bool Script::reset()
 		this->machine_setup();
 		// setup program argv *after* setting new stack pointer
 		machine().setup_argv({name()});
+
+		this->sequentialize_dynamic_calls();
 	}
 	catch (std::exception& e)
 	{
@@ -382,6 +384,36 @@ void Script::dynamic_call(const std::string& name)
 			"Unable to find dynamic function '", name, "' with hash ",
 			strf::hex(hash), "\n");
 		throw std::runtime_error("Unable to find dynamic function: " + name);
+	}
+}
+
+void Script::sequentialize_dynamic_calls()
+{
+	// Avoid re-doing the extraction
+	if (!this->m_sequential_dyncalls.empty())
+		return;
+
+	auto hl_addr = machine().address_of("dyncall_hashlist");
+	auto hc_addr = machine().address_of("dyncall_hashcnt");
+	if (hl_addr == 0x0 || hc_addr == 0x0)
+		throw std::runtime_error("Could not find hashlist and hashcnt");
+
+	const size_t count = machine().memory.read<uint32_t>(hc_addr);
+	if (count == 0 || count > 256)
+		throw std::runtime_error("Invalid hashlists in program");
+
+	this->m_sequential_dyncalls.resize(count);
+
+	// 2. Install system call handlers and set handlers
+	// They start at 500 and continue
+	for (size_t i = 0; i < count; i++)
+	{
+		const auto hash = machine().memory.read<uint32_t>(hl_addr + 4 * i);
+		//strf::to(stderr)(
+		//	"*** Adding hash  ", strf::hex(hash), " at index ", i, "\n");
+
+		// Add lazily empty handler to the current offset
+		m_sequential_dyncalls[i] = {hash, nullptr};
 	}
 }
 
