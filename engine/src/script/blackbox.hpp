@@ -6,7 +6,9 @@
 template <int W> struct MachineData
 {
 	static inline const riscv::MachineOptions<W> options {
-		.use_memory_arena = false};
+		.use_memory_arena = false,
+		//.default_exit_function = "fast_exit"
+		};
 
 	MachineData(
 		std::vector<uint8_t> b, const std::string& fn)

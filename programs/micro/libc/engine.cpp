@@ -18,6 +18,11 @@ void* SharedMemoryArea::push(const void* data, size_t size, size_t align)
 #define STRINGIFY(x) STRINGIFY_HELPER(x)
 asm(".section .text\n.align 8\n");
 
+extern "C" void __attribute__((naked, used, retain)) fast_exit()
+{
+	asm (".insn i SYSTEM, 0, x0, x0, 0x7ff");
+}
+
 asm(".global sys_write\n"
 "sys_write:\n"
 "	li a7, " STRINGIFY(ECALL_WRITE) "\n"
