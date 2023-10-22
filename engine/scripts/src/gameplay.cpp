@@ -33,7 +33,7 @@ static void opaque_dyncall_handler()
 	sys_empty();
 	sys_empty();
 	sys_empty();
-	// return_fast();
+	return_fast();
 }
 
 static void inline_dyncall_handler()
@@ -42,7 +42,7 @@ static void inline_dyncall_handler()
 	isys_empty();
 	isys_empty();
 	isys_empty();
-	// return_fast();
+	return_fast();
 }
 
 static void opaque_dyncall_args_x4()
@@ -55,7 +55,7 @@ static void opaque_dyncall_args_x4()
 	sys_testing123(1, 2, 3);
 	sys_empty();
 	sys_testing123(1, 2, 3);
-	// return_fast();
+	return_fast();
 }
 
 static void inline_dyncall_args_x4()
@@ -68,7 +68,7 @@ static void inline_dyncall_args_x4()
 	isys_testing123(1, 2, 3);
 	isys_empty();
 	isys_testing123(1, 2, 3);
-	// return_fast();
+	return_fast();
 }
 
 PUBLIC(void public_donothing())
@@ -94,7 +94,7 @@ PUBLIC(void benchmarks())
 	   while preserving registers, and then prints some statistics. */
 	measure("VM function call overhead",
 		[] {
-			//return_fast();
+			return_fast();
 		});
 	measure("Full thread creation overhead", full_thread_function);
 	measure("Oneshot thread creation overhead", oneshot_thread_function);

@@ -76,6 +76,9 @@ namespace api
 		static Timer periodic(float period, Callback);
 		static Timer periodic(float time, float period, Callback);
 		void stop() const;
+
+		static long sleep(float seconds);
+
 		const int id;
 	};
 

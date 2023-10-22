@@ -14,7 +14,7 @@ inline void print(Args&&... args)
 
 inline void print_backtrace()
 {
-	syscall(SYSCALL_BACKTRACE);
+	syscall1(SYSCALL_BACKTRACE);
 }
 
 extern "C"

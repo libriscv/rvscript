@@ -33,7 +33,7 @@ int fputc (int c, FILE*)
 	return sys_write(&c, 1);
 }
 extern "C"
-wint_t fputwc(wchar_t ch, FILE*)
+uint8_t fputwc(wchar_t ch, FILE*)
 {
 	char c = ch;
 	sys_write(&c, 1);

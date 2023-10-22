@@ -75,7 +75,7 @@ template <typename T> inline long measure(const char* testname, T testfunc)
 
 inline uint32_t Game::current_machine()
 {
-	return syscall(ECALL_MACHINE_HASH);
+	return syscall1(ECALL_MACHINE_HASH);
 }
 
 #define RUNNING_ON(mach) (api::current_machine() == crc32(mach))
@@ -107,7 +107,7 @@ inline void each_tick(const T& func, Args&&... args)
 
 inline void Game::exit()
 {
-	(void)syscall(ECALL_GAME_EXIT);
+	(void)syscall1(ECALL_GAME_EXIT);
 }
 
 inline void Game::breakpoint(std::source_location sl)
@@ -178,7 +178,7 @@ inline void Timer::stop() const
 	sys_timer_stop(this->id);
 }
 
-inline long sleep(float seconds)
+inline long Timer::sleep(float seconds)
 {
 	const int tid = microthread::gettid();
 	Timer::oneshot(
@@ -309,11 +309,13 @@ dynamic_call(const uint32_t hash, const char* name, Args&&... args)
 	{
 		if (type[i] == 0b001)
 		{
+#ifdef __OPTIMIZE__
 			if ((int64_t)gpr[i] >= -4096 && (int64_t)gpr[i] < 4096)
 			{
 				asm(".insn i 0b0001011, 0, x0, x0, %0" ::"I"(gpr[i]));
 			}
 			else
+#endif
 			{
 				a0 = gpr[i];
 				asm(".word 0b001000000001011" : : "r"(a0));

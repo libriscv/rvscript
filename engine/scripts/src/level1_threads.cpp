@@ -77,7 +77,7 @@ void do_threads_stuff()
 		[](std::string mt)
 		{
 			print("Hello ", mt, " World!\n");
-			sleep(1.0);
+			Timer::sleep(1.0);
 			print("Hello Belated Microthread World! 1 second passed.\n");
 			/* add_remote_work is implemented in events.hpp
 			   NOTE: We cannot pass "anything" we want here,

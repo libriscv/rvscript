@@ -51,7 +51,10 @@ bool Script::reset()
 		// setup system calls and traps
 		this->machine_setup();
 		// setup program argv *after* setting new stack pointer
-		machine().setup_argv({name()});
+		static const std::vector<std::string> env = {
+			"LC_CTYPE=C", "LC_ALL=C", "USER=groot"
+		};
+		machine().setup_linux({name()}, env);
 	}
 	catch (std::exception& e)
 	{
@@ -161,6 +164,10 @@ void Script::machine_setup()
 	{
 		this->m_heap_area = machine().memory.mmap_allocate(MAX_HEAP);
 	}
+
+	// Add POSIX system call interfaces
+	machine().setup_linux_syscalls();
+	machine().setup_posix_threads();
 	// Add native system call interfaces
 	machine().setup_native_heap(HEAP_SYSCALLS_BASE, heap_area(), MAX_HEAP);
 	machine().setup_native_memory(MEMORY_SYSCALLS_BASE);

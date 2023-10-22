@@ -2,6 +2,7 @@
 **/build_*/
 **/riscv32-unknown-elf/
 **/riscv64-unknown-elf/
+**/riscv64-linux-gnu/
 *.elf
 .vscode/
 engine/engine

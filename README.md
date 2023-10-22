@@ -39,7 +39,21 @@ This project has no external dependencies outside of libriscv and libfmt. libris
 
 Running the engine is only half the equation as you will also want to be able to modify the scripts themselves. To do that you need a RISC-V compiler.
 
-## Getting a RISC-V compiler
+## Using a RISC-V toolchain from system package
+
+This is the simplest option. Run [build.sh](/engine/build.sh) with `--glibc`. Right now it assumes you have installed `gcc-12-riscv64-linux-gnu`, however it may be possible to auto-detect this in the future.
+
+```sh
+sudo apt install gcc-12-riscv64-linux-gnu
+cd engine
+./build.sh --glibc
+```
+
+The C-library that is used by this toolchain, glibc, will use its own POSIX multi-threading, and it will be required that it works in order for C++ exceptions to work. So, be careful with mixing microthread and C++ exceptions.
+
+The GCC compiler is built using the C-extension (compressed instructions), which is now default enabled in the build script. It has a known minor performance impact.
+
+## Getting a newlib RISC-V compiler
 
 There are several ways to do this. However for now one requirement is to build the newlib variant in the riscv-gnu-toolchain for RISC-V. Install it like this:
 
@@ -65,7 +79,7 @@ $ riscv64-unknown-elf-g++ --version
 riscv64-unknown-elf-g++ (g5964b5cd7) 11.1.0
 ```
 
-While 32-bit RISC-V is faster to emulate than 64-bit, I prefer it when the sizes match between the address spaces.
+While 32-bit RISC-V is faster to emulate than 64-bit, I prefer it when the sizes match between the address spaces. It makes passing objects and structs very easy.
 
 ## Building script files
 
@@ -245,5 +259,3 @@ See `libriscv/memory.hpp` for a list of helper functions, each with a specific p
 	- Definitely. I already support a few 256-bit operations, but it is not near completion.
 - I have real-time requirements.
 	- As long as pausing the script to continue later is an option, you will not have any trouble. Just don't pause the script while it's in a thread and then accidentally vmcall into it from somewhere else. This will clobber all registers and you will have trouble later. You can use preempt provided that it returns to the same thread again (although you are able to yield back to a thread manually). There are many options where things will be OK. In my own engine all long-running tasks are running on separate machines to simplify things.
-- My program is jumping to a misaligned instruction. Something is very wrong!
-	- Try enabling the RISCV_EXT_C CMake option and see if perhaps your RISC-V programs are built with compressed instructions enabled. They are the most performant in libriscv, but they are pretty standard. For example the standard 64-bit RISC-V architecture is RV64GC, while the most performant in libriscv is RV64G.
