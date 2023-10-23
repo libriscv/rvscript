@@ -14,9 +14,9 @@ https://gist.github.com/fwsGonzo/2f4518b66b147ee657d64496811f9edb
 
 Note that I update the gist now and then as I make improvements. The key benchmark is showing the low overhead to calling into the script.
 
-The overhead of a system call is around 1ns last time I measured it, so you can basically pick and choose what kind of overhead you are comfortable with. Raw system calls are harder to maintain, but faster, while dynamic calls have slight overheads in lookups.
+The overhead of a system call is around 1-2ns last time I measured it, so you can basically pick and choose what kind of overhead you are comfortable with. Raw system calls are harder to maintain, but faster, while dynamic calls have slight overheads in lookups.
 
-For generally extending the API there is dynamic calls, which have an overhead of around 14ns (on my laptop). Dynamic calls require looking up a hash value, and is backed by a std::function with capture storage. See eg. [timers](/engine/src/timers_setup.cpp).
+For generally extending the API there is dynamic calls, which have an overhead of around 14-15ns (on my laptop). Dynamic calls require looking up a hash value, and is backed by a std::function with capture storage. See eg. [timers](/engine/src/timers_setup.cpp) or the [GUI](/engine/src/setup_gui.cpp). Dynamic calls are made visible to the programs through a [JSON file](/programs/dynamic_calls.json).
 
 
 ## Demonstration
@@ -41,10 +41,10 @@ Running the engine is only half the equation as you will also want to be able to
 
 ## Using a RISC-V toolchain from system package
 
-This is the simplest option. Run [build.sh](/engine/build.sh) with `--glibc`. Right now it assumes you have installed `gcc-12-riscv64-linux-gnu`, however it may be possible to auto-detect this in the future.
+This is the simplest option. Run [build.sh](/engine/build.sh) with `--glibc`. Right now it assumes you have installed `g++-12-riscv64-linux-gnu`, however it may be possible to auto-detect this in the future.
 
 ```sh
-sudo apt install gcc-12-riscv64-linux-gnu
+sudo apt install g++-12-riscv64-linux-gnu
 cd engine
 ./build.sh --glibc
 ```
@@ -76,10 +76,10 @@ This compiler will be used by the CMake script in the micro folder. Check out `m
 
 ```
 $ riscv64-unknown-elf-g++ --version
-riscv64-unknown-elf-g++ (g5964b5cd7) 11.1.0
+riscv64-unknown-elf-g++ (g2ee5e430018) 12.2.0
 ```
 
-While 32-bit RISC-V is faster to emulate than 64-bit, I prefer it when the sizes match between the address spaces. It makes passing objects and structs very easy.
+While 32-bit RISC-V is faster to emulate than 64-bit, I prefer when the sizes match between the address spaces. It makes passing objects and structs very easy.
 
 ## Building script files
 
@@ -249,10 +249,12 @@ See `libriscv/memory.hpp` for a list of helper functions, each with a specific p
 	- When you call into the virtual machine you usually give it a budget. A limit on the number of instructions it gets to run for that particular call (or any other limit you impose yourself). If you forget to check if the limit has been reached, then it will just look like it stopped. You can check this with `script.machine().instruction_limit_reached()`. You can safely resume execution again by calling `script.resume()` again, as running out of instructions is not exceptional. For example the first C++ exception thrown inside the RISC-V emulator uses a gigaton of instructions and can blow the default limit.
 - How do I share memory with the engine?
 	- Create aligned memory in your engine and use the `machine.memory.insert_non_owned_memory()` function to insert it using the given page attributes. The machine will then create non-owning pages pointing to this memory sequentially. You can do this on as many machines as you want. The challenge then is to be able to use the pages as memory for your objects, and access the readable members in a portable way (the VMs are default 64-bit).
+	- You can allocate structures directly on the heap of the guest through `script.guest_alloc<Type> (count)`. Using the returned buffer as an arena is also possible.
 - Passing long strings and big structures is slow.
 	- Use compile-time hashes of strings where you can.
 	- Alternatively use memory sharing, riscv::Buffer or buffer gathering for larger memory buffers.
 	- Page sharing if intended for communication between machines
+	- Use memory directly allocated in machines by using `script.guest_alloc<Type>(count)`.
 - How do I allow non-technical people to compile script?
 	- Hard question. If they are only going to write scripts for the actual levels it might be good enough to use a web API endpoint to compile these simpler binaries. You don't have to do the compilation in a Docker container, so it should be fairly straight-forward for a dedicated server. You could also have an editor in the browser, and when you press Save or Compile the resulting binary is sent to you. They can then move it to the folder it's supposed to be in, and restart the level. Something like that. I'm sure something that is even higher iteration can be done with some thought put into it.
 - Will you add support for SIMD-like instructions for RISC-V?
