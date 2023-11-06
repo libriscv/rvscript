@@ -15,6 +15,7 @@ for i in "$@"; do
 			shift # past argument with no value
 			;;
 		--glibc)
+			echo "Building game scripts with GCC/glibc"
 			GCC_VERSION=12
 			GCC_TRIPLE="riscv64-linux-gnu"
 			export CXX="ccache $GCC_TRIPLE-g++-$GCC_VERSION"

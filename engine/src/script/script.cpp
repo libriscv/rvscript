@@ -45,7 +45,8 @@ bool Script::reset()
 		riscv::MachineOptions<MARCH> options {
 			.memory_max		  = MAX_MEMORY,
 			.stack_size		  = STACK_SIZE,
-			.use_memory_arena = false};
+			.use_memory_arena = true
+		};
 		m_machine.reset(new machine_t(m_source_machine, options));
 
 		// setup system calls and traps

@@ -12,6 +12,7 @@ inline long perform_test(Script::machine_t& machine, gaddr_t func)
 	const auto regs		   = machine.cpu.registers();
 	const auto counter	   = machine.instruction_counter();
 	const auto max_counter = machine.max_instructions();
+	auto* exec = machine.cpu.current_execute_segment();
 	// this is a very hacky way of avoiding blowing up the stack
 	// because vmcall() resets the stack pointer on each call
 	auto old_stack = machine.memory.stack_initial();
@@ -40,6 +41,7 @@ inline long perform_test(Script::machine_t& machine, gaddr_t func)
 	machine.set_instruction_counter(counter);
 	machine.set_max_instructions(max_counter);
 	machine.memory.set_stack_initial(old_stack);
+	machine.cpu.set_execute_segment(exec);
 	return nanodiff(t0, t1);
 }
 
