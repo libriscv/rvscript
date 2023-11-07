@@ -110,17 +110,20 @@ inline void Game::exit()
 	(void)syscall1(ECALL_GAME_EXIT);
 }
 
-inline intptr_t Game::setting(std::string_view setting)
+inline std::optional<intptr_t> Game::setting(std::string_view setting)
 {
-	register const char* name_ptr asm("a0") = setting.begin();
-	register long        sysno    asm("a7") = ECALL_GAME_SETTING;
-	register intptr_t    result   asm("a0");
+	register const char* name_ptr  asm("a0") = setting.begin();
+	register unsigned    name_len  asm("a1") = setting.size();
+	register long        sysno     asm("a7") = ECALL_GAME_SETTING;
+	register bool        has_value asm("a0");
+	register intptr_t    result    asm("a1");
 
 	asm("ecall"
-		: "=r"(result)
-		: "m"(*name_ptr), "r"(name_ptr), "r"(sysno));
+		: "=r"(has_value), "=r"(result)
+		: "m"(*name_ptr), "r"(name_ptr), "r"(name_len), "r"(sysno));
 
-	return result;
+	if (has_value) return int64_t(result);
+	return std::nullopt;
 }
 
 inline void Game::breakpoint(std::source_location sl)

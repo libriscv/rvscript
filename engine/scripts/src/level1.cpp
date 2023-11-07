@@ -23,7 +23,7 @@ PUBLIC(void start())
 
 	my_dynamic_call(1234, 5678.0, "nine-ten-eleven-twelve!");
 
-	if (Game::setting("benchmarks"))
+	if (Game::setting("benchmarks").value_or(false))
 		do_benchmarks();
 
 	print("** Remote **\n");
@@ -45,6 +45,15 @@ int main()
 void do_benchmarks()
 {
 	measure("Benchmark overhead", [] { return_fast(); });
+
+	measure(
+		"Run-time setting",
+		[]
+		{
+			volatile auto val = Game::setting("benchmarks");
+			return_fast();
+			(void)val;
+		});
 
 	measure(
 		"Dynamic call (no arguments)",

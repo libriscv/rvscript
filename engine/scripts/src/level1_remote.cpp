@@ -135,7 +135,7 @@ void do_remote_stuff()
 			func();
 		});
 
-	if (Game::setting("benchmarks")) {
+	if (Game::setting("benchmarks").value_or(false)) {
 		measure("Call remote function", call_remotely);
 		measure("Call 1-arg function", call_args1);
 		measure("Call 2-arg function", call_args2);

@@ -396,17 +396,25 @@ void Script::dynamic_call(const std::string& name)
 	}
 }
 
-void Script::set_global_setting(const std::string& setting, gaddr_t value)
+void Script::set_global_setting(std::string_view setting, gaddr_t value)
 {
-	m_runtime_settings[setting] = value;
+	const uint32_t hash = riscv::crc32c(setting.begin(), setting.size());
+
+	m_runtime_settings[hash] = value;
 }
 
-std::optional<gaddr_t> Script::get_global_setting(const std::string& setting)
+std::optional<gaddr_t> Script::get_global_setting(uint32_t hash)
 {
-	auto it = m_runtime_settings.find(setting);
+	auto it = m_runtime_settings.find(hash);
 	if (it != m_runtime_settings.end())
 		return it->second;
 	return std::nullopt;
+}
+
+std::optional<gaddr_t> Script::get_global_setting(std::string_view setting)
+{
+	const uint32_t hash = riscv::crc32c(setting.begin(), setting.size());
+	return get_global_setting(hash);
 }
 
 gaddr_t Script::guest_alloc(gaddr_t bytes)

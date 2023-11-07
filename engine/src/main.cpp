@@ -28,6 +28,8 @@ int main()
 	});
 
 	Script::set_global_setting("benchmarks", do_benchmarks);
+	if (Script::get_global_setting("benchmarks") != do_benchmarks)
+		throw std::runtime_error("Insane global settings");
 
 	/* A single program that will be used as shared mutable
 		   storage among all the level programs. */

@@ -6,6 +6,7 @@
 #include "api_structs.h"
 #include <dyncall_api.h>
 #include <engine.hpp>
+#include <optional>
 #include <strf.hpp>
 
 namespace api
@@ -22,7 +23,8 @@ namespace api
 		breakpoint(std::source_location sl = std::source_location::current());
 		static bool is_debugging();
 		static uint32_t current_machine();
-		static intptr_t setting(std::string_view);
+
+		static std::optional<intptr_t> setting(std::string_view);
 	};
 
 	/** GUI **/

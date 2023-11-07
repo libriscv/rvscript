@@ -153,10 +153,13 @@ APICALL(api_each_frame)
 
 APICALL(api_game_setting)
 {
-	auto [setting] = machine.sysargs<std::string>();
+	auto [setting] = machine.sysargs<std::string_view>();
 
 	auto value = Script::get_global_setting(setting);
-	machine.set_result(value.value_or(0x0));
+	if (!value.has_value()) {
+		strf::to(stdout)("[", script(machine).name(), "] Warning: Could not find", setting, "\n");
+	}
+	machine.set_result(value.has_value(), value.value_or(0x0));
 }
 
 APICALL(api_game_exit)
