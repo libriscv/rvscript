@@ -19,6 +19,12 @@ int main()
 	extern void setup_dynamic_calls();
 	setup_dynamic_calls();
 
+	/* What happens when the Script wants to exit the game. */
+	Script::on_exit([] (auto& script) {
+		strf::to(stdout)(script.name(), " called Game::exit()");
+		exit(0);
+	});
+
 	/* A single program that will be used as shared mutable
 		   storage among all the level programs. */
 	Scripts::load_binary("gameplay", "scripts/gameplay.elf");

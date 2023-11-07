@@ -1,9 +1,7 @@
 
 # libriscv
-option(RISCV_THREADED "" ON)
-option(RISCV_EXPERIMENTAL "" OFF)
-option(RISCV_EXT_C "" OFF)
-option(RISCV_EXT_V "" ON)
+option(RISCV_EXPERIMENTAL "" ON)
+option(RISCV_FLAT_RW_ARENA "" ON)
 option(RISCV_MULTIPROCESS "" OFF)
 option(RISCV_MEMORY_TRAPS "" OFF)
 

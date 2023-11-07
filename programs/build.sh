@@ -1,8 +1,10 @@
 #!/bin/bash
 set -e
-GCC_TRIPLE="riscv64-unknown-elf"
-export CXX="ccache $GCC_TRIPLE-g++"
+
 CDEBUG="-DGCSECTIONS=ON -DLTO=OFF -DCMAKE_BUILD_TYPE=Release"
+CMAKE_OPTS="-DCMAKE_TOOLCHAIN_FILE=../micro/toolchain.cmake"
+
+source detect_compiler.sh
 
 for i in "$@"; do
 	case $i in
@@ -14,12 +16,12 @@ for i in "$@"; do
 			CDEBUG="-DGCSECTIONS=OFF -DLTO=OFF -DCMAKE_BUILD_TYPE=Debug"
 			shift # past argument with no value
 			;;
-		--glibc)
+		--glibc=*)
 			echo "Building game scripts with GCC/glibc"
-			GCC_VERSION=12
+			GCC_VERSION=${i#*=}
 			GCC_TRIPLE="riscv64-linux-gnu"
 			export CXX="ccache $GCC_TRIPLE-g++-$GCC_VERSION"
-			shift # past argument with no value
+			shift # past argument and value
 			;;
 		-*|--*)
 			echo "Unknown option $i"
@@ -32,6 +34,6 @@ done
 
 mkdir -p $GCC_TRIPLE
 pushd $GCC_TRIPLE
-cmake .. -DGCC_TRIPLE=$GCC_TRIPLE $CDEBUG -DCMAKE_TOOLCHAIN_FILE=../micro/toolchain.cmake
+cmake .. -DGCC_TRIPLE=$GCC_TRIPLE $CDEBUG $CMAKE_OPTS
 make -j4
 popd

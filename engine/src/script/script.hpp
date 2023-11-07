@@ -11,6 +11,7 @@ struct Script
 	using gaddr_t							   = riscv::address_type<MARCH>;
 	using machine_t							   = riscv::Machine<MARCH>;
 	using ghandler_t						   = std::function<void(Script&)>;
+	using exit_func_t                          = std::function<void(Script&)>;
 	static constexpr gaddr_t MAX_MEMORY		   = 1024 * 1024 * 16ul;
 	static constexpr gaddr_t MAX_HEAP		   = 1024 * 1024 * 256ul;
 	static constexpr uint64_t MAX_INSTRUCTIONS = 8000000;
@@ -150,6 +151,9 @@ struct Script
 	void
 	gdb_remote_debugging(std::string message, bool one_up, uint16_t port = 0);
 
+	static void on_exit(exit_func_t callback) { Script::m_exit = std::move(callback); }
+	void exit() { Script::m_exit(*this); } // Called by Game::exit() from the script.
+
 	static void setup_syscall_interface();
 	bool initialize();
 	Script(
@@ -187,6 +191,7 @@ struct Script
 	std::unordered_set<gaddr_t> m_remote_access;
 	// map of functions that extend engine using string hashes
 	static inline std::unordered_map<uint32_t, ghandler_t> m_dynamic_functions;
+	static inline exit_func_t m_exit = nullptr;
 };
 
 static_assert(

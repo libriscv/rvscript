@@ -5,8 +5,10 @@ set(CMAKE_CXX_FLAGS "-Wall -Wextra -Og -ggdb3 -fsanitize=address,undefined")
 
 option(RISCV_MULTIPROCESS "" OFF)
 option(RISCV_MEMORY_TRAPS "" OFF)
+option(RISCV_EXT_C "" ON)
 add_subdirectory(../ext ext)
 add_subdirectory(../engine/src/script script)
+target_compile_definitions(script PUBLIC TESTING_FRAMEWORK=1)
 
 add_subdirectory(Catch2)
 

@@ -154,7 +154,7 @@ APICALL(api_each_frame)
 APICALL(api_game_exit)
 {
 	strf::to(stdout)("[", script(machine).name(), "] Exit called\n");
-	exit(0);
+	script(machine).exit();
 }
 
 /** Math **/

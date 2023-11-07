@@ -84,7 +84,7 @@ function (add_shared_program NAME ORG WILDCARD)
 	add_micro_binary(${NAME} ${ORG} ${ARGN})
 	add_custom_command(
 		TARGET ${NAME} POST_BUILD
-		COMMAND ${CMAKE_OBJCOPY} -w --extract-symbol --strip-symbol=!${WILDCARD} --strip-symbol=* ${CMAKE_CURRENT_SOURCE_DIR}/${NAME} ${NAME}.syms
+		COMMAND ${GCC_TRIPLE}-objcopy -w --extract-symbol --strip-symbol=!${WILDCARD} --strip-symbol=* ${CMAKE_CURRENT_SOURCE_DIR}/${NAME} ${NAME}.syms
 	)
 endfunction()
 

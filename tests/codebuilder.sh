@@ -27,7 +27,8 @@ add_level(program 0x400000
 )
 EOT
 
-export CXX="riscv64-unknown-elf-g++"
+source $PROGRAMS/detect_compiler.sh
+
 cmake -G Ninja . -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN -DPROGRAMS=$PROGRAMS -DLTO=OFF -DGCSECTIONS=OFF
 ninja
 popd
