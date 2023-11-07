@@ -135,25 +135,27 @@ void do_remote_stuff()
 			func();
 		});
 
-	measure("Call remote function", call_remotely);
-	measure("Call 1-arg function", call_args1);
-	measure("Call 2-arg function", call_args2);
-	measure("Call 3-arg function", call_args3);
-	measure("Call 4-arg function", call_args4);
-	measure("Call 5-arg function", call_args5);
-	measure("Call 6-arg function", call_args6);
-	measure("Call 7-arg function", call_args7);
-	measure("Call 8-arg function", call_args8);
-	measure("Call remote C++ member function", call_remote_member);
-	measure("Call remote function ptr", call_remote_function);
-	measure("Call remote std::function", call_remote_std_function);
+	if (Game::setting("benchmarks")) {
+		measure("Call remote function", call_remotely);
+		measure("Call 1-arg function", call_args1);
+		measure("Call 2-arg function", call_args2);
+		measure("Call 3-arg function", call_args3);
+		measure("Call 4-arg function", call_args4);
+		measure("Call 5-arg function", call_args5);
+		measure("Call 6-arg function", call_args6);
+		measure("Call 7-arg function", call_args7);
+		measure("Call 8-arg function", call_args8);
+		measure("Call remote C++ member function", call_remote_member);
+		measure("Call remote function ptr", call_remote_function);
+		measure("Call remote std::function", call_remote_std_function);
 
-	measure("Call local function", bench_local_func);
-	measure("Call local C++ member function", bench_local_cpp);
-	measure("Call local function ptr", bench_local_func_ptr);
-	measure("Call local std::function", bench_local_std_func);
+		measure("Call local function", bench_local_func);
+		measure("Call local C++ member function", bench_local_cpp);
+		measure("Call local function ptr", bench_local_func_ptr);
+		measure("Call local std::function", bench_local_std_func);
 
-	measure("Call remote function", call_remotely);
+		measure("Call remote function", call_remotely);
+	}
 }
 
 void call_remotely()

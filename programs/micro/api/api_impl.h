@@ -110,6 +110,19 @@ inline void Game::exit()
 	(void)syscall1(ECALL_GAME_EXIT);
 }
 
+inline intptr_t Game::setting(std::string_view setting)
+{
+	register const char* name_ptr asm("a0") = setting.begin();
+	register long        sysno    asm("a7") = ECALL_GAME_SETTING;
+	register intptr_t    result   asm("a0");
+
+	asm("ecall"
+		: "=r"(result)
+		: "m"(*name_ptr), "r"(name_ptr), "r"(sysno));
+
+	return result;
+}
+
 inline void Game::breakpoint(std::source_location sl)
 {
 	char buffer[512];

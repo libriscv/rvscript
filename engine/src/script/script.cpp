@@ -7,7 +7,6 @@ using gaddr_t = Script::gaddr_t;
 #include <libriscv/native_heap.hpp>
 #include <libriscv/threads.hpp>
 #include <libriscv/util/crc32.hpp>
-#include <sstream>
 #include <strf/to_cfile.hpp>
 // the shared area is read-write for the guest
 static constexpr size_t STACK_SIZE	  = 0x100000;
@@ -18,6 +17,9 @@ static const int MEMORY_SYSCALLS_BASE = 575;
 static const int THREADS_SYSCALL_BASE = 590;
 // Memory area shared between all script instances
 static std::array<uint8_t, SHM_SIZE> shared_memory {};
+static std::vector<std::string> env = {
+	"LC_CTYPE=C", "LC_ALL=C", "USER=groot"
+};
 using riscv::crc32;
 
 Script::Script(
@@ -31,6 +33,9 @@ Script::Script(
 	{
 		init = true;
 		Script::setup_syscall_interface();
+
+		if (getenv("BENCHMARK"))
+			env.push_back("BENCHMARK=1");
 	}
 	this->reset();
 }
@@ -52,9 +57,6 @@ bool Script::reset()
 		// setup system calls and traps
 		this->machine_setup();
 		// setup program argv *after* setting new stack pointer
-		static const std::vector<std::string> env = {
-			"LC_CTYPE=C", "LC_ALL=C", "USER=groot"
-		};
 		machine().setup_linux({name()}, env);
 	}
 	catch (std::exception& e)
@@ -126,6 +128,7 @@ bool Script::initialize()
 		strf::to(stderr)(">>> Exception: ", e.what(), "\n");
 		return false;
 	}
+
 	strf::to(stderr)(">>> ", name(), " initialized.\n");
 	return true;
 }
@@ -391,6 +394,19 @@ void Script::dynamic_call(const std::string& name)
 			strf::hex(hash), "\n");
 		throw std::runtime_error("Unable to find dynamic function: " + name);
 	}
+}
+
+void Script::set_global_setting(const std::string& setting, gaddr_t value)
+{
+	m_runtime_settings[setting] = value;
+}
+
+std::optional<gaddr_t> Script::get_global_setting(const std::string& setting)
+{
+	auto it = m_runtime_settings.find(setting);
+	if (it != m_runtime_settings.end())
+		return it->second;
+	return std::nullopt;
 }
 
 gaddr_t Script::guest_alloc(gaddr_t bytes)

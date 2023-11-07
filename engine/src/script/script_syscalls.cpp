@@ -151,6 +151,14 @@ APICALL(api_each_frame)
 	machine.set_result(0);
 }
 
+APICALL(api_game_setting)
+{
+	auto [setting] = machine.sysargs<std::string>();
+
+	auto value = Script::get_global_setting(setting);
+	machine.set_result(value.value_or(0x0));
+}
+
 APICALL(api_game_exit)
 {
 	strf::to(stdout)("[", script(machine).name(), "] Exit called\n");
@@ -225,6 +233,7 @@ void Script::setup_syscall_interface()
 		{ECALL_MACHINE_HASH, api_machine_hash},
 		{ECALL_EACH_FRAME, api_each_frame},
 
+		{ECALL_GAME_SETTING, api_game_setting},
 		{ECALL_GAME_EXIT, api_game_exit},
 
 		{ECALL_SINF, api_math_sinf},

@@ -2,6 +2,7 @@
 #include <any>
 #include <functional>
 #include <libriscv/machine.hpp>
+#include <optional>
 #include <unordered_set>
 template <typename T> struct GuestObjects;
 
@@ -122,6 +123,15 @@ struct Script
 		return m_heap_area;
 	}
 
+	/// @brief Make a global setting available to all programs
+	/// @param setting 
+	/// @param value 
+	static void set_global_setting(const std::string& setting, gaddr_t value);
+
+	/// @brief Retrieve the value of a global setting
+	/// @param setting 
+	static std::optional<gaddr_t> get_global_setting(const std::string& setting);
+
 	/// @brief Make it possible to access and make function calls to the given
 	/// script from with another The access is two-way.
 	/// @param remote The remote script
@@ -191,6 +201,8 @@ struct Script
 	std::unordered_set<gaddr_t> m_remote_access;
 	// map of functions that extend engine using string hashes
 	static inline std::unordered_map<uint32_t, ghandler_t> m_dynamic_functions;
+	// map of globally accessible run-time settings
+	static inline std::unordered_map<std::string, gaddr_t> m_runtime_settings;
 	static inline exit_func_t m_exit = nullptr;
 };
 

@@ -8,6 +8,8 @@
 int main()
 {
 	const bool debug = getenv("DEBUG") != nullptr;
+	const bool do_benchmarks = getenv("BENCHMARK") != nullptr;
+
 	// Dynamically extend the functionality available
 	// See: setup_timers.cpp
 	extern void setup_timer_system();
@@ -24,6 +26,8 @@ int main()
 		strf::to(stdout)(script.name(), " called Game::exit()");
 		exit(0);
 	});
+
+	Script::set_global_setting("benchmarks", do_benchmarks);
 
 	/* A single program that will be used as shared mutable
 		   storage among all the level programs. */
@@ -199,16 +203,19 @@ int main()
 	/* Create an dynamic function for benchmarking */
 	gameplay.set_dynamic_call("empty", [](auto&) {});
 
-	// Benchmarks of various features
-	gameplay.call("benchmarks");
+	if (Script::get_global_setting("benchmarks").value_or(false))
+	{
+		// Benchmarks of various features
+		gameplay.call("benchmarks");
 
-	// (Full) Fork benchmark
-	strf::to(stdout)("Benchmarking full fork:\n");
-	Script::benchmark(
-		[&gameplay]
-		{
-			Script {gameplay.machine(), nullptr, "name", "file"};
-		});
+		// (Full) Fork benchmark
+		strf::to(stdout)("Benchmarking full fork:\n");
+		Script::benchmark(
+			[&gameplay]
+			{
+				Script {gameplay.machine(), nullptr, "name", "file"};
+			});
+	}
 
 	MainScreen::init();
 	MainScreen screen;
