@@ -42,21 +42,40 @@ def crc32(string):
 
     return -1 - value
 
+def is_type(string):
+	keywords = ["unsigned", "char", "short", "int", "long", "float", "double", "size_t", "int8_t", "uint8_t", "int16_t", "uint16_t", "int32_t", "uint32_t", "int64_t", "uint64_t"]
+	conventions = ("_callback", "_t")
+	return ("*" in string) or string in keywords or string.endswith(conventions)
+
+def is_simple_return(string):
+	keywords = ["*", "void", "unsigned", "char", "short", "int", "long", "size_t", "int8_t", "uint8_t", "int16_t", "uint16_t", "int32_t", "uint32_t", "int64_t", "uint64_t"]
+	return any(substring in string for substring in keywords)
+
 def find_arguments(string):
 	sfront = string.split('(', 1)
 	retval = [sfront[0].split(' ')[0]]
 	strargs = sfront[1].split(')')[0]
 	# [retval, arg0, arg1, '']
 	fargs = retval + strargs.split(", ")
+	# Remove parameter names
+	for (idx, arg) in enumerate(fargs):
+		symbols = arg.split(" ")
+		if len(symbols) > 1:
+			last = symbols[-1]
+			if not is_type(last):
+				symbols.pop()
+				fargs[idx] = " ".join(symbols)
 	# Remove empty argument lists
 	if fargs[-1] == "":
 		fargs.pop()
-	print(fargs)
 	return fargs
 
 def emit_inline_assembly(header, asmdef, crc, fargs):
 	retval = fargs[0]
 	fargs.pop(0)
+
+	if not is_simple_return(retval):
+		return (header, False)
 
 	has_output = (retval != "void")
 	inputs = []
@@ -79,9 +98,12 @@ def emit_inline_assembly(header, asmdef, crc, fargs):
 		reg = "a" + str(areg)
 		asm_regs += "register " + arg + " " + reg + " asm(\"" + reg + "\") = arg" + str(areg) + ";\n"
 		# strings
-		if arg == "char*" or arg == "char *" or arg == "const char*" or arg == "const char *":
+		if "*" in arg:
 			asm_in += ["\"r\"(" + reg + ")"]
-			asm_in += ["\"m\"(*" + reg + ")"]
+			if "void" in arg:
+				asm_in += ["\"m\"(*(char *)arg" + str(areg) + ")"]
+			else:
+				asm_in += ["\"m\"(*arg" + str(areg) + ")"]
 		# integrals
 		else:
 			asm_in += ["\"r\"(" + reg + ")"]
@@ -92,11 +114,11 @@ def emit_inline_assembly(header, asmdef, crc, fargs):
 
 	header += "static inline " + retval + " i" + asmdef + " (" + ','.join(fargs) + ') {\n'
 	header += asm_regs
-	header += "__asm__(\"ecall\" : " + ",".join(asm_out) + " : " + ",".join(asm_in) + " : " + ",".join(asm_clob) + ");\n"
+	header += "__asm__ volatile(\"ecall\" : " + ",".join(asm_out) + " : " + ",".join(asm_in) + " : " + ",".join(asm_clob) + ");\n"
 	if has_output:
 		header += "return ra0;\n"
 	header += "}" + '\n'
-	return header
+	return (header, True)
 
 # load JSON
 j = {}
@@ -138,17 +160,18 @@ for key in j:
 			print("ERROR: Dynamic call '" + key + "' has a collision, ignored!")
 			continue
 		crc = '%08x' % crcval
-		if args.verbose:
-			print(key + " dynamic call hash 0x" + crc)
 
-		header += "// " + key + ": 0x" + crc + "\n";
-		header += "extern " + asmdef + ";\n";
+		header += "// " + key + ": 0x" + crc + "\n"
+		header += "extern " + asmdef + ";\n"
 
 		## Given the parsed arguments, starting with
 		## the return value, we can produce perfect
 		## inline assembly that allows the compiler
 		## room to optimize better.
-		header = emit_inline_assembly(header, asmname, crc, fargs)
+		(header, inlined) = emit_inline_assembly(header, asmname, crc, fargs)
+
+		if args.verbose:
+			print("Dynamic call: " + key + ", hash 0x" + crc + (" (inlined)" if inlined else ""))
 
 		source += '__asm__("\\n\\\n'
 		source += '.global ' + asmname + '\\n\\\n'
