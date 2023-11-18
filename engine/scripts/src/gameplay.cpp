@@ -48,26 +48,26 @@ static void inline_dyncall_handler()
 static void opaque_dyncall_args_x4()
 {
 	sys_empty();
-	sys_testing123(1, 2, 3);
+	sys_testing123(4, 5, 6, 7.0, 8.0, 9.0);
 	sys_empty();
-	sys_testing123(1, 2, 3);
+	sys_testing123(4, 5, 6, 7.0, 8.0, 9.0);
 	sys_empty();
-	sys_testing123(1, 2, 3);
+	sys_testing123(4, 5, 6, 7.0, 8.0, 9.0);
 	sys_empty();
-	sys_testing123(1, 2, 3);
+	sys_testing123(4, 5, 6, 7.0, 8.0, 9.0);
 	return_fast();
 }
 
 static void inline_dyncall_args_x4()
 {
 	isys_empty();
-	isys_testing123(1, 2, 3);
+	isys_testing123(4, 5, 6, 7.0, 8.0, 9.0);
 	isys_empty();
-	isys_testing123(1, 2, 3);
+	isys_testing123(4, 5, 6, 7.0, 8.0, 9.0);
 	isys_empty();
-	isys_testing123(1, 2, 3);
+	isys_testing123(4, 5, 6, 7.0, 8.0, 9.0);
 	isys_empty();
-	isys_testing123(1, 2, 3);
+	isys_testing123(4, 5, 6, 7.0, 8.0, 9.0);
 	return_fast();
 }
 
@@ -143,7 +143,11 @@ PUBLIC(void myobject_death(GameObject& object))
 
 PUBLIC(void test_dynamic_functions())
 {
-	// See: dyncalls.json
+	// See: dynamic_calls.json
+	// 1: A simple no-argument dynamic call
 	sys_testing();
-	sys_testing123(5, 6, 7);
+	// 2: A dynamic call that takes a zero-terminated string, and then a string with length
+	sys_testing_strings("Hello World!", "Hello World!", 12);
+	// 3: A dynamic call that takes a few integers and floats
+	sys_testing123(4, 5, 6, 7.0, 8.0, 9.0);
 }

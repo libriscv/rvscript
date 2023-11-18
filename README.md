@@ -2,7 +2,7 @@
 
 This repository implements a game engine oriented scripting system using [libriscv](https://github.com/fwsGonzo/libriscv) as a backend. By using a fast userspace emulator with low call overhead and memory usage, combined with modern programming techniques we can have a fast budgeted script that lives separately in its own address space.
 
-The guest environment is modern C++20 using GCC 13.2 with RTTI and exceptions enabled. Several CRT functions have been implemented as system calls, and will have native performance. There is also Nim support and some example code.
+The guest environment is modern C++20 using a GNU RISC-V compiler with RTTI and exceptions enabled. Several CRT functions have been implemented as system calls, and will have native performance. There is also Nim support and some example code.
 
 The example programs have some basic example timers and threads, as well as multiple machines to call into and between. The repository is a starting point for anyone who wants to try to use this in their game engine.
 
@@ -22,7 +22,7 @@ Install cmake, git, GCC or Clang for your system.
 
 Run [setup.sh](/setup.sh) to make sure that libriscv is initialized properly. Then go into the engine folder and run:
 
-```bash
+```sh
 bash build.sh
 ```
 
@@ -64,7 +64,7 @@ Add `$HOME/riscv` to your PATH by adding `export PATH=$PATH:$HOME/riscv/bin` to 
 
 This compiler will be preferred by the build script in the programs folder. Check out the [compiler detection script](/programs/detect_compiler.sh) for the selection process.
 
-```
+```sh
 $ riscv64-unknown-elf-g++ --version
 riscv64-unknown-elf-g++ (gc891d8dc23e) 13.2.0
 ```
@@ -86,7 +86,7 @@ If you want to select a specific compiler, you can edit [detect_compiler.sh](/pr
 Running `DEBUG=1 ./build.sh` in the [programs](programs) folder will produce programs that are easy to debug with GDB. Run `DEBUG=1 ./build.sh` in the engine folder to enable remote debugging with GDB. The engine will listen for a remote debugger on each breakpoint in the code. It will also try to start GDB automatically and connect for you. Remote GDB is a little bit wonky and doesn't like microthreads much but for the most part it works well.
 
 Install gdb-multiarch from your distro packaging system:
-```
+```sh
 sudo apt install gdb-multiarch
 ```
 
@@ -130,24 +130,24 @@ The general API to adding new functionality inside the VM is to add more system 
 
 Dynamic calls are string names that when invoked from inside the script will call a std::function on the host side, outside of the script. An example:
 
-```
+```C++
 Script::set_dynamic_call("lazy", [] (auto&) {
 		strf::to(stdout)("I'm not doing much, tbh.\n");
 	});
 ```
 Will assign the function to the string "lazy". To call this function from inside the RISC-V programs we have to amend [dynamic_calls.json](/programs/dynamic_calls.json), like so:
 
-```
+```json
 "lazy":      "void sys_lazy ()"
 ```
 The build system will see the JSON changed and rebuild some API files (see [generate.py](/programs/dyncalls/generate.py)), and it will expose the callable function `sys_lazy`:
 
-```
+```C++
 sys_lazy();
 ```
 
 A slightly more complex example, where we take an integer as argument, and return an integer as the result:
-```
+```C++
 Script::set_dynamic_call("object_id",
 	[] (Script& script) {
 		const auto [id] = script.machine().sysargs <int> ();
@@ -158,7 +158,7 @@ Script::set_dynamic_call("object_id",
 ```
 
 Or, let's take a struct by reference or pointer:
-```
+```C++
 Script::set_dynamic_call("struct_by_ref",
 	[] (Script& script) {
 		struct Something {
@@ -170,21 +170,22 @@ Script::set_dynamic_call("struct_by_ref",
 ```
 
 Also, let's take a `char* buffer, size_t length` pair as argument:
-```
+```C++
 Script::set_dynamic_call("big_data",
 	[] (Script& script) {
-		// A Buffer is a list of pointers to fragmented virtual memory,
-		// which cannot always be guaranteed to be sequential.
-		// riscv::Buffer consumes two system call arguments (pointer + length).
+		// A Buffer is a general-purpose container for fragmented virtual memory,
+		// even though 99.99999% of all operations (even big ones) will be sequential.
+		// The <riscv::Buffer> consumes two system call registers (pointer + length).
 		const auto [buffer] = script.machine().sysargs <riscv::Buffer> ();
-
-		// NOTE: The buffer is read-only
-		handle_buffer(buffer.data(), buffer.size());
+		handle_buffer(buffer.strview());
+		// Or, alternatively (also consumes two registers):
+		const auto [view] = script.machine().sysargs <std::string_view> ();
+		handle_buffer(view);
 	});
 ```
 
 In this case we would add this to [dynamic_calls.json](/programs/dynamic_calls.json):
-```
+```json
 "big_data":      "void sys_big_data (const char*, size_t)"
 ```
 See [memory.hpp](/ext/libriscv/lib/libriscv/memory.hpp) for a list of helper functions, each with a specific purpose.
@@ -224,7 +225,7 @@ Nim code can be live-debugged just like other programs by running the engine wit
 	- You can allocate structures directly on the heap of the guest through `script.guest_alloc<Type> (count)`. Using the returned buffer as an arena is also possible.
 - Passing long strings and big structures is slow.
 	- Use compile-time hashes of strings where you can.
-	- Alternatively use memory sharing, riscv::Buffer or buffer gathering for larger memory buffers.
+	- Use riscv::Buffer or buffer gathering for larger memory buffers.
 	- Page sharing if intended for communication between machines
 	- Use memory directly allocated in machines by using `script.guest_alloc<Type>(count)`.
 - How do I allow non-technical people to compile script?

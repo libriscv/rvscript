@@ -178,23 +178,37 @@ int main()
 			called |= 0x1;
 		});
 	gameplay.set_dynamic_call(
-		"testing123",
+		"testing_strings",
 		[&](auto& s)
 		{
-			const auto [arg1, arg2, arg3]
-				= s.machine().template sysargs<int, int, int>();
-			if (arg1 == 5 && arg2 == 6 && arg3 == 7)
+			// Argument 1: A heap-allocated string
+			// Argument 2: A string-view pointing into guest memory
+			const auto [str, view]
+				= s.machine().template sysargs<std::string, std::string_view>();
+			if (str == "Hello World!" && view == "Hello World!")
 			{
 				called |= 0x2;
 			}
 		});
+	gameplay.set_dynamic_call(
+		"testing123",
+		[&](auto& s)
+		{
+			const auto [arg1, arg2, arg3, arg4, arg5, arg6]
+				= s.machine().template sysargs<int, int, int, float, float, float>();
+			if (arg1 == 4 && arg2 == 5 && arg3 == 6 && arg4 == 7.0 && arg5 == 8.0 && arg6 == 9.0)
+			{
+				called |= 0x4;
+			}
+		});
 	gameplay.call("test_dynamic_functions");
 	// All the functions should have been called
-	if (called != 0x3) {
+	if (called != (0x1 | 0x2 | 0x4)) {
 		strf::to(stderr)(
 			"Error: Dynamic calls not invoked or did not set locals!?\n");
 		exit(1);
 	}
+
 	// INVALID (Duplicate hash):
 	// gameplay.set_dynamic_call("empty", [] (auto&) {});
 	// This will replace the function:
@@ -202,11 +216,13 @@ int main()
 	// This will remove the function:
 	gameplay.reset_dynamic_call("empty");
 
-	/* Create an dynamic function for benchmarking */
-	gameplay.set_dynamic_call("empty", [](auto&) {});
+	strf::to(stdout)("* Dynamic call tests passed!\n");
 
 	if (Script::get_global_setting("benchmarks").value_or(false))
 	{
+		// Create an dynamic function for benchmarking
+		gameplay.set_dynamic_call("empty", [](auto&) {});
+
 		// Benchmarks of various features
 		gameplay.call("benchmarks");
 
@@ -218,6 +234,8 @@ int main()
 				Script {gameplay.machine(), nullptr, "name", "file"};
 			});
 	}
+
+	strf::to(stdout)("...\nBringing up the main screen!\n");
 
 	MainScreen::init();
 	MainScreen screen;

@@ -19,5 +19,6 @@
 
 	"empty":      "void sys_empty ()",
 	"testing":    "void sys_testing ()",
-	"testing123": "void sys_testing123 (int, int, int)"
+	"testing_strings": "void sys_testing_strings (const char*, const char*, size_t)",
+	"testing123": "void sys_testing123 (int, int, int, float, float, float)"
 }
