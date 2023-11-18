@@ -38,6 +38,7 @@ elif command -v "riscv64-linux-gnu-g++-10" &> /dev/null; then
 	export CEXT="ON"
 
 else
-	echo "* Error: Could not detect RISC-V compiler. Check programs/build.sh"
+	echo "* Error: Could not detect RISC-V compiler. Install one from your package manager."
+	echo "* Example: sudo apt install gcc-12-riscv64-linux-gnu"
 	exit 1
 fi
