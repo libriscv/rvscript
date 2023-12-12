@@ -4,10 +4,10 @@
 using gaddr_t = Script::gaddr_t;
 
 inline timespec time_now();
-inline long nanodiff(timespec start_time, timespec end_time);
+inline int64_t nanodiff(timespec start_time, timespec end_time);
 
 template <int ROUNDS = 2000>
-inline long perform_test(Script::machine_t& machine, gaddr_t func)
+inline int64_t perform_test(Script::machine_t& machine, gaddr_t func)
 {
 	const auto regs		   = machine.cpu.registers();
 	const auto counter	   = machine.instruction_counter();
@@ -117,8 +117,8 @@ timespec time_now()
 	return t;
 }
 
-long nanodiff(timespec start_time, timespec end_time)
+int64_t nanodiff(timespec start_time, timespec end_time)
 {
-	return (end_time.tv_sec - start_time.tv_sec) * (long)1e9
+	return (end_time.tv_sec - start_time.tv_sec) * int64_t(1e9)
 		   + (end_time.tv_nsec - start_time.tv_nsec);
 }

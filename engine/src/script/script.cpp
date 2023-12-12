@@ -9,7 +9,7 @@ using gaddr_t = Script::gaddr_t;
 #include <libriscv/util/crc32.hpp>
 #include <strf/to_cfile.hpp>
 // the shared area is read-write for the guest
-static constexpr size_t STACK_SIZE	  = 0x100000;
+static constexpr size_t STACK_SIZE	  = 2ULL << 20;
 static constexpr gaddr_t SHM_BASE	  = 0x2000;
 static constexpr gaddr_t SHM_SIZE	  = 2 * riscv::Page::size();
 static const int HEAP_SYSCALLS_BASE	  = 570;
@@ -17,7 +17,7 @@ static const int MEMORY_SYSCALLS_BASE = 575;
 static const int THREADS_SYSCALL_BASE = 590;
 // Memory area shared between all script instances
 static std::array<uint8_t, SHM_SIZE> shared_memory {};
-static std::vector<std::string> env = {
+static const std::vector<std::string> env = {
 	"LC_CTYPE=C", "LC_ALL=C", "USER=groot"
 };
 using riscv::crc32;
@@ -26,16 +26,13 @@ Script::Script(
 	const machine_t& smach, void* userptr, const std::string& name,
 	const std::string& filename, bool debug)
   : m_source_machine(smach), m_userptr(userptr), m_name(name),
-	m_filename(filename), m_hash(crc32(name.c_str())), m_is_debug(debug)
+	m_filename(filename), m_hash(crc32(name.c_str(), name.size())), m_is_debug(debug)
 {
 	static bool init = false;
 	if (!init)
 	{
 		init = true;
 		Script::setup_syscall_interface();
-
-		if (getenv("BENCHMARK"))
-			env.push_back("BENCHMARK=1");
 	}
 	this->reset();
 }
@@ -44,6 +41,8 @@ Script::~Script() {}
 
 bool Script::reset()
 {
+	// If the reset fails, this object is still valid:
+	// m_machine.reset() will not happen if new machine_t fails
 	try
 	{
 		// Fork the source machine into m_machine */
@@ -169,8 +168,8 @@ void Script::machine_setup()
 		this->m_heap_area = machine().memory.mmap_allocate(MAX_HEAP);
 	}
 
-	// Add POSIX system call interfaces
-	machine().setup_linux_syscalls();
+	// Add POSIX system call interfaces (no filesystem or network access)
+	machine().setup_linux_syscalls(false, false);
 	machine().setup_posix_threads();
 	// Add native system call interfaces
 	machine().setup_native_heap(HEAP_SYSCALLS_BASE, heap_area(), MAX_HEAP);

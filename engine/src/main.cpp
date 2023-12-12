@@ -226,11 +226,24 @@ int main()
 		// Benchmarks of various features
 		gameplay.call("benchmarks");
 
-		// (Full) Fork benchmark
-		strf::to(stdout)("Benchmarking full fork:\n");
+		// Fork benchmarks
+		strf::to(stdout)("Benchmarking RISC-V machine fork:\n");
 		Script::benchmark(
 			[&gameplay]
 			{
+				// Forking the underlying virtual machine
+				const riscv::MachineOptions<Script::MARCH> options {
+					.memory_max		  = 16ULL << 20,
+					.stack_size		  = 2ULL << 20,
+					.use_memory_arena = true
+				};
+				riscv::Machine<Script::MARCH> fork { gameplay.machine(), options };
+			});
+		strf::to(stdout)("Benchmarking Script instance fork:\n");
+		Script::benchmark(
+			[&gameplay]
+			{
+				// Create a new Script instance based on the underlying virtual machine
 				Script {gameplay.machine(), nullptr, "name", "file"};
 			});
 	}

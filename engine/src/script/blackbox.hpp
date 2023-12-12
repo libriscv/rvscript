@@ -5,6 +5,8 @@
 
 template <int W> struct MachineData
 {
+	// Disabling the (faster) memory arena in the source VM will
+	// allow us to enable memory arenas in the forks!
 	static inline const riscv::MachineOptions<W> options {
 		.use_memory_arena = false,
 		//.default_exit_function = "fast_exit"

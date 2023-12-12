@@ -43,10 +43,10 @@ int main()
 	print("Testing C++ exception handling\n");
 	auto [cycles, time] = measure_exception_throw();
 	print("It took ", cycles, " instructions to throw, catch and print the exception\n");
-	print("It took ", time, " milliseconds\n");
+	print("It took ", time, " microseconds\n");
 	auto [cycles2, time2] = measure_exception_throw();
 	print("It took ", cycles2, " instructions the second time\n");
-	print("It took ", time2, " milliseconds the second time\n");
+	print("It took ", time2, " microseconds the second time\n");
 #endif
 
 	return 0;
