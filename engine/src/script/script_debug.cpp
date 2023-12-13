@@ -34,7 +34,7 @@ static void gdb_remote_finish(Script& script)
 	if (!machine.stopped())
 	{
 		// resume until stopped
-		machine.cpu.simulate_precise(machine.max_instructions());
+		machine.cpu.simulate_precise();
 	}
 }
 
