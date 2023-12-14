@@ -144,6 +144,12 @@ for key in j:
 header += "\n"
 
 source = '__asm__(".section .text\\n");\n\n'
+dyncallindex = 0
+
+dyncall = '__asm__("\\n\\\n'
+dyncall += '.pushsection .rodata\\n\\\n'
+dyncall += '.global dyncall_table\\n\\\n'
+dyncall += 'dyncall_table:\\n\\\n'
 
 # create dyncall prototypes and assembly
 for key in j:
@@ -173,13 +179,15 @@ for key in j:
 		if args.verbose:
 			print("Dynamic call: " + key + ", hash 0x" + crc + (" (inlined)" if inlined else ""))
 
+		dyncall += '  .word 0x' + crc + '\\n\\\n'
+		dyncall += '  .word ' + str(0) + '\\n\\\n'
+		dyncall += '  .dword ' + asmname + '_str\\n\\\n'
+
 		source += '__asm__("\\n\\\n'
 		source += '.global ' + asmname + '\\n\\\n'
 		source += '.func ' + asmname + '\\n\\\n'
 		source += asmname + ':\\n\\\n'
-		source += '  li t0, 0x' + crc + '\\n\\\n'
-		source += '  lui t1, %hi(' + asmname + '_str)\\n\\\n'
-		source += '  addi t1, t1, %lo(' + asmname + '_str)\\n\\\n'
+		source += '  li t0, ' + str(dyncallindex) + '\\n\\\n'
 		source += '  li a7, ' + str(args.dyncall) + '\\n\\\n'
 		source += '  ecall\\n\\\n'
 		source += '  ret\\n\\\n'
@@ -190,11 +198,18 @@ for key in j:
 		source += '.popsection\\n\\\n'
 		source += '");\n\n'
 
+		dyncallindex += 1
+
 header += """
 #ifdef __cplusplus
 }
 #endif
 """;
+
+dyncall += '.popsection\\n\\\n'
+dyncall += '");\n\n'
+
+source += dyncall
 
 if (args.print_sources):
 	print(header)

@@ -179,6 +179,7 @@ struct Script
 	bool install_binary(const std::string& file, bool shared = true);
 	void machine_setup();
 	void machine_remote_setup();
+	void resolve_dynamic_calls();
 	static long finish_benchmark(std::vector<long>&);
 
 	std::unique_ptr<machine_t> m_machine = nullptr;
