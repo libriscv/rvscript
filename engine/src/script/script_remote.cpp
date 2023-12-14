@@ -61,7 +61,7 @@ void Script::machine_remote_setup()
 		// space we can look for an existing alternative in
 		// a potential connected remote script.
 		this->machine().cpu.set_override_new_execute_segment(
-			[](auto& cpu) -> riscv::DecodedExecuteSegment<MARCH>*
+			[](auto& cpu) -> riscv::DecodedExecuteSegment<MARCH>&
 			{
 				auto* this_script
 					= cpu.machine().template get_userdata<Script>();
@@ -70,17 +70,10 @@ void Script::machine_remote_setup()
 				if (remote_script != nullptr && cpu.pc() < REMOTE_IMG_BASE)
 				{
 					auto& remote_machine = remote_script->machine();
-					auto* seg
-						= remote_machine.memory.exec_segment_for(cpu.pc());
-					if (seg != nullptr)
-					{
-						return seg;
-					}
-					cpu.trigger_exception(
-						riscv::EXECUTION_SPACE_PROTECTION_FAULT, cpu.pc());
+					return remote_machine.memory.exec_segment_for(cpu.pc());
 				}
 
-				return nullptr;
+				return cpu.empty_execute_segment();
 			});
 	}
 
