@@ -105,11 +105,8 @@ APICALL(api_dyncall)
 {
 	auto& regs = machine.cpu.registers();
 	// call the handler with register t0 as hash
-	script(machine).dynamic_call(
+	script(machine).dynamic_call_hash(
 		regs.get(riscv::REG_T0), regs.get(riscv::REG_T1));
-	// skip return since PC is only allowed to change
-	// for normal system calls
-	machine.cpu.jump(regs.get(riscv::REG_RA) - 4);
 }
 
 APICALL(api_dyncall_args)
@@ -119,7 +116,7 @@ APICALL(api_dyncall_args)
 	auto& scr = script(machine);
 	// Perform a dynamic call, which takes no arguments
 	// Instead, the caller must check the dynargs() vector.
-	scr.dynamic_call(hash, g_name);
+	scr.dynamic_call_hash(hash, g_name);
 	// After the call we can clear dynargs.
 	scr.dynargs().clear();
 }
@@ -229,7 +226,7 @@ void Script::setup_syscall_interface()
 		{ECALL_WRITE, api_write},
 		{ECALL_MEASURE, api_measure},
 		{ECALL_DYNCALL, api_dyncall},
-		{ECALL_DYNCALL2, api_dyncall_args},
+		{ECALL_DYNARGS, api_dyncall_args},
 		{ECALL_FARCALL, api_farcall},
 		{ECALL_FARCALL_DIRECT, api_farcall_direct},
 		{ECALL_INTERRUPT, api_interrupt},
@@ -249,10 +246,24 @@ void Script::setup_syscall_interface()
 	// Add a few Newlib system calls (just in case)
 	machine_t::setup_newlib_syscalls();
 
+	// A custom intruction used to handle indexed dynamic calls.
+	using namespace riscv;
+	static const Instruction<MARCH> dyncall_instruction_handler {
+		[](CPU<MARCH>& cpu, rv32i_instruction instr)
+		{
+			auto& scr = script(cpu.machine());
+			scr.dynamic_call_array(instr.Itype.imm);
+		},
+		[](char* buffer, size_t len, auto&, rv32i_instruction instr)
+		{
+			return snprintf(
+				buffer, len, "DYNCALL: 4-byte 0x%X (0x%X)", instr.opcode(),
+				instr.whole);
+		}};
 	// A custom intruction used to handle dynamic arguments
 	// to the dynamic system call.
 	using namespace riscv;
-	static const Instruction<MARCH> custom_instruction_handler {
+	static const Instruction<MARCH> dynargs_instruction_handler {
 		[](CPU<MARCH>& cpu, rv32i_instruction instr)
 		{
 			auto& scr = script(cpu.machine());
@@ -287,9 +298,13 @@ void Script::setup_syscall_interface()
 	CPU<MARCH>::on_unimplemented_instruction
 		= [](rv32i_instruction instr) -> const Instruction<MARCH>&
 	{
+		if (instr.opcode() == 0b1011011)
+		{
+			return dyncall_instruction_handler;
+		}
 		if (instr.opcode() == 0b0001011)
 		{
-			return custom_instruction_handler;
+			return dynargs_instruction_handler;
 		}
 		return CPU<MARCH>::get_unimplemented_instruction();
 	};

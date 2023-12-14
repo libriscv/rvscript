@@ -48,13 +48,13 @@ static void inline_dyncall_handler()
 static void opaque_dyncall_args_x4()
 {
 	sys_empty();
-	sys_testing123(4, 5, 6, 7.0, 8.0, 9.0);
+	sys_testing123(4, 5, 6, 7.0f, 8.0f, 9.0f);
 	sys_empty();
-	sys_testing123(4, 5, 6, 7.0, 8.0, 9.0);
+	sys_testing123(4, 5, 6, 7.0f, 8.0f, 9.0f);
 	sys_empty();
-	sys_testing123(4, 5, 6, 7.0, 8.0, 9.0);
+	sys_testing123(4, 5, 6, 7.0f, 8.0f, 9.0f);
 	sys_empty();
-	sys_testing123(4, 5, 6, 7.0, 8.0, 9.0);
+	sys_testing123(4, 5, 6, 7.0f, 8.0f, 9.0f);
 	return_fast();
 }
 
@@ -101,8 +101,8 @@ PUBLIC(void benchmarks())
 	measure("Direct thread creation overhead", direct_thread_function);
 	measure("Dynamic call handler x4 (inline)", inline_dyncall_handler);
 	measure("Dynamic call handler x4 (call)", opaque_dyncall_handler);
-	measure("Dynamic call args x4 (inline)", inline_dyncall_args_x4);
-	measure("Dynamic call args x4 (call)", opaque_dyncall_args_x4);
+	measure("Dynamic call args x8 (inline)", inline_dyncall_args_x4);
+	measure("Dynamic call args x8 (call)", opaque_dyncall_args_x4);
 
 	//benchmark_multiprocessing();
 }

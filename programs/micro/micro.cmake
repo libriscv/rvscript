@@ -61,6 +61,8 @@ function (add_micro_binary NAME ORG)
 	target_link_libraries(${NAME} frozen::frozen)
 	target_link_libraries(${NAME} "-Wl,-Ttext-segment=${ORG}")
 	target_link_libraries(${NAME} "-Wl,--wrap=exit")
+	# The dynamic call table sometimes gets removed by linker GC
+	target_link_libraries(${NAME} "-Wl,-u,dyncall_table")
 	# place ELF into the sub-projects source folder
 	set_target_properties(${NAME}
 		PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"

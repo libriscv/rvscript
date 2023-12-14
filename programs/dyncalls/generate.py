@@ -70,7 +70,7 @@ def find_arguments(string):
 		fargs.pop()
 	return fargs
 
-def emit_inline_assembly(header, asmdef, crc, fargs):
+def emit_inline_assembly(header, asmdef, index, fargs):
 	retval = fargs[0]
 	fargs.pop(0)
 
@@ -90,8 +90,6 @@ def emit_inline_assembly(header, asmdef, crc, fargs):
 		asm_regs += "register " + retval + " ra0 asm(\"a0\");\n"
 		asm_out = ["\"=r\"(ra0)"]
 
-	#asm_regs += "register const char* t0 asm(\"t1\") = \"" + key + "\";\n"
-	asm_regs += "register uint32_t a7 asm(\"a7\") = 0x" + crc + ";\n"
 	asm_clob += []
 
 	for arg in fargs:
@@ -110,11 +108,12 @@ def emit_inline_assembly(header, asmdef, crc, fargs):
 		fargs[areg ] = arg + " arg" + str(areg)
 		areg += 1
 
-	asm_in += ["\"r\"(a7)"]
+	asm_in += []
 
 	header += "static inline " + retval + " i" + asmdef + " (" + ','.join(fargs) + ') {\n'
 	header += asm_regs
-	header += "__asm__ volatile(\"ecall\" : " + ",".join(asm_out) + " : " + ",".join(asm_in) + " : " + ",".join(asm_clob) + ");\n"
+	header += '__asm__ volatile(\".insn i 0b1011011, 0, x0, x0, ' + str(index) + "\"" \
+		+ " : " + ",".join(asm_out) + " : " + ",".join(asm_in) + " : " + ",".join(asm_clob) + ");\n"
 	if has_output:
 		header += "return ra0;\n"
 	header += "}" + '\n'
@@ -146,10 +145,7 @@ header += "\n"
 source = '__asm__(".section .text\\n");\n\n'
 dyncallindex = 0
 
-dyncall = '__asm__("\\n\\\n'
-dyncall += '.pushsection .rodata\\n\\\n'
-dyncall += '.global dyncall_table\\n\\\n'
-dyncall += 'dyncall_table:\\n\\\n'
+dyncall = ""
 
 # create dyncall prototypes and assembly
 for key in j:
@@ -174,22 +170,23 @@ for key in j:
 		## the return value, we can produce perfect
 		## inline assembly that allows the compiler
 		## room to optimize better.
-		(header, inlined) = emit_inline_assembly(header, asmname, crc, fargs)
+		(header, inlined) = emit_inline_assembly(header, asmname, dyncallindex, fargs)
 
 		if args.verbose:
 			print("Dynamic call: " + key + ", hash 0x" + crc + (" (inlined)" if inlined else ""))
 
-		dyncall += '  .word 0x' + crc + '\\n\\\n'
-		dyncall += '  .word ' + str(0) + '\\n\\\n'
-		dyncall += '  .dword ' + asmname + '_str\\n\\\n'
+		dyncall += '  .long 0x' + crc + '\\n\\\n'
+		dyncall += '  .long ' + str(0) + '\\n\\\n'
+		dyncall += '  .long ' + asmname + '_str\\n\\\n'
 
+		# These dynamic calls use the table indexed variant
+		# Each dynamic call has a table index where the name and hash is stored
+		# and at run-time this value is lazily resolved
 		source += '__asm__("\\n\\\n'
 		source += '.global ' + asmname + '\\n\\\n'
 		source += '.func ' + asmname + '\\n\\\n'
 		source += asmname + ':\\n\\\n'
-		source += '  li t0, ' + str(dyncallindex) + '\\n\\\n'
-		source += '  li a7, ' + str(args.dyncall) + '\\n\\\n'
-		source += '  ecall\\n\\\n'
+		source += '  .insn i 0b1011011, 0, x0, x0, ' + str(dyncallindex) + '\\n\\\n'
 		source += '  ret\\n\\\n'
 		source += '.endfunc\\n\\\n'
 		source += '.pushsection .rodata\\n\\\n'
@@ -204,12 +201,23 @@ header += """
 #ifdef __cplusplus
 }
 #endif
-""";
+"""
 
+dyncall_header =  '__asm__("\\n\\\n'
+dyncall_header += '.pushsection .rodata\\n\\\n'
+dyncall_header += '.align 8\\n\\\n'
+dyncall_header += '.global dyncall_table\\n\\\n'
+dyncall_header += 'dyncall_table:\\n\\\n'
+dyncall_header += '  .long ' + str(dyncallindex) + '\\n\\\n'
+
+dyncall = dyncall_header + dyncall
 dyncall += '.popsection\\n\\\n'
 dyncall += '");\n\n'
 
 source += dyncall
+
+if (args.verbose):
+	print("* There are " + str(dyncallindex) + " dynamic calls")
 
 if (args.print_sources):
 	print(header)

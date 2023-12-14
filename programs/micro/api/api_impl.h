@@ -319,7 +319,7 @@ dynamic_call(const uint32_t hash, const char* name, Args&&... args)
 
 	register long a0 asm("a0");
 	register float fa0 asm("fa0");
-	register long syscall_id asm("a7") = ECALL_DYNCALL2;
+	register long syscall_id asm("a7") = ECALL_DYNARGS;
 
 	for (unsigned i = 0; i < argc; i++)
 	{

@@ -54,7 +54,8 @@ struct Script
 	static void
 	reset_dynamic_call(const std::string& name, ghandler_t = nullptr);
 	void dynamic_call(const std::string&);
-	void dynamic_call(uint32_t hash, gaddr_t strname);
+	void dynamic_call_hash(uint32_t hash, gaddr_t strname);
+	void dynamic_call_array(uint32_t idx);
 
 	auto& dynargs()
 	{
@@ -199,6 +200,8 @@ struct Script
 	Script* m_remote_script = nullptr;
 	// dynamic call arguments
 	std::vector<std::any> m_arguments;
+	// dynamic call array
+	std::vector<ghandler_t> m_dyncall_array;
 	/// @brief Functions accessible when remote access is *strict*
 	std::unordered_set<gaddr_t> m_remote_access;
 	// map of functions that extend engine using string hashes

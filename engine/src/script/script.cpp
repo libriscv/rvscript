@@ -159,7 +159,7 @@ void Script::machine_setup()
 		else
 		{
 			// call the handler with register A7 as hash
-			script.dynamic_call(num, 0x0);
+			script.dynamic_call_hash(num, 0x0);
 		}
 	};
 	// Allocate heap area using mmap
@@ -181,6 +181,9 @@ void Script::machine_setup()
 
 	// Install shared memory area and guard pages
 	this->add_shared_memory();
+
+	// Figure out the local indices based on dynamic call table
+	this->resolve_dynamic_calls();
 }
 
 void Script::could_not_find(std::string_view func)
@@ -354,7 +357,7 @@ void Script::set_dynamic_calls(
 	}
 }
 
-void Script::dynamic_call(uint32_t hash, gaddr_t straddr)
+void Script::dynamic_call_hash(uint32_t hash, gaddr_t straddr)
 {
 	auto it = m_dynamic_functions.find(hash);
 	if (LIKELY(it != m_dynamic_functions.end()))
@@ -378,6 +381,15 @@ void Script::dynamic_call(uint32_t hash, gaddr_t straddr)
 	}
 }
 
+void Script::dynamic_call_array(uint32_t idx)
+{
+	if (idx < this->m_dyncall_array.size())
+		this->m_dyncall_array[idx](*this);
+	else
+		throw riscv::MachineException(
+			riscv::INVALID_PROGRAM, "dynamic_call_array(): Index is out of range", idx);
+}
+
 void Script::dynamic_call(const std::string& name)
 {
 	const uint32_t hash = crc32(name.c_str(), name.size());
@@ -393,6 +405,52 @@ void Script::dynamic_call(const std::string& name)
 			strf::hex(hash), "\n");
 		throw std::runtime_error("Unable to find dynamic function: " + name);
 	}
+}
+
+void Script::resolve_dynamic_calls()
+{
+	auto g_table = machine().address_of("dyncall_table");
+	if (g_table == 0x0)
+		throw std::runtime_error(this->name() + ": Unable to find dynamic call table");
+	// Table header contains the number of entries
+	const uint32_t entries = machine().memory.read<uint32_t> (g_table);
+	if (entries > 512)
+		throw std::runtime_error(this->name() + ": Too many dynamic call table entries (bogus value)");
+	// Skip past header
+	g_table += 0x4;
+	// Copy whole table into vector
+	struct DyncallEntry {
+		uint32_t hash;
+		uint32_t resv;
+		uint32_t strname;
+	};
+	std::vector<DyncallEntry> table (entries);
+	machine().copy_from_guest(table.data(), g_table, entries * sizeof(DyncallEntry));
+
+	this->m_dyncall_array.resize(entries);
+
+	for (size_t i = 0; i < entries; i++) {
+		auto& entry = table.at(i);
+
+		this->m_dyncall_array.at(i) = [this, i, entry] (auto&) {
+			// First try to resolve
+			auto it = m_dynamic_functions.find(entry.hash);
+			if (LIKELY(it != m_dynamic_functions.end()))
+			{
+				it->second(*this);
+				m_dyncall_array.at(i) = it->second;
+				return;
+			}
+			// Fail with helpful message
+			const std::string name = this->machine().memory.memstring(entry.strname);
+			strf::to(stderr)(
+				"WARNING: Unimplemented dynamic function '", name, "' with hash ", strf::hex(entry.hash), " and program table index ",
+				this->m_dyncall_array.size(), "\n");
+			throw std::runtime_error("The dynamic call " + name + " has not been implemented");
+		};
+	}
+	if (m_dyncall_array.size() != entries)
+		throw std::runtime_error("Mismatching number of dynamic call array entries");
 }
 
 void Script::set_global_setting(std::string_view setting, gaddr_t value)
