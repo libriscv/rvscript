@@ -347,7 +347,7 @@ void Script::set_dynamic_call(std::string name, std::string def, ghandler_t hand
 		}
 		it->second.func = std::move(handler);
 	} else {
-		m_dynamic_functions.try_emplace(hash, std::move(name), std::move(def), std::move(handler));
+		m_dynamic_functions.try_emplace(hash, HostDyncall{std::move(name), std::move(def), std::move(handler)});
 	}
 }
 
