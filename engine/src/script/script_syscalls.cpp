@@ -262,7 +262,6 @@ void Script::setup_syscall_interface()
 		}};
 	// A custom intruction used to handle dynamic arguments
 	// to the dynamic system call.
-	using namespace riscv;
 	static const Instruction<MARCH> dynargs_instruction_handler {
 		[](CPU<MARCH>& cpu, rv32i_instruction instr)
 		{

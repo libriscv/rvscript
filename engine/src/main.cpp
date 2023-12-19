@@ -172,13 +172,13 @@ int main()
 	/* Test dynamic functions */
 	int called = 0x0;
 	gameplay.set_dynamic_call(
-		"testing",
+		"void sys_testing ()",
 		[&](auto&)
 		{
 			called |= 0x1;
 		});
 	gameplay.set_dynamic_call(
-		"testing_strings",
+		"void sys_testing_strings (const char*, const char*, size_t)",
 		[&](auto& s)
 		{
 			// Argument 1: A heap-allocated string
@@ -191,7 +191,7 @@ int main()
 			}
 		});
 	gameplay.set_dynamic_call(
-		"testing123",
+		"void sys_testing123 (int, int, int, float, float, float)",
 		[&](auto& s)
 		{
 			const auto [arg1, arg2, arg3, arg4, arg5, arg6]
@@ -209,19 +209,12 @@ int main()
 		exit(1);
 	}
 
-	// INVALID (Duplicate hash):
-	// gameplay.set_dynamic_call("empty", [] (auto&) {});
-	// This will replace the function:
-	gameplay.reset_dynamic_call("empty", [](auto&) {});
-	// This will remove the function:
-	gameplay.reset_dynamic_call("empty");
-
 	strf::to(stdout)("* Dynamic call tests passed!\n");
 
 	if (Script::get_global_setting("benchmarks").value_or(false))
 	{
 		// Create an dynamic function for benchmarking
-		gameplay.set_dynamic_call("empty", [](auto&) {});
+		gameplay.set_dynamic_call("void sys_empty ()", [](auto&) {});
 
 		// Benchmarks of various features
 		gameplay.call("benchmarks");
@@ -238,13 +231,6 @@ int main()
 					.use_memory_arena = true
 				};
 				riscv::Machine<Script::MARCH> fork { gameplay.machine(), options };
-			});
-		strf::to(stdout)("Benchmarking Script instance fork:\n");
-		Script::benchmark(
-			[&gameplay]
-			{
-				// Create a new Script instance based on the underlying virtual machine
-				Script {gameplay.machine(), nullptr, "name", "file"};
 			});
 	}
 

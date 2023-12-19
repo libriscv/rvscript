@@ -14,14 +14,14 @@ void setup_timer_system()
 	// and other low level things, and gives us a nice API
 	// with a std::function to work with.
 	Script::set_dynamic_calls({
-		{"Timer::stop",
+		{"Timer::stop", "void sys_timer_stop (int)",
 		 [](Script& script)
 		 {
 			 // Stop timer
 			 const auto [timer_id] = script.machine().sysargs<int>();
 			 timers.stop(timer_id);
 		 }},
-		{"Timer::periodic",
+		{"Timer::periodic", "int sys_timer_periodic (float, float, timer_callback, void*, size_t)",
 		 [](Script& script)
 		 {
 			 // Periodic timer

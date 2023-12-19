@@ -10,7 +10,7 @@ void setup_gui_system(MainScreen& screen)
 	using gaddr_t = Script::gaddr_t;
 
 	Script::set_dynamic_calls({
-		{"GUI::find",
+		{"GUI::find", "unsigned sys_gui_find   (const char *)",
 		 [&screen](Script& script)
 		 {
 			 const auto [text] = script.machine().sysargs<std::string>();
@@ -30,7 +30,7 @@ void setup_gui_system(MainScreen& screen)
 
 			 script.machine().set_result(-1);
 		 }},
-		{"GUI::window",
+		{"GUI::window", "unsigned sys_gui_window (const char *)",
 		 [&screen](Script& script)
 		 {
 			 const auto [title] = script.machine().sysargs<std::string>();
@@ -41,7 +41,7 @@ void setup_gui_system(MainScreen& screen)
 
 			 script.machine().set_result(idx);
 		 }},
-		{"GUI::button",
+		{"GUI::button", "unsigned sys_gui_button (unsigned, const char *)",
 		 [&screen](Script& script)
 		 {
 			 const auto [widx, text]
@@ -54,7 +54,7 @@ void setup_gui_system(MainScreen& screen)
 
 			 script.machine().set_result(idx);
 		 }},
-		{"GUI::label",
+		{"GUI::label", "unsigned sys_gui_label (unsigned, const char *)",
 		 [&screen](Script& script)
 		 {
 			 const auto [widx, text]
@@ -67,7 +67,7 @@ void setup_gui_system(MainScreen& screen)
 
 			 script.machine().set_result(idx);
 		 }},
-		{"GUI::widget_set_pos",
+		{"GUI::widget_set_pos", "void sys_gui_widget_set_pos (unsigned, int, int)",
 		 [&screen](Script& script)
 		 {
 			 const auto [widx, x, y]
@@ -76,7 +76,7 @@ void setup_gui_system(MainScreen& screen)
 			 nanogui::Widget* widget = screen.getw(widx);
 			 widget->set_position({x, y});
 		 }},
-		{"GUI::widget_callback",
+		{"GUI::widget_callback", "void sys_gui_widget_callback (unsigned, gui_callback, void *, size_t)",
 		 [&screen](Script& script)
 		 {
 			 auto& machine = script.machine();

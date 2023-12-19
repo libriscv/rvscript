@@ -48,12 +48,10 @@ struct Script
 
 	// Install a callback function using a string name
 	// Can be invoked from the guest using the same string name
-	static void set_dynamic_call(const std::string& name, ghandler_t);
+	static void set_dynamic_call(const std::string& def, ghandler_t);
+	static void set_dynamic_call(std::string name, std::string def, ghandler_t);
 	static void
-		set_dynamic_calls(std::vector<std::pair<std::string, ghandler_t>>);
-	static void
-	reset_dynamic_call(const std::string& name, ghandler_t = nullptr);
-	void dynamic_call(const std::string&);
+		set_dynamic_calls(std::vector<std::tuple<std::string, std::string, ghandler_t>>);
 	void dynamic_call_hash(uint32_t hash, gaddr_t strname);
 	void dynamic_call_array(uint32_t idx);
 
@@ -181,6 +179,7 @@ struct Script
 	void machine_setup();
 	void machine_remote_setup();
 	void resolve_dynamic_calls();
+	void dynamic_call_error(uint32_t idx, const std::exception& e);
 	static long finish_benchmark(std::vector<long>&);
 
 	std::unique_ptr<machine_t> m_machine = nullptr;
@@ -198,14 +197,26 @@ struct Script
 	bool m_last_newline		= true;
 	int m_budget_overruns	= 0;
 	Script* m_remote_script = nullptr;
+	/// @brief Functions accessible when remote access is *strict*
+	std::unordered_set<gaddr_t> m_remote_access;
 	// dynamic call arguments
 	std::vector<std::any> m_arguments;
 	// dynamic call array
+	struct DyncallDesc {
+		uint32_t hash;
+		uint32_t resv;
+		uint32_t strname;
+	};
 	std::vector<ghandler_t> m_dyncall_array;
-	/// @brief Functions accessible when remote access is *strict*
-	std::unordered_set<gaddr_t> m_remote_access;
-	// map of functions that extend engine using string hashes
-	static inline std::unordered_map<uint32_t, ghandler_t> m_dynamic_functions;
+	gaddr_t m_g_dyncall_table = 0x0;
+	// Map of functions that extend engine using string hashes
+	// The host-side implementation:
+	struct HostDyncall {
+		std::string name;
+		std::string definition;
+		ghandler_t  func;
+	};
+	static inline std::map<uint32_t, HostDyncall> m_dynamic_functions;
 	// map of globally accessible run-time settings
 	static inline std::unordered_map<uint32_t, gaddr_t> m_runtime_settings;
 	static inline exit_func_t m_exit = nullptr;
@@ -218,7 +229,6 @@ static_assert(
 template <typename... Args>
 inline long Script::call(gaddr_t address, Args&&... args)
 {
-	machine().reset_instruction_counter();
 	try
 	{
 		return machine().vmcall<MAX_INSTRUCTIONS>(
@@ -249,8 +259,8 @@ inline long Script::preempt(gaddr_t address, Args&&... args)
 	const auto regs = machine().cpu.registers();
 	try
 	{
-		const long ret = machine().preempt<MAX_INSTRUCTIONS, true, false>(
-			address, std::forward<Args>(args)...);
+		const long ret = machine().preempt<true, false>(
+			MAX_INSTRUCTIONS, address, std::forward<Args>(args)...);
 		machine().cpu.registers() = regs;
 		return ret;
 	}
@@ -266,7 +276,7 @@ inline void Script::resume(uint64_t cycles)
 {
 	try
 	{
-		machine().simulate<false>(cycles);
+		machine().resume<false>(cycles);
 	}
 	catch (const std::exception& e)
 	{

@@ -114,7 +114,7 @@ void Script::gdb_remote_debugging(
 void setup_debugging_system()
 {
 	Script::set_dynamic_calls(
-		{{"Debug::breakpoint",
+		{{"Debug::breakpoint", "void sys_breakpoint (uint16_t, const char*)",
 		  [](Script& script)
 		  {
 			  auto& machine = script.machine();
@@ -140,7 +140,8 @@ void setup_debugging_system()
 					  (void*)machine.cpu.pc(), "\n");
 			  }
 		  }},
-		 {"Debug::is_debug", [](Script& script)
+		 {"Debug::is_debug", "int sys_is_debug ()",
+		  [](Script& script)
 		  {
 			  auto& machine = script.machine();
 			  machine.set_result(script.is_debug());

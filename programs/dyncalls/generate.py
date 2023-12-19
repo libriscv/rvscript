@@ -155,12 +155,7 @@ for key in j:
 
 		fargs = find_arguments(asmdef)
 
-		## CRC32 cannot be < 600, as that would
-		## collide with other system call numbers
-		crcval = crc32(key) & 0xffffffff
-		if crcval < 600:
-			print("ERROR: Dynamic call '" + key + "' has a collision, ignored!")
-			continue
+		crcval = crc32(asmdef) & 0xffffffff
 		crc = '%08x' % crcval
 
 		header += "// " + key + ": 0x" + crc + "\n"
