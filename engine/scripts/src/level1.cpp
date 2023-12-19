@@ -56,7 +56,15 @@ void do_benchmarks()
 		});
 
 	measure(
-		"Dynamic call (no arguments)",
+		"Dynamic call (inline, no arguments)",
+		[]
+		{
+			isys_empty();
+			return_fast();
+		});
+
+	measure(
+		"Dynamic arguments (no arguments)",
 		[]
 		{
 			DYNCALL("Test::void");
@@ -64,7 +72,7 @@ void do_benchmarks()
 		});
 
 	measure(
-		"Dynamic call (4x arguments)",
+		"Dynamic arguments (4x arguments)",
 		[]
 		{
 			DYNCALL("Test::void", 1234, 5678.0, 4321, 8765.0);

@@ -335,20 +335,7 @@ void Script::set_dynamic_call(std::string name, std::string def, ghandler_t hand
 {
 	// Uses the definition as hash
 	const uint32_t hash = crc32(def.c_str(), def.size());
-	auto it				= m_dynamic_functions.find(hash);
-	if (it != m_dynamic_functions.end())
-	{
-		if (it->second.name != name) {
-			strf::to(stderr)(
-				"Dynamic function ", name, " with hash ", strf::hex(hash),
-				" already exists with another name ", it->second.name, "\n");
-			throw std::runtime_error(
-				"Script::set_dynamic_call failed: Hash collision for " + name);
-		}
-		it->second.func = std::move(handler);
-	} else {
-		m_dynamic_functions.try_emplace(hash, HostDyncall{std::move(name), std::move(def), std::move(handler)});
-	}
+	m_dynamic_functions[hash] = HostDyncall{std::move(name), std::move(def), std::move(handler)};
 }
 
 void Script::set_dynamic_calls(
@@ -473,23 +460,15 @@ void Script::resolve_dynamic_calls()
 
 void Script::set_global_setting(std::string_view setting, gaddr_t value)
 {
-	const uint32_t hash = riscv::crc32c(setting.begin(), setting.size());
-
-	m_runtime_settings[hash] = value;
-}
-
-std::optional<gaddr_t> Script::get_global_setting(uint32_t hash)
-{
-	auto it = m_runtime_settings.find(hash);
-	if (it != m_runtime_settings.end())
-		return it->second;
-	return std::nullopt;
+	m_runtime_settings.insert_or_assign(std::string(setting), value);
 }
 
 std::optional<gaddr_t> Script::get_global_setting(std::string_view setting)
 {
-	const uint32_t hash = riscv::crc32c(setting.begin(), setting.size());
-	return get_global_setting(hash);
+	auto it = m_runtime_settings.find(setting);
+	if (it != m_runtime_settings.end())
+		return it->second;
+	return std::nullopt;
 }
 
 gaddr_t Script::guest_alloc(gaddr_t bytes)

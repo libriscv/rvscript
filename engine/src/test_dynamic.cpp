@@ -3,7 +3,11 @@
 
 void setup_dynamic_calls()
 {
-	Script::set_dynamic_call("Test::void", [](Script&) {});
+	Script::set_dynamic_call("empty",
+		"void sys_empty ()", [](Script&) {});
+
+	Script::set_dynamic_call("Test::void",
+		[](Script&) {});
 
 	Script::set_dynamic_call(
 		"Test::my_dynamic_call",
