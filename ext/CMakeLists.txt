@@ -1,8 +1,9 @@
 
 # libriscv
-option(RISCV_EXPERIMENTAL "" ON)
+option(RISCV_32I "" OFF)
+option(RISCV_64I "" ON)
 option(RISCV_FLAT_RW_ARENA "" ON)
-option(RISCV_MULTIPROCESS "" OFF)
+option(RISCV_EXPERIMENTAL "" OFF)
 option(RISCV_MEMORY_TRAPS "" OFF)
 
 add_subdirectory(libriscv/lib)

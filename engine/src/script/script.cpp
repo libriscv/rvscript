@@ -51,9 +51,10 @@ bool Script::reset()
 		riscv::MachineOptions<MARCH> options {
 			.memory_max		  = MAX_MEMORY,
 			.stack_size		  = STACK_SIZE,
-			.use_memory_arena = true
+			.use_memory_arena = (m_source_machine.memory.start_address() < MAX_MEMORY),
+			.default_exit_function = "fast_exit",
 		};
-		m_machine.reset(new machine_t(m_source_machine, options));
+		m_machine.reset(new machine_t(m_source_machine.memory.binary(), options));
 
 		// setup system calls and traps
 		this->machine_setup();
@@ -94,19 +95,13 @@ bool Script::initialize()
 	// run through the initialization
 	try
 	{
-#ifdef RISCV_DEBUG
-		// Verbose debugging with DEBUG=1 ./engine
-		if (getenv("DEBUG"))
-			machine().verbose_instructions = true;
-#endif
 		machine().simulate<false>(MAX_INSTRUCTIONS);
 
 		if (UNLIKELY(machine().instruction_limit_reached()))
 		{
 			strf::to(stderr)(
 				">>> Exception: Instruction limit reached on ", name(), "\n",
-				"Instruction count: ", machine().instruction_counter(), "/",
-				machine().max_instructions(), "\n");
+				"Instruction count: ", machine().max_instructions(), "\n");
 			return false;
 		}
 	}
@@ -115,13 +110,9 @@ bool Script::initialize()
 		strf::to(stderr)(
 			">>> Machine exception ", me.type(), ": ", me.what(),
 			" (data: ", strf::hex(me.data()), "\n");
-#ifdef RISCV_DEBUG
-		m_machine->print_and_pause();
-#else
 		// Remote debugging with DEBUG=1 ./engine
 		if (getenv("DEBUG"))
 			gdb_remote_debugging("", false);
-#endif
 		return false;
 	}
 	catch (std::exception& e)
@@ -154,15 +145,7 @@ void Script::machine_setup()
 	machine().on_unhandled_syscall = [](machine_t& machine, size_t num)
 	{
 		auto& script = *machine.get_userdata<Script>();
-		if (UNLIKELY(num < 600))
-		{
-			strf::to(stderr)(script.name(), ": Unhandled system call: ", num, "\n");
-		}
-		else
-		{
-			// call the handler with register A7 as hash
-			script.dynamic_call_hash(num, 0x0);
-		}
+		strf::to(stderr)(script.name(), ": Unhandled system call: ", num, "\n");
 	};
 	// Allocate heap area using mmap
 	if (m_heap_area == 0x0)

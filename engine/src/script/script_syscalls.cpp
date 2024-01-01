@@ -33,7 +33,7 @@ APICALL(assert_fail)
 APICALL(api_write)
 {
 	auto [address, len]	 = machine.sysargs<gaddr_t, uint32_t>();
-	const uint32_t len_g = std::min(1024u, (uint32_t)len);
+	const uint32_t len_g = std::min(4096u, (uint32_t)len);
 
 	auto& scr = script(machine);
 	if (scr.machine().is_multiprocessing())
@@ -41,23 +41,16 @@ APICALL(api_write)
 		machine.set_result(-1);
 		return;
 	}
-	if (scr.stdout_enabled() == false)
+
+	if (scr.stdout_enabled())
 	{
-		machine.set_result(len_g);
-		return;
+		std::array<riscv::vBuffer, 16> buffers;
+		const size_t cnt =
+			machine.memory.gather_buffers_from_range(buffers.size(), buffers.data(), address, len_g);
+		for (size_t i = 0; i < cnt; i++)
+			machine.print(buffers[i].ptr, buffers[i].len);
 	}
 
-	machine.memory.foreach (
-		address, len_g,
-		[&scr](auto&, auto, const uint8_t* data, size_t len)
-		{
-			if (data == nullptr)
-			{
-				strf::to(stderr)("[", scr.name(), "] had an illegal write\n");
-				return;
-			}
-			scr.print(std::string_view((const char*)data, len));
-		});
 	machine.set_result(len_g);
 }
 
