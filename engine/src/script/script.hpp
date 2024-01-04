@@ -8,25 +8,27 @@ template <typename T> struct GuestObjects;
 
 struct Script
 {
-	static constexpr int MARCH				   = RISCV_ARCH / 8;
-	using gaddr_t							   = riscv::address_type<MARCH>;
-	using machine_t							   = riscv::Machine<MARCH>;
-	using ghandler_t						   = std::function<void(Script&)>;
-	using exit_func_t                          = std::function<void(Script&)>;
-	static constexpr gaddr_t MAX_MEMORY		   = 1024 * 1024 * 16ul;
-	static constexpr gaddr_t MAX_HEAP		   = 1024 * 1024 * 256ul;
-	static constexpr uint64_t MAX_INSTRUCTIONS = 8000000;
+	static constexpr int MARCH = RISCV_ARCH / 8;
+	using gaddr_t		= riscv::address_type<MARCH>;
+	using machine_t		= riscv::Machine<MARCH>;
+	using ghandler_t	= std::function<void(Script&)>;
+	using exit_func_t 	= std::function<void(Script&)>;
+	static constexpr gaddr_t MAX_MEMORY	= 1024 * 1024 * 16ull;
+	static constexpr gaddr_t MAX_HEAP	= 1024 * 1024 * 256ull;
+	static constexpr uint64_t MAX_INSTR = 32'000'000ull;
 
 	// Call any script function, with any parameters
 	template <typename... Args>
-	inline long call(const std::string& name, Args&&...);
+	long call(const std::string& name, Args&&...);
 
-	template <typename... Args> inline long call(gaddr_t addr, Args&&...);
+	template <typename... Args>
+	long call(gaddr_t addr, Args&&...);
 
-	template <typename... Args> inline long preempt(gaddr_t addr, Args&&...);
+	template <typename... Args>
+	long preempt(gaddr_t addr, Args&&...);
 
 	// Run for a bit, then stop
-	inline void resume(uint64_t instruction_count);
+	void resume(uint64_t instruction_count);
 
 	template <typename T> T* userptr() noexcept
 	{
@@ -166,7 +168,7 @@ struct Script
 	static void setup_syscall_interface();
 	bool initialize();
 	Script(
-		const machine_t&, void* userptr, const std::string& name,
+		const std::vector<uint8_t>& binary, void* userptr, const std::string& name,
 		const std::string& filename, bool = false);
 	~Script();
 
@@ -182,7 +184,7 @@ struct Script
 	static long finish_benchmark(std::vector<long>&);
 
 	std::unique_ptr<machine_t> m_machine = nullptr;
-	const machine_t& m_source_machine;
+	const std::vector<uint8_t>& m_binary;
 	void* m_userptr;
 	gaddr_t m_heap_area		   = 0;
 	gaddr_t m_tick_event	   = 0;
@@ -200,7 +202,7 @@ struct Script
 	std::unordered_set<gaddr_t> m_remote_access;
 	// dynamic call arguments
 	std::vector<std::any> m_arguments;
-	// dynamic call array
+	// dynamic call array, lazily resolved at run-time
 	struct DyncallDesc {
 		uint32_t hash;
 		uint32_t resv;
@@ -230,7 +232,7 @@ inline long Script::call(gaddr_t address, Args&&... args)
 {
 	try
 	{
-		return machine().vmcall<MAX_INSTRUCTIONS>(
+		return machine().vmcall<MAX_INSTR>(
 			address, std::forward<Args>(args)...);
 	}
 	catch (const std::exception& e)
@@ -259,7 +261,7 @@ inline long Script::preempt(gaddr_t address, Args&&... args)
 	try
 	{
 		const long ret = machine().preempt<true, false>(
-			MAX_INSTRUCTIONS, address, std::forward<Args>(args)...);
+			MAX_INSTR, address, std::forward<Args>(args)...);
 		machine().cpu.registers() = regs;
 		return ret;
 	}

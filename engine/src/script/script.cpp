@@ -25,9 +25,9 @@ static const std::vector<std::string> env = {
 using riscv::crc32;
 
 Script::Script(
-	const machine_t& smach, void* userptr, const std::string& name,
+	const std::vector<uint8_t>& binary, void* userptr, const std::string& name,
 	const std::string& filename, bool debug)
-  : m_source_machine(smach), m_userptr(userptr), m_name(name),
+  : m_binary(binary), m_userptr(userptr), m_name(name),
 	m_filename(filename), m_hash(crc32(name.c_str(), name.size())), m_is_debug(debug)
 {
 	static bool init = false;
@@ -47,14 +47,14 @@ bool Script::reset()
 	// m_machine.reset() will not happen if new machine_t fails
 	try
 	{
-		// Fork the source machine into m_machine */
+		// Create a new machine based on m_binary */
 		riscv::MachineOptions<MARCH> options {
 			.memory_max		  = MAX_MEMORY,
 			.stack_size		  = STACK_SIZE,
-			.use_memory_arena = (m_source_machine.memory.start_address() < MAX_MEMORY),
+			.use_memory_arena = true,
 			.default_exit_function = "fast_exit",
 		};
-		m_machine.reset(new machine_t(m_source_machine.memory.binary(), options));
+		m_machine.reset(new machine_t(m_binary, options));
 
 		// setup system calls and traps
 		this->machine_setup();
@@ -95,7 +95,7 @@ bool Script::initialize()
 	// run through the initialization
 	try
 	{
-		machine().simulate<false>(MAX_INSTRUCTIONS);
+		machine().simulate<false>(MAX_INSTR);
 
 		if (UNLIKELY(machine().instruction_limit_reached()))
 		{

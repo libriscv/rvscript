@@ -3,29 +3,15 @@
 #include <stdexcept>
 #include <string_view>
 
-template <int W> struct MachineData
+template <int W> struct ProgramBinary
 {
-	// Disabling the (faster) memory arena in the source VM will
-	// allow us to enable memory arenas in the forks!
-	static inline const riscv::MachineOptions<W> options {
-		.use_memory_arena = false,
-		//.default_exit_function = "fast_exit"
-		};
-
-	MachineData(
+	ProgramBinary(
 		std::vector<uint8_t> b, const std::string& fn)
-	  : binary {std::move(b)}, machine {binary, options}, filename {fn}
-	{
-	}
-
-	MachineData(
-		std::vector<uint8_t> b, const std::string& fn, bool)
-	  : binary {std::move(b)}, machine {binary, options}, filename {fn}
+	  : binary {std::move(b)}, filename {fn}
 	{
 	}
 
 	const std::vector<uint8_t> binary;
-	const riscv::Machine<W> machine;
 	const std::string filename;
 };
 
@@ -55,7 +41,7 @@ template <int W> struct Blackbox
 	static std::vector<uint8_t> load_file(const std::string&);
 
   private:
-	std::map<std::string, MachineData<W>> m_data;
+	std::map<std::string, ProgramBinary<W>> m_data;
 };
 
 template <int W>
@@ -63,7 +49,6 @@ inline void Blackbox<W>::insert_binary(
 	const std::string& name, const std::string& binpath)
 {
 	const auto binary = load_file(binpath);
-	// insert into map
 	m_data.emplace(
 		std::piecewise_construct, std::forward_as_tuple(name),
 		std::forward_as_tuple(std::move(binary), binpath));
@@ -75,10 +60,9 @@ inline void Blackbox<W>::insert_embedded_binary(
 	const std::string_view binary)
 {
 	const std::vector<uint8_t> binvec {binary.begin(), binary.end()};
-	// insert into map
 	m_data.emplace(
 		std::piecewise_construct, std::forward_as_tuple(name),
-		std::forward_as_tuple(std::move(binvec), filename, true));
+		std::forward_as_tuple(std::move(binvec), filename));
 }
 
 template <int W>

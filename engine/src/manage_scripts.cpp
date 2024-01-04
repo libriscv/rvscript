@@ -17,7 +17,7 @@ Scripts::create(const std::string& name, const std::string& bbname, bool debug)
 		std::piecewise_construct,
 		std::forward_as_tuple(riscv::crc32(name.c_str())),
 		std::forward_as_tuple(
-			box.machine, nullptr, name, box.filename, debug));
+			box.binary, nullptr, name, box.filename, debug));
 
 	auto& script = it.first->second;
 	script.initialize();
