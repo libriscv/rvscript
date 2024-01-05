@@ -116,7 +116,7 @@ void do_remote_stuff()
 				"Key ", key, " has value: ", gameplay_state.strings[key],
 				"\n");
 			// This value cannot be read because the GP register is changed during the remote call
-			print("Local value: ", local_value, "\n");
+			print("Local GP-relative value: ", local_value, " (Cannot be read)\n");
 		});
 
 	gameplay_exec(

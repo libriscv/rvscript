@@ -48,7 +48,7 @@ APICALL(api_write)
 		const size_t cnt =
 			machine.memory.gather_buffers_from_range(buffers.size(), buffers.data(), address, len_g);
 		for (size_t i = 0; i < cnt; i++)
-			machine.print(buffers[i].ptr, buffers[i].len);
+			scr.print(std::string_view{(const char *)buffers[i].ptr, buffers[i].len});
 	}
 
 	machine.set_result(len_g);

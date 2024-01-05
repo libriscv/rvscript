@@ -15,10 +15,21 @@ void Script::machine_remote_setup()
 			[this,
 			 pages_max](auto& mem, const auto page, bool init) -> riscv::Page&
 			{
-				if (page * riscv::Page::size() < REMOTE_IMG_BASE)
+				const auto addr = page * riscv::Page::size();
+				if (addr < REMOTE_IMG_BASE)
 				{
 					// Normal path: Create and insert new page
-					if (mem.pages_active() < pages_max)
+					if (addr < mem.memory_arena_size())
+					{
+						const riscv::PageAttributes attr {
+							.read  = true,
+							.write = true,
+							.non_owning = true
+						};
+						auto* pdata = (riscv::PageData *)mem.memory_arena_ptr();
+						return mem.allocate_page(page, attr, &pdata[page]);
+					}
+					else if (mem.pages_active() < pages_max)
 					{
 						return mem.allocate_page(
 							page, init ? riscv::PageData::INITIALIZED
@@ -36,7 +47,7 @@ void Script::machine_remote_setup()
 				throw std::runtime_error("No script for remote page fault");
 			});
 		machine().memory.set_page_readf_handler(
-			[&](auto&, auto pageno) -> const riscv::Page&
+			[&](auto& mem, auto pageno) -> const riscv::Page&
 			{
 				// In order to differentiate between normal
 				// execution and remote calls we will compare
@@ -50,7 +61,7 @@ void Script::machine_remote_setup()
 						pageno);
 				}
 
-				return riscv::Page::cow_page();
+				return riscv::Memory<MARCH>::default_page_read(mem, pageno);
 			});
 	} // level machine
 	else
@@ -124,10 +135,10 @@ void Script::setup_remote_calls_to(Script& dest)
 				auto& m = dest_script->machine();
 
 #if 0
-			// Copy all registers to destination
-			m.cpu.registers().copy_from(
-				riscv::Registers<MARCH>::Options::NoVectors,
-				cpu.registers());
+				// Copy all registers to destination
+				m.cpu.registers().copy_from(
+					riscv::Registers<MARCH>::Options::NoVectors,
+					cpu.registers());
 #else
 				// Copy only argument registers to destination
 				for (int i = 0; i < 8; i++)
@@ -147,13 +158,16 @@ void Script::setup_remote_calls_to(Script& dest)
 				old_read_handler = m.memory.set_page_readf_handler(
 					[&](auto&, auto pageno) -> const riscv::Page&
 					{
+						auto& remote_mem = cpu.machine().memory;
+
 						if (pageno * riscv::Page::size() < REMOTE_IMG_BASE)
 						{
 							// The page is in the callers image space
 							// so get the page from the caller:
-							return cpu.machine().memory.get_pageno(pageno);
+							return remote_mem.get_pageno(pageno);
 						}
-						return riscv::Page::cow_page();
+
+						return remote_mem.default_page_read(remote_mem, pageno);
 					});
 
 				riscv::Memory<MARCH>::page_fault_cb_t old_fault_handler;
@@ -161,8 +175,7 @@ void Script::setup_remote_calls_to(Script& dest)
 				// image base become writes to this Script machine instead.
 				// If they are larger than its base, they become normal pages.
 				old_fault_handler = m.memory.set_page_fault_handler(
-					[&](auto& mem, const auto pageno,
-						bool init) -> riscv::Page&
+					[&](auto& mem, const auto pageno, bool init) -> riscv::Page&
 					{
 						if (pageno * riscv::Page::size() < REMOTE_IMG_BASE)
 						{

@@ -148,10 +148,7 @@ void Script::machine_setup()
 		strf::to(stderr)(script.name(), ": Unhandled system call: ", num, "\n");
 	};
 	// Allocate heap area using mmap
-	if (m_heap_area == 0x0)
-	{
-		this->m_heap_area = machine().memory.mmap_allocate(MAX_HEAP);
-	}
+	this->m_heap_area = machine().memory.mmap_allocate(MAX_HEAP);
 
 	// Add POSIX system call interfaces (no filesystem or network access)
 	machine().setup_linux_syscalls(false, false);
