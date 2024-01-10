@@ -49,7 +49,6 @@ add_subdirectory(src/script script)
 add_executable(engine
 	src/main.cpp
 	src/main_screen.cpp
-	src/manage_scripts.cpp
 	src/renderer.cpp
 	src/test_dynamic.cpp
 	src/timers.cpp

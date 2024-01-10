@@ -153,8 +153,6 @@ void do_remote_stuff()
 		measure("Call local C++ member function", bench_local_cpp);
 		measure("Call local function ptr", bench_local_func_ptr);
 		measure("Call local std::function", bench_local_std_func);
-
-		measure("Call remote function", call_remotely);
 	}
 }
 

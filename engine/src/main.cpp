@@ -1,6 +1,5 @@
 #include "main_screen.hpp"
 
-#include "manage_scripts.hpp"
 #include <api/embedded_string.hpp>
 #include <script/event.hpp>
 #include <strf/to_cfile.hpp>
@@ -21,7 +20,7 @@ int main()
 	extern void setup_dynamic_calls();
 	setup_dynamic_calls();
 
-	/* What happens when the Script wants to exit the game. */
+	/* What happens when the Script calls Game::exit(). */
 	Script::on_exit([] (auto& script) {
 		strf::to(stdout)(script.name(), " called Game::exit()");
 		exit(0);
@@ -31,38 +30,26 @@ int main()
 	if (Script::get_global_setting("benchmarks") != do_benchmarks)
 		throw std::runtime_error("Insane global settings");
 
-	/* A single program that will be used as shared mutable
-		   storage among all the level programs. */
-	Scripts::load_binary("gameplay", "scripts/gameplay.elf");
-	Scripts::create("gameplay", "gameplay", debug);
-
-	/* A few levels. */
-	Scripts::load_binary("level1", "scripts/level1.elf");
-	Scripts::create("level1", "level1", debug);
-
-	Scripts::load_binary("level2", "scripts/level2.elf");
-	Scripts::create("level2", "level2", debug);
-
 	/* The event_loop function can be resumed later, and can execute work
 	   that has been preemptively handed to it from other machines. */
-	auto& events = Scripts::create("events", "gameplay");
+	auto events = Script("events", "scripts/gameplay.elf", debug);
 	/* A VM function call. The function must be public (listed in the symbols
 	 * file). */
 	events.call("event_loop");
 
-	/* Get the gameplay machine */
-	auto& gameplay = SCRIPT("gameplay");
+	/* Create the gameplay machine by cloning 'events' (same binary, but new instance) */
+	auto gameplay = events.clone("gameplay");
 
 	/* This is the main start function, which would be something like the
 	   starting function for the current levels script. You can find the
 	   implementation in scripts/src/gameplay.cpp. */
-	auto& level1 = SCRIPT("level1");
+	auto level1 = Script("level1", "scripts/level1.elf", debug);
 	level1.setup_remote_calls_to(gameplay);
 
 	level1.call("start");
 
 	/* Use strict remote calls for level2 */
-	auto& level2 = SCRIPT("level2");
+	auto level2 = Script("level2", "scripts/level2.elf", debug);
 	level2.setup_strict_remote_calls_to(gameplay);
 	/* Allow calling *only* this function remotely, when in strict mode */
 	gameplay.add_allowed_remote_function(
@@ -169,7 +156,7 @@ int main()
 
 	strf::to(stdout)("...\n");
 
-	/* Test dynamic functions */
+	/* Verify dynamic functions are working */
 	int called = 0x0;
 	gameplay.set_dynamic_call(
 		"void sys_testing ()",

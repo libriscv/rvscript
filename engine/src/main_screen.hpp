@@ -1,5 +1,6 @@
 #include <map>
 #include <nanogui/screen.h>
+#include <script/script.hpp>
 
 struct MainScreen : public nanogui::Screen
 {
@@ -25,6 +26,7 @@ struct MainScreen : public nanogui::Screen
 	uint32_t managew(nanogui::Widget* w);
 
   private:
+	std::unique_ptr<Script> m_script = nullptr;
 	std::map<uint32_t, nanogui::Widget*> idx_to_widget;
 	std::map<nanogui::Widget*, uint32_t> widget_to_idx;
 	uint32_t counter = 0;

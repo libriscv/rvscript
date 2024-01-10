@@ -167,9 +167,16 @@ struct Script
 
 	static void setup_syscall_interface();
 	bool initialize();
+	// Create new Script instance from file
 	Script(
-		const std::vector<uint8_t>& binary, void* userptr, const std::string& name,
-		const std::string& filename, bool = false);
+		const std::string& name, const std::string& filename,
+		bool dbg = false, void* userptr = nullptr);
+	// Create new Script instance from existing binary
+	Script(
+		std::shared_ptr<const std::vector<uint8_t>> binary, const std::string& name,
+		const std::string& filename, bool dbg = false, void* userptr = nullptr);
+	// Create new Script instance from cloning another Script
+	Script clone(const std::string& name, void* userptr = nullptr);
 	~Script();
 
   private:
@@ -184,7 +191,7 @@ struct Script
 	static long finish_benchmark(std::vector<long>&);
 
 	std::unique_ptr<machine_t> m_machine = nullptr;
-	const std::vector<uint8_t>& m_binary;
+	std::shared_ptr<const std::vector<uint8_t>> m_binary;
 	void* m_userptr;
 	gaddr_t m_heap_area		   = 0;
 	gaddr_t m_tick_event	   = 0;

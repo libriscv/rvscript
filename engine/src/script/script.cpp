@@ -8,6 +8,7 @@ using gaddr_t = Script::gaddr_t;
 #include <libriscv/threads.hpp>
 #include <libriscv/util/crc32.hpp>
 #include <strf/to_cfile.hpp>
+static std::vector<uint8_t> load_file(const std::string& filename);
 // Some dynamic calls are currently enabled late in initialization
 static constexpr bool WARN_ON_UNIMPLEMENTED_DYNCALL = false;
 // the shared area is read-write for the guest
@@ -25,9 +26,10 @@ static const std::vector<std::string> env = {
 using riscv::crc32;
 
 Script::Script(
-	const std::vector<uint8_t>& binary, void* userptr, const std::string& name,
-	const std::string& filename, bool debug)
-  : m_binary(binary), m_userptr(userptr), m_name(name),
+	std::shared_ptr<const std::vector<uint8_t>> binary, const std::string& name,
+	const std::string& filename, bool debug, void* userptr)
+  : m_binary(binary),
+    m_userptr(userptr), m_name(name),
 	m_filename(filename), m_hash(crc32(name.c_str(), name.size())), m_is_debug(debug)
 {
 	static bool init = false;
@@ -36,7 +38,19 @@ Script::Script(
 		init = true;
 		Script::setup_syscall_interface();
 	}
-	this->reset();
+	if (this->reset()) {
+		this->initialize();
+	}
+}
+
+Script::Script(
+	const std::string& name, const std::string& filename, bool debug, void* userptr)
+  : Script(std::make_shared<const std::vector<uint8_t>> (load_file(filename)), name, filename, debug, userptr)
+{}
+
+Script Script::clone(const std::string& name, void* userptr)
+{
+	return Script(this->m_binary, name, this->m_filename, this->m_is_debug, userptr);
 }
 
 Script::~Script() {}
@@ -54,7 +68,7 @@ bool Script::reset()
 			.use_memory_arena = true,
 			.default_exit_function = "fast_exit",
 		};
-		m_machine.reset(new machine_t(m_binary, options));
+		m_machine.reset(new machine_t(*m_binary, options));
 
 		// setup system calls and traps
 		this->machine_setup();
@@ -464,4 +478,27 @@ gaddr_t Script::guest_alloc_sequential(gaddr_t bytes)
 bool Script::guest_free(gaddr_t addr)
 {
 	return machine().arena().free(addr) == 0x0;
+}
+
+#include <unistd.h>
+
+std::vector<uint8_t> load_file(const std::string& filename)
+{
+	size_t size = 0;
+	FILE* f		= fopen(filename.c_str(), "rb");
+	if (f == NULL)
+		throw std::runtime_error("Could not open file: " + filename);
+
+	fseek(f, 0, SEEK_END);
+	size = ftell(f);
+	fseek(f, 0, SEEK_SET);
+
+	std::vector<uint8_t> result(size);
+	if (size != fread(result.data(), 1, size, f))
+	{
+		fclose(f);
+		throw std::runtime_error("Error when reading from file: " + filename);
+	}
+	fclose(f);
+	return result;
 }

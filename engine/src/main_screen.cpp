@@ -1,5 +1,4 @@
 #include "main_screen.hpp"
-#include "manage_scripts.hpp"
 #include <nanogui/nanogui.h>
 
 MainScreen::MainScreen() : nanogui::Screen({800, 600}, "hubris")
@@ -16,8 +15,8 @@ void MainScreen::buildInterface()
 {
 	static const int debug = false;
 
-	Scripts::load_binary("gui", "scripts/gui.elf");
-	Scripts::create("gui", "gui", debug);
+	/* Let the script build the GUI during initialization. */
+	this->m_script.reset(new Script("gui", "scripts/gui.elf", debug));
 }
 
 void MainScreen::mainLoop()
