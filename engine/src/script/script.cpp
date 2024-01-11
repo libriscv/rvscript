@@ -77,7 +77,7 @@ bool Script::reset()
 	}
 	catch (std::exception& e)
 	{
-		strf::to(stderr)(
+		strf::to(stdout)(
 			">>> Exception during initialization: ", e.what(), "\n");
 		throw;
 	}
@@ -113,7 +113,7 @@ bool Script::initialize()
 
 		if (UNLIKELY(machine().instruction_limit_reached()))
 		{
-			strf::to(stderr)(
+			strf::to(stdout)(
 				">>> Exception: Instruction limit reached on ", name(), "\n",
 				"Instruction count: ", machine().max_instructions(), "\n");
 			return false;
@@ -121,7 +121,7 @@ bool Script::initialize()
 	}
 	catch (riscv::MachineException& me)
 	{
-		strf::to(stderr)(
+		strf::to(stdout)(
 			">>> Machine exception ", me.type(), ": ", me.what(),
 			" (data: ", strf::hex(me.data()), "\n");
 		// Remote debugging with DEBUG=1 ./engine
@@ -131,11 +131,11 @@ bool Script::initialize()
 	}
 	catch (std::exception& e)
 	{
-		strf::to(stderr)(">>> Exception: ", e.what(), "\n");
+		strf::to(stdout)(">>> Exception: ", e.what(), "\n");
 		return false;
 	}
 
-	strf::to(stderr)(">>> ", name(), " initialized.\n");
+	strf::to(stdout)(">>> ", name(), " initialized.\n");
 	return true;
 }
 
@@ -154,12 +154,12 @@ void Script::machine_setup()
 	machine().on_unhandled_csr = [](machine_t& machine, int csr, int, int)
 	{
 		auto& script = *machine.template get_userdata<Script>();
-		strf::to(stderr)(script.name(), ": Unhandled CSR: ", csr, "\n");
+		strf::to(stdout)(script.name(), ": Unhandled CSR: ", csr, "\n");
 	};
 	machine().on_unhandled_syscall = [](machine_t& machine, size_t num)
 	{
 		auto& script = *machine.get_userdata<Script>();
-		strf::to(stderr)(script.name(), ": Unhandled system call: ", num, "\n");
+		strf::to(stdout)(script.name(), ": Unhandled system call: ", num, "\n");
 	};
 	// Allocate heap area using mmap
 	this->m_heap_area = machine().memory.mmap_allocate(MAX_HEAP);
@@ -184,14 +184,14 @@ void Script::machine_setup()
 
 void Script::could_not_find(std::string_view func)
 {
-	strf::to(stderr)(
+	strf::to(stdout)(
 		"Script::call(): Could not find: '", func, "' in '", name(), "'\n");
 }
 
 void Script::handle_exception(gaddr_t address)
 {
 	auto callsite = machine().memory.lookup(address);
-	strf::to(stderr)(
+	strf::to(stdout)(
 		"[", name(), "] Exception when calling:\n  ", callsite.name, " (0x",
 		strf::hex(callsite.address), ")\n", "Backtrace:\n");
 	this->print_backtrace(address);
@@ -207,7 +207,7 @@ void Script::handle_exception(gaddr_t address)
 	}
 	catch (const riscv::MachineException& e)
 	{
-		strf::to(stderr)(
+		strf::to(stdout)(
 			"\nException: ", e.what(), "  (data: ", strf::hex(e.data()), ")\n",
 			">>> ", machine().cpu.current_instruction_to_string(), "\n",
 			">>> Machine registers:\n[PC\t", strf::hex(machine().cpu.pc()) > 8,
@@ -219,12 +219,12 @@ void Script::handle_exception(gaddr_t address)
 	}
 	catch (const std::exception& e)
 	{
-		strf::to(stderr)("\nMessage: ", e.what(), "\n\n");
+		strf::to(stdout)("\nMessage: ", e.what(), "\n\n");
 	}
-	strf::to(stderr)(
+	strf::to(stdout)(
 		"Program page: ", machine().memory.get_page_info(machine().cpu.pc()),
 		"\n");
-	strf::to(stderr)(
+	strf::to(stdout)(
 		"Stack page: ", machine().memory.get_page_info(machine().cpu.reg(2)),
 		"\n");
 	// Close active non-main thread (XXX: Probably not what we want)
@@ -232,7 +232,7 @@ void Script::handle_exception(gaddr_t address)
 	while (mt.get_tid() != 0)
 	{
 		auto* thread = mt.get_thread();
-		strf::to(stderr)(
+		strf::to(stdout)(
 			"Script::call: Closing running thread: ", thread->tid, "\n");
 		thread->exit();
 	}
@@ -242,7 +242,7 @@ void Script::handle_timeout(gaddr_t address)
 {
 	this->m_budget_overruns++;
 	auto callsite = machine().memory.lookup(address);
-	strf::to(stderr)(
+	strf::to(stdout)(
 		"Script::call: Max instructions for: ", callsite.name,
 		" (Overruns: ", m_budget_overruns, "\n");
 	// Check if we need to suspend a thread
@@ -269,10 +269,10 @@ void Script::print_backtrace(const gaddr_t addr)
 	machine().memory.print_backtrace(
 		[](std::string_view line)
 		{
-			strf::to(stderr)("-> ", line, "\n");
+			strf::to(stdout)("-> ", line, "\n");
 		});
 	auto origin = machine().memory.lookup(addr);
-	strf::to(stderr)(
+	strf::to(stdout)(
 		"-> [-] ", strf::hex(origin.address), " + ", strf::hex(origin.offset),
 		": ", origin.name, "\n");
 }
@@ -322,14 +322,21 @@ void Script::each_tick_event()
 void Script::set_dynamic_call(const std::string& def, ghandler_t handler)
 {
 	// Uses the definition as both name and hash
-	set_dynamic_call(def, def, handler);
+	set_dynamic_call(def, def, std::move(handler));
 }
 
 void Script::set_dynamic_call(std::string name, std::string def, ghandler_t handler)
 {
+	// Allow unsetting a dynamic call by using an uncallable/invalid callback function
+	if (handler == nullptr) {
+		handler = [] (auto&) {
+			throw std::runtime_error("Unimplemented-trap");
+		};
+	}
+
 	// Uses the definition as hash
 	const uint32_t hash = crc32(def.c_str(), def.size());
-	m_dynamic_functions[hash] = HostDyncall{std::move(name), std::move(def), std::move(handler)};
+	m_dynamic_functions.insert_or_assign(hash, HostDyncall{std::move(name), std::move(def), std::move(handler)});
 }
 
 void Script::set_dynamic_calls(
@@ -351,7 +358,7 @@ void Script::dynamic_call_hash(uint32_t hash, gaddr_t straddr)
 	else
 	{
 		auto name = machine().memory.memstring(straddr);
-		strf::to(stderr)(
+		strf::to(stdout)(
 			"Unable to find dynamic function '", name, "' with hash ",
 			strf::hex(hash), "\n");
 		throw std::runtime_error("Unable to find dynamic function: " + name);
@@ -389,18 +396,24 @@ void Script::dynamic_call_error(uint32_t idx, const std::exception& e)
 				this->m_dyncall_array.at(idx) = it->second.func;
 				return;
 			}
+			const auto dname = machine().memory.memstring(entry.strname);
+			strf::to(stdout)(
+				"ERROR: Exception in '", this->name(),"', dynamic function '", dname, "' with hash ",
+				strf::hex(entry.hash), " and table index ", idx, "\n"
+				"ERROR: Not installed in the host game engine. Forgot to call set_dynamic_handler(...)?\n");
+		} else {
+			const auto dname = machine().memory.memstring(entry.strname);
+			strf::to(stdout)(
+				"ERROR: Exception in '", this->name(),"', dynamic function '", dname, "' with hash ",
+				strf::hex(entry.hash), " and table index ", idx, "\n");
 		}
 
-		const auto dname = machine().memory.memstring(entry.strname);
-		strf::to(stderr)(
-			"ERROR: Exception in '", this->name(),"', dynamic function '", dname, "' with hash ",
-			strf::hex(entry.hash), " and table index ", idx, "\n");
-
 	} else {
-		strf::to(stderr)(
+		strf::to(stdout)(
 			"ERROR: Exception in '", this->name(),"', dynamic function table index ",
 			idx, " out of range\n");
 	}
+	fflush(stdout);
 	throw;
 }
 
@@ -420,7 +433,7 @@ void Script::resolve_dynamic_calls()
 	this->m_dyncall_array.reserve(entries);
 	this->m_dyncall_array.clear();
 	if constexpr (WARN_ON_UNIMPLEMENTED_DYNCALL) {
-	strf::to(stderr)(
+	strf::to(stdout)(
 		"Resolving dynamic calls for '", name(), "' with ", entries, " entries\n");
 	}
 
@@ -442,7 +455,7 @@ void Script::resolve_dynamic_calls()
 			});
 			if constexpr (WARN_ON_UNIMPLEMENTED_DYNCALL) {
 			const std::string name = machine().memory.memstring(entry.strname);
-			strf::to(stderr)(
+			strf::to(stdout)(
 				"WARNING: Unimplemented dynamic function '", name, "' with hash ", strf::hex(entry.hash), " and program table index ",
 				m_dyncall_array.size(), "\n");
 			}

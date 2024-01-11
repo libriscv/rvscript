@@ -1,9 +1,10 @@
+#include "codebuilder.hpp"
+
 #include <stdexcept>
 #include <cstdio>
 #include <cstring>
 #include <vector>
 #include <unistd.h>
-#include <libriscv/machine.hpp>
 #include "crc32.hpp"
 static constexpr bool VERBOSE_COMPILER = true;
 
@@ -64,9 +65,7 @@ std::vector<uint8_t> load_file(const std::string& filename)
 	return result;
 }
 
-std::vector<std::vector<uint8_t>> binaries;
-
-riscv::Machine<riscv::RISCV64>
+std::shared_ptr<std::vector<uint8_t>>
 	build_and_load(const std::string& code, const std::string& args)
 {
 	// Create temporary filenames for code and binary
@@ -106,11 +105,8 @@ riscv::Machine<riscv::RISCV64>
 	} while (r > 0);
 	pclose(f);
 
-	binaries.push_back(load_file(bin_filename));
+	auto vec = std::make_shared<std::vector<uint8_t>> (load_file(bin_filename));
 	unlink(bin_filename);
 
-	riscv::Machine<riscv::RISCV64> machine { binaries.back() };
-	riscv::Machine<riscv::RISCV64>::setup_newlib_syscalls();
-
-	return machine;
+	return vec;
 }

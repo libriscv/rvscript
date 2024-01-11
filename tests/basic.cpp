@@ -2,7 +2,7 @@
 
 TEST_CASE("Instantiate machine", "[Basic]")
 {
-	const auto machine = build_and_load(R"M(
+	const auto program = build_and_load(R"M(
 	#include <api.h>
 
 	int main() {
@@ -13,8 +13,7 @@ TEST_CASE("Instantiate machine", "[Basic]")
 		return 0xDEADBEEF;
 	})M");
 
-	Script script {machine, nullptr, "MyScript", "/tmp/myscript"};
-	script.initialize();
+	Script script {program, "MyScript", "/tmp/myscript"};
 
 	REQUIRE(script.machine().return_value() == 666);
 
@@ -23,7 +22,7 @@ TEST_CASE("Instantiate machine", "[Basic]")
 
 TEST_CASE("Exit game", "[Basic]")
 {
-	const auto machine = build_and_load(R"M(
+	const auto program = build_and_load(R"M(
 	#include <api.h>
 	using namespace api;
 
@@ -40,8 +39,7 @@ TEST_CASE("Exit game", "[Basic]")
 		exit_called = true;
 	});
 
-	Script script {machine, nullptr, "MyScript", "/tmp/myscript"};
-	script.initialize();
+	Script script {program, "MyScript", "/tmp/myscript"};
 
 	REQUIRE(exit_called);
 	REQUIRE(script.machine().return_value() == 123);
@@ -49,9 +47,8 @@ TEST_CASE("Exit game", "[Basic]")
 
 TEST_CASE("Verify dynamic calls work", "[Basic]")
 {
-	const auto machine = build_and_load(R"M(
+	const auto program = build_and_load(R"M(
 	#include <api.h>
-	using namespace api;
 
 	int main() {
 		sys_empty(); /* Opaque dynamic call */
@@ -61,15 +58,46 @@ TEST_CASE("Verify dynamic calls work", "[Basic]")
 		return 666;
 	})M");
 
-	Script script {machine, nullptr, "MyScript", "/tmp/myscript"};
-
 	int count = 0;
-	script.reset_dynamic_call("empty", [&] (Script&) {
+	Script::set_dynamic_call("void sys_empty ()", [&] (Script&) {
 		count += 1;
 	});
 
-	script.initialize();
+	Script script {program, "MyScript", "/tmp/myscript"};
 
 	REQUIRE(script.machine().return_value() == 666);
+	REQUIRE(count == 2);
+}
+
+TEST_CASE("Verify late dynamic calls work", "[Basic]")
+{
+	const auto program = build_and_load(R"M(
+	#include <api.h>
+
+	extern "C" int my_func() {
+		sys_empty(); /* Opaque dynamic call */
+
+		isys_empty(); /* Inlined dynamic call */
+
+		return 666;
+	}
+
+	int main() {
+	})M");
+
+	// Unset the previous 'empty'
+	Script::set_dynamic_call("void sys_empty ()", nullptr);
+
+	Script script {program, "MyScript", "/tmp/myscript"};
+
+	// Add new 'empty' after initialization
+	int count = 0;
+	Script::set_dynamic_call("void sys_empty ()", [&] (Script&) {
+		count += 1;
+	});
+
+	auto ret = script.call("my_func");
+
+	REQUIRE(ret == 666);
 	REQUIRE(count == 2);
 }
