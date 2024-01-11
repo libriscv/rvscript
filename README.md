@@ -1,19 +1,17 @@
 # RVScript
 
-This repository implements a game engine oriented scripting system using [libriscv](https://github.com/fwsGonzo/libriscv) as a backend. By using a fast userspace emulator with low call overhead and memory usage, combined with modern programming techniques we can have a fast budgeted script that lives separately in its own address space.
+RVScript is a game engine oriented scripting system backed by a [low latency RISC-V emulator](https://github.com/fwsGonzo/libriscv). By using a fast virtual machine with low call overhead and memory usage, combined with modern programming techniques we can have a type-safe and memory-safe script that is able to call billions of functions within a limited frame budget.
 
 The guest environment is modern C++20 using a GNU RISC-V compiler with RTTI and exceptions enabled. Several CRT functions have been implemented as system calls, and will have native performance. There is also Nim support and some example code.
 
 The example programs have some basic example timers and threads, as well as multiple machines to call into and between. The repository is a starting point for anyone who wants to try to use this in their game engine.
-
-In no uncertain terms: This requires compiling ahead of time, and there is no JIT, although that means you can use it on consoles. I have so far had no issues compiling my script on WSL2 or any Linux. It is probably easiest to use this from a Debian-like (eg. Ubuntu) distribution.
 
 
 ## Demonstration
 
 This repository is built as an example on how you could use advanced techniques to speed up and blur the lines between native and emulated modern C++. The main function is in [engine/src](engine/src/main.cpp).
 
-All the host-side code is in the engine folder, and is written as if it was running inside a game engine, kinda.
+All the host-side code is in the engine folder, and is written as if it was running inside a game engine.
 
 
 ## Getting started
@@ -56,7 +54,7 @@ git clone https://github.com/riscv/riscv-gnu-toolchain.git
 cd riscv-gnu-toolchain
 git submodule update --depth 1 --init
 <install dependencies for GCC on your particular system here>
-./configure --prefix=$HOME/riscv --with-arch=rv64g --with-abi=lp64d
+./configure --prefix=$HOME/riscv --with-arch=rv64g_zba_zbb_zbc_zbs --with-abi=lp64d
 make -j8
 ```
 
@@ -93,13 +91,13 @@ sudo apt install gdb-multiarch
 Connecting manually:
 ```
 gdb-multiarch myprogram.elf
-target remote localhost:2159
+target remote :2159
 ```
 
 
 ## C++ RTTI and exceptions
 
-Exceptions and RTTI are currently always enabled, and will bloat the binary by at least 170k according to my measurements. Additionally, you will have to increase the maximum allotted number of instructions to a call by at least 600k instructions, as the first exception thrown will have to run through a massive amount of code. However, any code that does not throw exceptions as part of normal operation will be fine performance-wise.
+Exceptions and RTTI are currently always enabled, and will add at least 170k to binaries, according to my measurements. Additionally, you will have to increase the maximum allotted number of instructions to a call by at least 600k instructions, as the first exception thrown will have to run through a massive amount of code. However, any code that does not throw exceptions as part of normal operation will be fine performance-wise.
 
 
 ## WSL2 support
@@ -111,19 +109,6 @@ There is nothing different that you have to do on WSL2. Install dependencies for
 You must be on the latest Windows insider version for this at the time of writing.
 
 
-## Details
-
-I have written in detail about this subject here:
-
-1: https://medium.com/@fwsgonzo/adventures-in-game-engine-programming-a3ab1e96dbde
-
-2: https://medium.com/@fwsgonzo/using-c-as-a-scripting-language-part-2-7726f8e13e3
-
-3: https://medium.com/@fwsgonzo/adventures-in-game-engine-programming-part-3-3895a9f5af1d
-
-Part 3 is a good introduction that will among other things answer the 'why'.
-
-
 ## Creating an API
 
 The general API to adding new functionality inside the VM is to add more system calls, or use dynamic calls. System calls can only capture a single pointer, require hard-coding a number (the system call number), and is invoked from inline assembly inside the guest. Performant, but clearly not very conducive to auto-generated APIs or preventing binding bugs.
@@ -131,7 +116,7 @@ The general API to adding new functionality inside the VM is to add more system 
 Dynamic calls are string names that when invoked from inside the script will call a std::function on the host side, outside of the script. An example:
 
 ```C++
-Script::set_dynamic_call("lazy", [] (auto&) {
+Script::set_dynamic_call("void sys_lazy ()", [] (auto&) {
 		strf::to(stdout)("I'm not doing much, tbh.\n");
 	});
 ```
@@ -171,13 +156,12 @@ Script::set_dynamic_call("struct_by_ref",
 
 Also, let's take a `char* buffer, size_t length` pair as argument:
 ```C++
-Script::set_dynamic_call("big_data",
+Script::set_dynamic_call("void sys_big_data (const char*, size_t)",
 	[] (Script& script) {
-		// A Buffer is a general-purpose container for fragmented virtual memory,
-		// even though 99.99999% of all operations (even big ones) will be sequential.
-		// The <riscv::Buffer> consumes two system call registers (pointer + length).
+		// A Buffer is a general-purpose container for fragmented virtual memory.
+		// The <riscv::Buffer> consumes two registers (A0: pointer, A1: length).
 		const auto [buffer] = script.machine().sysargs <riscv::Buffer> ();
-		handle_buffer(buffer.strview());
+		handle_buffer(buffer.to_string());
 		// Or, alternatively (also consumes two registers):
 		const auto [view] = script.machine().sysargs <std::string_view> ();
 		handle_buffer(view);
@@ -193,19 +177,19 @@ See [memory.hpp](/ext/libriscv/lib/libriscv/memory.hpp) for a list of helper fun
 
 ## Using other programming languages
 
-This is not so easy, as you will have to create a tiny freestanding environment for your language (hard), and also implement the system call layer that your API relies on (easy). Both these things require writing inline assembly, although you only have to create the syscall wrappers once. That said, I have a Rust implementation here:
+This is not so easy, as you will have to be able to create FFI (`extern "C"`) functions for your language, and also implement the system call layer that your API relies on. Some parts require writing inline assembly, although you may only have to create the syscall wrappers once. That said, I have a Rust implementation here:
 https://github.com/fwsGonzo/script_bench/tree/master/rvprogram/rustbin
 
-You can use any programming language that can output RISC-V binaries. A tiny bit of info about Rust is that I was unable to build anything but rv64gc binaries, so you would need to enable the C extension in the build.sh script (where it is sometimes explicitly set to OFF).
+You can use any programming language that can output RISC-V binaries. A tiny bit of info about Rust is that I was unable to build anything but rv64gc binaries, so you would need to enable the C extension in the build.sh script (where it is sometimes explicitly set to OFF, depending on which compiler it detects).
 
-The easiest languages to integrate are those that transpile to C or C++, such as Nim, Haxe and Pythran. If you can stomach the extra cost of interpreting JavaScript then QuickJS can work well. Any language on the [list of compilers targetting C](https://github.com/dbohdan/compilers-targeting-c) would work.
+The easiest languages to integrate are those that transpile to C or C++, such as Nim, Haxe and Nelua. If you can stomach the extra cost of interpreting JavaScript then QuickJS can work well. Any language on the [list of compilers targetting C](https://github.com/dbohdan/compilers-targeting-c) would work.
 
 Good luck.
 
 
 ## Nim language support
 
-There is Nim support and a few examples are in the [micronim folder](/programs/micronim). The `nim` program must be in PATH, and `NIM_LIBS` will be auto-detected to point to the nim lib folder. For example `$HOME/nim-1.6.6/lib`. Nim support is experimental and the API is fairly incomplete.
+There is Nim support and a few examples are in the [micronim folder](/programs/micronim). The `nim` program must be in PATH, and `NIM_LIBS` will be auto-detected to point to the nim lib folder. For example `$HOME/nim-2.0.0/lib`. Nim support is experimental and the API is fairly incomplete.
 
 The Nim build system is not easily worked with to build in parallel, but I have made an effort with the build scripts. Nim programs are built in parallel and the CMake build after is also that. There is still a lot of shared generated code, but those issues need to be solved by the Nim developers.
 
@@ -221,15 +205,15 @@ Nim code can be live-debugged just like other programs by running the engine wit
 - After I throw a C++ exception the emulator seems to just stop.
 	- When you call into the virtual machine you usually give it a budget. A limit on the number of instructions it gets to run for that particular call (or any other limit you impose yourself). If you forget to check if the limit has been reached, then it will just look like it stopped. You can check this with `script.machine().instruction_limit_reached()`. You can safely resume execution again by calling `script.resume()` again, as running out of instructions is not exceptional. For example the first C++ exception thrown inside the RISC-V emulator uses a gigaton of instructions and can blow the default limit.
 - How do I share memory with the engine?
+	- You can allocate structures directly on the heap of the guest through `script.guest_alloc<Type> (count)`. Using the returned buffer as an arena is possible, but verify the alignment first.
 	- Create aligned memory in your engine and use the `machine.memory.insert_non_owned_memory()` function to insert it using the given page attributes. The machine will then create non-owning pages pointing to this memory sequentially. You can do this on as many machines as you want. The challenge then is to be able to use the pages as memory for your objects, and access the readable members in a portable way (the VMs are default 64-bit).
-	- You can allocate structures directly on the heap of the guest through `script.guest_alloc<Type> (count)`. Using the returned buffer as an arena is also possible.
 - Passing long strings and big structures is slow.
 	- Use compile-time hashes of strings where you can.
 	- Use riscv::Buffer or buffer gathering for larger memory buffers.
 	- Page sharing if intended for communication between machines
 	- Use memory directly allocated in machines by using `script.guest_alloc<Type>(count)`.
 - How do I allow non-technical people to compile script?
-	- Hard question. If they are only going to write scripts for the actual levels it might be good enough to use a web API endpoint to compile these simpler binaries. You don't have to do the compilation in a Docker container, so it should be fairly straight-forward for a dedicated server. You could also have an editor in the browser, and when you press Save or Compile the resulting binary is sent to you. They can then move it to the folder it's supposed to be in, and restart the level. Something like that. I'm sure something that is even higher iteration can be done with some thought put into it.
+	- Hard question. Similar to other ahead-of-time compiled solutions, you will need a compiler in order to build the script. Maybe a REST endpoint that produces a binary by POSTing the code?
 - I have real-time requirements.
 	- As long as pausing the script to continue later is an option, you will not have any trouble. Just don't pause the script while it's in a thread and then accidentally vmcall into it from somewhere else. This will clobber all registers and you will have trouble later. You can use preempt provided that it returns to the same thread again (although you are able to yield back to a thread manually). There are many options where things will be OK. In my own engine all long-running tasks are running on separate machines to simplify things.
 
