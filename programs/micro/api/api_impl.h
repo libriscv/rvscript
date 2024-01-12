@@ -319,41 +319,41 @@ dynamic_call(const uint32_t hash, const char* name, Args&&... args)
 
 	register long a0 asm("a0");
 	register float fa0 asm("fa0");
-	register long syscall_id asm("a7") = ECALL_DYNARGS;
 
 	for (unsigned i = 0; i < argc; i++)
 	{
 		if (type[i] == 0b001)
 		{
 #ifdef __OPTIMIZE__
-			if ((int64_t)gpr[i] >= -4096 && (int64_t)gpr[i] < 4096)
+			if ((long)gpr[i] >= -4096 && (long)gpr[i] < 4096)
 			{
-				asm(".insn i 0b0001011, 0, x0, x0, %0" ::"I"(gpr[i]));
+				int imm = (long)gpr[i] & 0x7ff;
+				asm(".insn i 0b0001011, 0, x0, x0, %0" :: "I"(imm));
 			}
 			else
 #endif
 			{
 				a0 = gpr[i];
-				asm(".word 0b001000000001011" : : "r"(a0));
+				asm(".insn u 0b0001011, x1, 0" : : "r"(a0));
 			}
 		}
 		else if (type[i] == 0b010)
 		{
 			fa0 = fpr[i];
-			asm(".word 0b010000000001011" : : "f"(fa0));
+			asm(".insn u 0b0001011, x3, 0" : : "f"(fa0));
 		}
 		else if (type[i] == 0b111)
 		{
 			a0 = gpr[i];
-			asm(".word 0b111000000001011" : : "r"(a0));
+			asm(".insn u 0b0001011, x7, 0" : : "r"(a0), "m"(*(const char *)gpr[i]));
 		}
 	}
 
 	register const size_t name_hash asm("a0") = hash;
 	register const char* name_ptr asm("a1")	  = name;
-	asm("ecall"
+	asm volatile (".insn u 0b0001011, x31, 0"
 		:
-		: "r"(name_hash), "m"(*name_ptr), "r"(name_ptr), "r"(syscall_id));
+		: "r"(name_hash), "m"(*name_ptr), "r"(name_ptr));
 }
 
 #define DYNCALL(name, ...) dynamic_call(crc32(name), name, ##__VA_ARGS__)

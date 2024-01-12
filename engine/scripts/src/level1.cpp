@@ -75,7 +75,7 @@ void do_benchmarks()
 		"Dynamic arguments (4x arguments)",
 		[]
 		{
-			DYNCALL("Test::void", 1234, 5678.0, 4321, 8765.0);
+			DYNCALL("Test::void", -4096, 5678.0, 524287, 8765.0);
 			return_fast();
 		});
 }

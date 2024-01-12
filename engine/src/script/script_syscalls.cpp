@@ -260,23 +260,35 @@ void Script::setup_syscall_interface()
 		{
 			auto& scr = script(cpu.machine());
 			// Select type and retrieve value from argument registers
-			switch (instr.Itype.funct3)
+			switch (instr.Utype.rd)
 			{
-			case 0b000: // 32-bit signed integer immediate
+			case 0x0: // 64-bit signed integer immediate
 				scr.dynargs().emplace_back((int64_t)instr.Itype.signed_imm());
 				break;
-			case 0b001: // 64-bit signed integer
+			case 0x1: // 64-bit signed integer
 				scr.dynargs().emplace_back((int64_t)cpu.reg(riscv::REG_ARG0));
 				break;
-			case 0b010: // 32-bit floating point
+			case 0x3: // 32-bit floating point
 				scr.dynargs().emplace_back(
 					cpu.registers().getfl(riscv::REG_FA0).f32[0]);
 				break;
-			case 0b111: // std::string
+			case 0x7: // std::string
 				scr.dynargs().emplace_back(
 					cpu.machine().memory.memstring(cpu.reg(riscv::REG_ARG0)));
 				break;
-			default: throw "Implement me";
+			case 0x1F: { // complete the dynamic argument call
+				const auto [hash, g_name] = cpu.machine().sysargs<uint32_t, gaddr_t>();
+
+				auto& scr = script(cpu.machine());
+				// Perform a dynamic call, which takes no arguments
+				// Instead, the caller must check the dynargs() vector.
+				scr.dynamic_call_hash(hash, g_name);
+				// After the call we can clear dynargs.
+				scr.dynargs().clear();
+				return;
+			}
+			default:
+				throw std::runtime_error("Dynamic args: Implement me");
 			}
 		},
 		[](char* buffer, size_t len, auto&, rv32i_instruction instr)
