@@ -22,7 +22,7 @@ jobs:
         sudo apt install -y ninja-build ccache cmake libglew-dev libglfw3-dev g++-12-riscv64-linux-gnu
         git submodule update --init ${{github.workspace}}/tests/Catch2
         git submodule update --init --recursive ${{github.workspace}}/ext/nanogui
-        git submodule update --init ${{github.workspace}}/ext/library
+        git submodule update --init --recursive ${{github.workspace}}/ext/library
         git submodule update --init ${{github.workspace}}/ext/libriscv
         git submodule update --init ${{github.workspace}}/programs/micro/ext
 
