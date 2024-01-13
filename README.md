@@ -4,16 +4,18 @@ RVScript is a game engine oriented scripting system backed by a [low latency RIS
 
 [![Build Engine w/scripts](https://github.com/fwsGonzo/rvscript/actions/workflows/engine.yml/badge.svg)](https://github.com/fwsGonzo/rvscript/actions/workflows/engine.yml) [![Unit Tests](https://github.com/fwsGonzo/rvscript/actions/workflows/unittests.yml/badge.svg)](https://github.com/fwsGonzo/rvscript/actions/workflows/unittests.yml)
 
-This project aims to change how scripting is done in game engines. Lua, Luau and even LuaJIT have fairly substantial overheads when calling into the script, especially when many function arguments are involved. The same is true for some WebAssembly emulators that I have measured, eg. wasmtime. As a result, script functions are thought of as expensive to call often, and that changes thinking and design in projects accordingly. RVScript makes the game script low latency, so that even automation games where interactions between complex machinery requires billions of script function calls, can still be achieved.
+## Introduction
+
+This project aims to change how scripting is done in game engines. Lua, Luau and even LuaJIT have fairly substantial overheads when making function calls into the script, especially when many arguments are involved. The same is true for some WebAssembly emulators that I have measured, eg. wasmtime. As a result, script functions are considered expensive to call, regardless of how little or how much they do, especially when used from a game engine where there is a tight deadline every frame. That changes thinking and design in projects accordingly. This repository is an attempt at making game scripting low latency, so that even automation games where interactions between complex machinery requires billions of script function calls, can still be achieved in a timely manner.
 
 
 ## Demonstration
 
-This repository is built as a demonstration of how you could use advanced techniques to speed up and blur the lines between native and emulated modern C++. The main function is in [engine/src](engine/src/main.cpp).
+This repository is built as a demonstration of how you could use advanced techniques to speed up and blur the lines between native and emulated modern C++. The main function is in [engine/src](engine/src/main.cpp). See also the [unit tests](/tests/).
 
-All the host-side code is in the engine folder, and is written as if it was running inside a tiny game framework.
+All the host-side code is in the engine folder, and is written as if it was running inside a tiny fictional game framework.
 
-The script programs are using modern C++20 using a GNU RISC-V compiler with RTTI and exceptions enabled. Several CRT functions have been implemented as system calls, and will have native performance. There is also Nim support and some example code.
+The script programs are using modern C++20 using a GNU RISC-V compiler with RTTI and exceptions being optional. Several CRT functions have been implemented as system calls, and will have native performance. There is also Nim support and some example code.
 
 The example programs have some basic timers and threads, as well as some examples making calls between machines.
 
