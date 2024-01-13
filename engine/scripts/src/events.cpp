@@ -14,7 +14,7 @@ PUBLIC(void event_loop())
 	}
 }
 
-PUBLIC(bool add_work(const Events::Work* work))
+PUBLIC(bool add_work(const Events<>::Work* work))
 {
 	EXPECT(work != nullptr);
 	for (auto& ev : events)

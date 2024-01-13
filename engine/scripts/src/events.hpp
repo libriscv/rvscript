@@ -1,7 +1,7 @@
 #include <api.h>
 #include <include/event_loop.hpp>
 
-PUBLIC(bool add_work(const Events::Work*));
+PUBLIC(bool add_work(const Events<>::Work*));
 
 inline void add_remote_work(Function<void()> func)
 {

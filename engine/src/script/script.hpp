@@ -381,8 +381,11 @@ template <typename T> inline GuestObjects<T> Script::guest_alloc(size_t n)
 		// Lazily create zero-initialized page
 		auto& page	 = machine().memory.create_writable_pageno(pageno, true);
 		auto* object = (T*)&page.data()[offset];
+		// Default-initialize all objects
+		for (auto *o = object; o < object + n; o++)
+			new (o) T{};
 		// Note: this can fail and throw, but we don't care
 		return {*this, addr, object, n};
 	}
-	return {*this, 0x0, nullptr, 0u};
+	throw std::runtime_error("Unable to allocate aligned sequential data");
 }

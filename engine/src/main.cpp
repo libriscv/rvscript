@@ -127,9 +127,7 @@ int main()
 	   on destruction will free all objects. It can be
 	   moved.
 
-	   All objects are potentially uninitialized, like all
-	   heap allocations, and will need to be individually
-	   initialized.
+	   All objects are default-initialized.
 	**/
 	auto guest_objs = gameplay.guest_alloc<GameObject>(16);
 
