@@ -9,6 +9,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        compiler: [ {cpp: g++-12, c: gcc-12}, {cpp: clang++-17, c: clang-17} ]
+
     defaults:
       run:
         working-directory: ${{github.workspace}}/engine
@@ -20,17 +25,23 @@ jobs:
       run: |
         sudo apt update
         sudo apt install -y ninja-build ccache cmake build-essential libglew-dev libglfw3-dev \
-          g++-12 g++-12-riscv64-linux-gnu
+          gcc-12 g++-12 g++-12-riscv64-linux-gnu
         git submodule update --init ${{github.workspace}}/tests/Catch2
         git submodule update --init --recursive ${{github.workspace}}/ext/nanogui
-        git submodule update --init ${{github.workspace}}/ext/library
+        git submodule update --init --recursive ${{github.workspace}}/ext/library
         git submodule update --init ${{github.workspace}}/ext/libriscv
         git submodule update --init ${{github.workspace}}/programs/micro/ext
 
+    - name: Install newer Clang
+      run: |
+       wget https://apt.llvm.org/llvm.sh
+       chmod +x ./llvm.sh
+       sudo ./llvm.sh 17
+
     - name: Configure
       env:
-        CC: gcc-12
-        CXX: g++-12
+        CC: ${{ matrix.compiler.c }}
+        CXX: ${{ matrix.compiler.cpp }}
       run: cmake -B ${{github.workspace}}/engine/build -DCMAKE_BUILD_TYPE=Release
 
     - name: Build the engine
