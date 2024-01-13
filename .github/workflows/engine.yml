@@ -1,0 +1,37 @@
+name: Build Engine w/scripts
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{github.workspace}}/engine
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y ninja-build ccache cmake build-essential libglew-dev libglfw3-dev \
+          g++-12 g++-12-riscv64-linux-gnu
+        git submodule update --init ${{github.workspace}}/tests/Catch2
+        git submodule update --init --recursive ${{github.workspace}}/ext/nanogui
+        git submodule update --init ${{github.workspace}}/ext/library
+        git submodule update --init ${{github.workspace}}/ext/libriscv
+        git submodule update --init ${{github.workspace}}/programs/micro/ext
+
+    - name: Configure
+      env:
+        CC: gcc-12
+        CXX: g++-12
+      run: cmake -B ${{github.workspace}}/engine/build -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build the engine
+      run: cmake --build ${{github.workspace}}/engine/build --parallel 4
