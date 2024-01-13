@@ -264,19 +264,15 @@ inline long Script::call(const std::string& func, Args&&... args)
 template <typename... Args>
 inline long Script::preempt(gaddr_t address, Args&&... args)
 {
-	const auto regs = machine().cpu.registers();
 	try
 	{
-		const long ret = machine().preempt<true, false>(
+		return machine().preempt(
 			MAX_INSTR, address, std::forward<Args>(args)...);
-		machine().cpu.registers() = regs;
-		return ret;
 	}
 	catch (const std::exception& e)
 	{
 		this->handle_exception(address);
 	}
-	machine().cpu.registers() = regs;
 	return -1;
 }
 

@@ -30,3 +30,4 @@ function(add_unit_test NAME)
 endfunction()
 
 add_unit_test(basic    basic.cpp)
+add_unit_test(evloop   event_loop.cpp)
