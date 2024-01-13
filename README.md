@@ -2,6 +2,8 @@
 
 RVScript is a game engine oriented scripting system backed by a [low latency RISC-V emulator](https://github.com/fwsGonzo/libriscv). By using a fast virtual machine with low call overhead and memory usage, combined with modern programming techniques we can have a type-safe and memory-safe script that is able to call billions of functions within a limited frame budget.
 
+[![Unit Tests](https://github.com/fwsGonzo/rvscript/actions/workflows/unittests.yml/badge.svg)](https://github.com/fwsGonzo/rvscript/actions/workflows/unittests.yml)
+
 This project aims to change how scripting is done in game engines. Lua, LuaJIT and even Luau have fairly substantial overheads when calling into the script, especially when many arguments are involved. The same is true for some WebAssembly emulators that I have measured, eg. wasmtime. As a result, script functions are thought of as expensive to call often, and that changes thinking and design in projects accordingly. RVScript makes the game script ultra-low latency, so that even automation games where interactions between complex machinery requires billions of guest function calls, can still be achieved with RVScript.
 
 

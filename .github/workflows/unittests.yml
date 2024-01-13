@@ -1,0 +1,37 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{github.workspace}}/tests
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y ninja-build ccache cmake libglew-dev libglfw3-dev g++-12-riscv64-linux-gnu
+        git submodule update --init ${{github.workspace}}/tests/Catch2
+        git submodule update --init --recursive ${{github.workspace}}/ext/nanogui
+        git submodule update --init ${{github.workspace}}/ext/library
+        git submodule update --init ${{github.workspace}}/ext/libriscv
+        git submodule update --init ${{github.workspace}}/programs/micro/ext
+
+    - name: Configure
+      run: cmake -B ${{github.workspace}}/tests/build -DCMAKE_BUILD_TYPE=Debug
+
+    - name: Build the unittests
+      run: cmake --build ${{github.workspace}}/tests/build --parallel 4
+
+    - name: Run tests
+      working-directory: ${{github.workspace}}/tests/build
+      run: ctest --verbose .
