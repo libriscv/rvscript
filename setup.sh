@@ -5,5 +5,5 @@ git submodule update --init --depth 2
 git submodule update --init --recursive ext/nanogui
 
 pushd engine
-./build.sh --glibc
+./build.sh
 popd

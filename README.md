@@ -2,16 +2,18 @@
 
 RVScript is a game engine oriented scripting system backed by a [low latency RISC-V emulator](https://github.com/fwsGonzo/libriscv). By using a fast virtual machine with low call overhead and memory usage, combined with modern programming techniques we can have a type-safe and memory-safe script that is able to call billions of functions within a limited frame budget.
 
-The guest environment is modern C++20 using a GNU RISC-V compiler with RTTI and exceptions enabled. Several CRT functions have been implemented as system calls, and will have native performance. There is also Nim support and some example code.
-
-The example programs have some basic example timers and threads, as well as multiple machines to call into and between. The repository is a starting point for anyone who wants to try to use this in their game engine.
+This project aims to change how scripting is done in game engines. Lua, LuaJIT and even Luau have fairly substantial overheads when calling into the script, especially when many arguments are involved. The same is true for some WebAssembly emulators that I have measured, eg. wasmtime. As a result, script functions are thought of as expensive to call often, and that changes thinking and design in projects accordingly. RVScript makes the game script ultra-low latency, so that even automation games where interactions between complex machinery requires billions of guest function calls, can still be achieved with RVScript.
 
 
 ## Demonstration
 
-This repository is built as an example on how you could use advanced techniques to speed up and blur the lines between native and emulated modern C++. The main function is in [engine/src](engine/src/main.cpp).
+This repository is built as a demonstration on how you could use advanced techniques to speed up and blur the lines between native and emulated modern C++. The main function is in [engine/src](engine/src/main.cpp).
 
 All the host-side code is in the engine folder, and is written as if it was running inside a game engine.
+
+The guest environment is modern C++20 using a GNU RISC-V compiler with RTTI and exceptions enabled. Several CRT functions have been implemented as system calls, and will have native performance. There is also Nim support and some example code.
+
+The example programs have some basic example timers and threads, as well as multiple machines to call into and between.
 
 
 ## Getting started
@@ -24,11 +26,11 @@ Run [setup.sh](/setup.sh) to make sure that libriscv is initialized properly. Th
 bash build.sh
 ```
 
-This project has no external dependencies outside of libriscv and libfmt. libriscv has no dependencies.
+There are also some benchmarks that can be performed with `BENCHMARK=1 ./build.sh`.
+
+This project has no external dependencies outside of libriscv and strf. libriscv has no dependencies.
 
 Running the engine is only half the equation as you will also want to be able to modify the scripts themselves. To do that you need a RISC-V compiler.
-
-There are some benchmarks that can be performed with `BENCHMARK=1 ./build.sh`.
 
 
 ## Using a RISC-V toolchain from system package
@@ -204,7 +206,7 @@ Nim code can be live-debugged just like other programs by running the engine wit
 
 - After I throw a C++ exception the emulator seems to just stop.
 	- When you call into the virtual machine you usually give it a budget. A limit on the number of instructions it gets to run for that particular call (or any other limit you impose yourself). If you forget to check if the limit has been reached, then it will just look like it stopped. You can check this with `script.machine().instruction_limit_reached()`. You can safely resume execution again by calling `script.resume()` again, as running out of instructions is not exceptional. For example the first C++ exception thrown inside the RISC-V emulator uses a gigaton of instructions and can blow the default limit.
-- How do I share memory with the engine?
+- How do I share memory with the script?
 	- You can allocate structures directly on the heap of the guest through `script.guest_alloc<Type> (count)`. Using the returned buffer as an arena is possible, but verify the alignment first.
 	- Create aligned memory in your engine and use the `machine.memory.insert_non_owned_memory()` function to insert it using the given page attributes. The machine will then create non-owning pages pointing to this memory sequentially. You can do this on as many machines as you want. The challenge then is to be able to use the pages as memory for your objects, and access the readable members in a portable way (the VMs are default 64-bit).
 - Passing long strings and big structures is slow.
