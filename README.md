@@ -1,21 +1,21 @@
 # RVScript
 
-RVScript is a game engine oriented scripting system backed by a [low latency RISC-V emulator](https://github.com/fwsGonzo/libriscv). By using a fast virtual machine with low call overhead and memory usage, combined with modern programming techniques we can have a type-safe and memory-safe script that is able to call billions of functions within a limited frame budget.
+RVScript is a game engine oriented scripting system backed by a [low latency RISC-V sandbox](https://github.com/fwsGonzo/libriscv). By using a fast virtual machine with low call overhead and memory usage, combined with modern programming techniques we can have a type-safe and memory-safe script that is able to call billions of functions within a limited frame budget.
 
 [![Build Engine w/scripts](https://github.com/fwsGonzo/rvscript/actions/workflows/engine.yml/badge.svg)](https://github.com/fwsGonzo/rvscript/actions/workflows/engine.yml) [![Unit Tests](https://github.com/fwsGonzo/rvscript/actions/workflows/unittests.yml/badge.svg)](https://github.com/fwsGonzo/rvscript/actions/workflows/unittests.yml)
 
-This project aims to change how scripting is done in game engines. Lua, LuaJIT and even Luau have fairly substantial overheads when calling into the script, especially when many arguments are involved. The same is true for some WebAssembly emulators that I have measured, eg. wasmtime. As a result, script functions are thought of as expensive to call often, and that changes thinking and design in projects accordingly. RVScript makes the game script ultra-low latency, so that even automation games where interactions between complex machinery requires billions of guest function calls, can still be achieved with RVScript.
+This project aims to change how scripting is done in game engines. Lua, Luau and even LuaJIT have fairly substantial overheads when calling into the script, especially when many function arguments are involved. The same is true for some WebAssembly emulators that I have measured, eg. wasmtime. As a result, script functions are thought of as expensive to call often, and that changes thinking and design in projects accordingly. RVScript makes the game script low latency, so that even automation games where interactions between complex machinery requires billions of script function calls, can still be achieved.
 
 
 ## Demonstration
 
-This repository is built as a demonstration on how you could use advanced techniques to speed up and blur the lines between native and emulated modern C++. The main function is in [engine/src](engine/src/main.cpp).
+This repository is built as a demonstration of how you could use advanced techniques to speed up and blur the lines between native and emulated modern C++. The main function is in [engine/src](engine/src/main.cpp).
 
-All the host-side code is in the engine folder, and is written as if it was running inside a game engine.
+All the host-side code is in the engine folder, and is written as if it was running inside a tiny game framework.
 
-The guest environment is modern C++20 using a GNU RISC-V compiler with RTTI and exceptions enabled. Several CRT functions have been implemented as system calls, and will have native performance. There is also Nim support and some example code.
+The script programs are using modern C++20 using a GNU RISC-V compiler with RTTI and exceptions enabled. Several CRT functions have been implemented as system calls, and will have native performance. There is also Nim support and some example code.
 
-The example programs have some basic example timers and threads, as well as multiple machines to call into and between.
+The example programs have some basic timers and threads, as well as some examples making calls between machines.
 
 
 ## Getting started
@@ -30,7 +30,7 @@ bash build.sh
 
 There are also some benchmarks that can be performed with `BENCHMARK=1 ./build.sh`.
 
-This project has no external dependencies outside of libriscv and strf. libriscv has no dependencies.
+The scripting system itself is its own CMake project, and it has no external dependencies outside of libriscv and strf. libriscv has no dependencies, and strf can be replaced with libfmt.
 
 Running the engine is only half the equation as you will also want to be able to modify the scripts themselves. To do that you need a RISC-V compiler.
 
@@ -51,7 +51,7 @@ The C-library that is used by this toolchain, glibc, will use its own POSIX mult
 
 ## Getting a newlib RISC-V compiler
 
-If you want to produce small and nimble executables, use riscvXX-unknown-elf from the RISC-V GNU toolchain. You can install it like this:
+If you want to produce performant and nimble executables, use riscvXX-unknown-elf from the RISC-V GNU toolchain. You can install it like this:
 
 ```sh
 git clone https://github.com/riscv/riscv-gnu-toolchain.git
@@ -64,7 +64,7 @@ make -j8
 
 Add `$HOME/riscv` to your PATH by adding `export PATH=$PATH:$HOME/riscv/bin` to your `~/.bashrc` file. After you have done this, close and reopen your terminals. You should be able to tab-complete `riscv64-unknown-elf-` now.
 
-This compiler will be preferred by the build script in the programs folder. Check out the [compiler detection script](/programs/detect_compiler.sh) for the selection process.
+This compiler will be preferred by the build script in the programs folder because it is more performant. Check out the [compiler detection script](/programs/detect_compiler.sh) for the selection process.
 
 ```sh
 $ riscv64-unknown-elf-g++ --version
@@ -73,7 +73,7 @@ riscv64-unknown-elf-g++ (gc891d8dc23e) 13.2.0
 
 ## Building and running
 
-If you have installed any RISC-V compiler the rest should be simple: Run [build.sh](/engine/build.sh) in the engine folder. It will automatically call the build script to create RISC-V programs.
+If you have installed any RISC-V compiler the rest should be simple: Run [build.sh](/engine/build.sh) in the engine folder. It will also automatically start building script programs from the [programs folder](/programs). The actual script programs are located in [the scripts folder](/engine/scripts).
 
 ```sh
 cd engine
@@ -179,18 +179,6 @@ In this case we would add this to [dynamic_calls.json](/programs/dynamic_calls.j
 See [memory.hpp](/ext/libriscv/lib/libriscv/memory.hpp) for a list of helper functions, each with a specific purpose.
 
 
-## Using other programming languages
-
-This is not so easy, as you will have to be able to create FFI (`extern "C"`) functions for your language, and also implement the system call layer that your API relies on. Some parts require writing inline assembly, although you may only have to create the syscall wrappers once. That said, I have a Rust implementation here:
-https://github.com/fwsGonzo/script_bench/tree/master/rvprogram/rustbin
-
-You can use any programming language that can output RISC-V binaries. A tiny bit of info about Rust is that I was unable to build anything but rv64gc binaries, so you would need to enable the C extension in the build.sh script (where it is sometimes explicitly set to OFF, depending on which compiler it detects).
-
-The easiest languages to integrate are those that transpile to C or C++, such as Nim, Haxe and Nelua. If you can stomach the extra cost of interpreting JavaScript then QuickJS can work well. Any language on the [list of compilers targetting C](https://github.com/dbohdan/compilers-targeting-c) would work.
-
-Good luck.
-
-
 ## Nim language support
 
 There is Nim support and a few examples are in the [micronim folder](/programs/micronim). The `nim` program must be in PATH, and `NIM_LIBS` will be auto-detected to point to the nim lib folder. For example `$HOME/nim-2.0.0/lib`. Nim support is experimental and the API is fairly incomplete.
@@ -202,28 +190,3 @@ Remember to use `.exportc` to make your Nim entry functions callable from the ou
 There is example code on how to load Nim programs at the bottom of [main.cpp](/engine/src/main.cpp).
 
 Nim code can be live-debugged just like other programs by running the engine with `DEBUG=1`. The Nim programs should be built with `DEBUG=1` also, to disable optimizations and generate richer debug information.
-
-
-## Common Issues
-
-- After I throw a C++ exception the emulator seems to just stop.
-	- When you call into the virtual machine you usually give it a budget. A limit on the number of instructions it gets to run for that particular call (or any other limit you impose yourself). If you forget to check if the limit has been reached, then it will just look like it stopped. You can check this with `script.machine().instruction_limit_reached()`. You can safely resume execution again by calling `script.resume()` again, as running out of instructions is not exceptional. For example the first C++ exception thrown inside the RISC-V emulator uses a gigaton of instructions and can blow the default limit.
-- How do I share memory with the script?
-	- You can allocate structures directly on the heap of the guest through `script.guest_alloc<Type> (count)`. Using the returned buffer as an arena is possible, but verify the alignment first.
-	- Create aligned memory in your engine and use the `machine.memory.insert_non_owned_memory()` function to insert it using the given page attributes. The machine will then create non-owning pages pointing to this memory sequentially. You can do this on as many machines as you want. The challenge then is to be able to use the pages as memory for your objects, and access the readable members in a portable way (the VMs are default 64-bit).
-- Passing long strings and big structures is slow.
-	- Use compile-time hashes of strings where you can.
-	- Use riscv::Buffer or buffer gathering for larger memory buffers.
-	- Page sharing if intended for communication between machines
-	- Use memory directly allocated in machines by using `script.guest_alloc<Type>(count)`.
-- How do I allow non-technical people to compile script?
-	- Hard question. Similar to other ahead-of-time compiled solutions, you will need a compiler in order to build the script. Maybe a REST endpoint that produces a binary by POSTing the code?
-- I have real-time requirements.
-	- As long as pausing the script to continue later is an option, you will not have any trouble. Just don't pause the script while it's in a thread and then accidentally vmcall into it from somewhere else. This will clobber all registers and you will have trouble later. You can use preempt provided that it returns to the same thread again (although you are able to yield back to a thread manually). There are many options where things will be OK. In my own engine all long-running tasks are running on separate machines to simplify things.
-
-
-## Stripped symbols
-
-Any functions you want to be callable from outside should be listed in the symbols file if you want them to not be pruned when stripping symbols. The symbol file is [programs/symbols.map](/programs/symbols.map), and the file is shared between all programs. It is a text file with a list of symbols that are to be left alone when stripping is enabled. It is only relevant when the `STRIP_SYMBOLS` CMake option is enabled, and it is _disabled by default_.
-
-These symbols are usually the ones you want to be made visible so that we can call public functions from the engine. In other words, if the function `start` is made public, by retaining it, then you can call the function from the engine like so: `myscript.call("start")`. Even GC-sections will not prune functions that are using the `PUBLIC()` macro. This is because of `__attribute__((used, retain))`.
