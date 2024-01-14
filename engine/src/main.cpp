@@ -33,8 +33,10 @@ int main()
 	/* The event_loop function can be resumed later, and can execute work
 	   that has been preemptively handed to it from other machines. */
 	auto events = Script("events", "scripts/gameplay.elf", debug);
-	/* A VM function call. The function must be public (listed in the symbols
-	 * file). */
+	/* A VM function call. The function is looked up in the symbol table
+	   of the program binary. Without an entry in the table, we cannot
+	   know the address of the function, even if it exists in the code. */
+	assert(events.address_of("event_loop") != 0x0);
 	events.call("event_loop");
 
 	/* Create the gameplay machine by cloning 'events' (same binary, but new instance) */
@@ -65,20 +67,21 @@ int main()
 	timers_loop(
 		[&]
 		{
-			/* This guy should run each engine tick instead. We are passing
-			   the maximum number of instructions that we allow it to use.
-			   This can work well as a substitute for time spent, provided
-			   each complex system call increments the counter sufficiently. */
+			/* This should run each engine tick instead. We are passing
+			   the maximum number of instructions that we allow it to use. */
 			events.resume(5'000);
 		});
 
-	/* Pass some non-trivial parameters to a VM function call. */
+	/* Create an event that is callable. */
 	struct C
 	{
 		char c = 'C';
 	};
+	Event<void(const std::string&, const C&, const std::string&)> my_event(gameplay, "cpp_function");
 
-	gameplay.call("cpp_function", "Hello", C {}, "World");
+	/* Pass some non-trivial parameters to the function call. */
+	my_event.call("Hello", C {}, "World");
+
 
 	strf::to(stdout)("...\n");
 
@@ -94,8 +97,11 @@ int main()
 		EmbeddedString<32> name;
 		bool alive = false;
 
-		Event onDeath;
-		Event onAction;
+		// Since this is shared between host and Script,
+		// we do not use Event here, as it would contain
+		// host pointers, which we don't want to share.
+		Script::gaddr_t onDeath = 0x0;
+		Script::gaddr_t onAction = 0x0;
 
 		static Script::gaddr_t address(size_t i)
 		{
@@ -130,21 +136,21 @@ int main()
 	auto& obj	= guest_objs.at(0);
 	obj.alive	= true;
 	obj.name	= "myobject";
-	obj.onDeath = Event(gameplay, "myobject_death");
+	obj.onDeath = gameplay.address_of("myobject_death");
 
 	/* Simulate object dying */
 	strf::to(stdout)(
-		"Calling '", obj.onDeath.function(), "' in '",
-		obj.onDeath.script().name(), "' for object at 0x",
+		"Calling '", gameplay.symbol_name(obj.onDeath), "' in '",
+		gameplay.name(), "' for object at 0x",
 		strf::hex(guest_objs.address(0)), "\n");
 	assert(obj.alive == true);
-	obj.onDeath.call(guest_objs.address(0));
+	gameplay.call(obj.onDeath, guest_objs.address(0));
 	assert(obj.alive == false);
 
 	/* Guest-allocated objects can be moved */
 	auto other_guest_objs		 = std::move(guest_objs);
 	other_guest_objs.at(0).alive = true;
-	other_guest_objs.at(0).onDeath.call(other_guest_objs.address(0));
+	gameplay.call(other_guest_objs.at(0).onDeath, other_guest_objs.address(0));
 	assert(other_guest_objs.at(0).alive == false);
 
 	strf::to(stdout)("...\n");

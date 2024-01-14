@@ -1,12 +1,17 @@
 #pragma once
 #include "script.hpp"
 
+/// @brief Create a wrapper for a function call, matching the
+/// function type F into a given Script instance, for the given function.
+/// @tparam F A function type, eg. void(int)
+template <typename F>
 struct Event
 {
 	Event() = default;
 	Event(Script&, const std::string& func);
+	Event(Script&, Script::gaddr_t address);
 
-	template <typename... Args> long call(Args&&... args);
+	template <typename... Args> auto call(Args&&... args);
 
 	bool is_callable() const noexcept
 	{
@@ -41,16 +46,32 @@ struct Event
 	Script::gaddr_t m_addr = 0;
 };
 
-inline Event::Event(Script& script, const std::string& func)
+template <typename F>
+inline Event<F>::Event(Script& script, const std::string& func)
   : m_script(&script), m_addr(script.address_of(func))
 {
 }
 
-template <typename... Args> inline long Event::call(Args&&... args)
+template <typename F>
+inline Event<F>::Event(Script& script, Script::gaddr_t address)
+  : m_script(&script), m_addr(address)
 {
+}
+
+template <typename F>
+template <typename... Args> inline auto Event<F>::call(Args&&... args)
+{
+	static_assert(std::is_invocable_v<F, Args...>);
+	using Ret = decltype((F*){}(args...));
+
 	if (is_callable())
 	{
-		return script().call(address(), std::forward<Args>(args)...);
+		script().call(address(), std::forward<Args>(args)...);
+		if constexpr (std::is_same_v<void, Ret>)
+			return;
+		else
+			return script().machine().template return_value<Ret>();
 	}
-	return -1;
+	if constexpr (!std::is_same_v<void, Ret>)
+		return Ret(-1);
 }
