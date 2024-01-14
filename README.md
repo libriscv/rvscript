@@ -172,3 +172,17 @@ In this case we would add this to [dynamic_calls.json](/programs/dynamic_calls.j
 "big_data":      "void sys_big_data (const char*, size_t)"
 ```
 See also [memory.hpp](/ext/libriscv/lib/libriscv/memory.hpp) for a list of helper functions, each with a specific purpose. The helper functions exist to simplify string and memory operations.
+
+
+## Other examples
+
+[Dynamic calls](/tests/basic.cpp)
+
+[Event callbacks](/tests/events.cpp)
+
+[Event loop unit test](/tests/event_loop.cpp)
+
+
+## Development notice
+
+This repository is still under development and will change over time. There are no stable APIs currently.
