@@ -6,7 +6,7 @@ RVScript is a game engine oriented scripting system backed by a [low latency RIS
 
 ## Introduction
 
-This project aims to change how scripting is done in game engines. Lua, Luau and even LuaJIT have fairly substantial overheads when making function calls into the script, especially when many arguments are involved. The same is true for some WebAssembly emulators that I have measured, eg. wasmtime. As a result, script functions are considered expensive to call, regardless of how little or how much they do, especially when used from a game engine where there is a tight deadline every frame. That changes thinking and design in projects accordingly. This repository is an attempt at making game scripting low latency, so that even automation games where interactions between complex machinery requires billions of script function calls, can still be achieved in a timely manner.
+This project aims to change how scripting is done in game engines. Lua, Luau and even LuaJIT have fairly substantial overheads when making function calls into the script, especially when many arguments are involved. The same is true for WebAssembly emulators that I have measured, eg. wasmtime. I have yet to find another low latency emulator, actually. As a result, script functions are considered expensive to call, regardless of how little or how much they do, especially when used from a game engine where there is a tight deadline every frame. That changes thinking and design in projects accordingly. This repository is an attempt at making game scripting low latency, so that even automation games where interactions between complex machinery requires billions of script function calls, can still be achieved in a timely manner.
 
 
 ## Demonstration
@@ -101,18 +101,11 @@ target remote :2159
 ```
 
 
-## C++ RTTI and exceptions
-
-Exceptions and RTTI are currently always enabled, and will add at least 170k to binaries, according to my measurements. Additionally, you will have to increase the maximum allotted number of instructions to a call by at least 600k instructions, as the first exception thrown will have to run through a massive amount of code. However, any code that does not throw exceptions as part of normal operation will be fine performance-wise.
-
-
 ## WSL2 support
 
 Follow this to install WSL2 on Windows 10: https://docs.microsoft.com/en-us/windows/wsl/install-win10
 
 There is nothing different that you have to do on WSL2. Install dependencies for GCC, then clone and install the RISC-V toolchain like above. It will just work.
-
-You must be on the latest Windows insider version for this at the time of writing.
 
 
 ## Creating an API
@@ -126,7 +119,7 @@ Script::set_dynamic_call("void sys_lazy ()", [] (auto&) {
 		strf::to(stdout)("I'm not doing much, tbh.\n");
 	});
 ```
-Will assign the function to the string "lazy". To call this function from inside the RISC-V programs we have to amend [dynamic_calls.json](/programs/dynamic_calls.json), like so:
+Will assign the function to the dynamic call "void sys_lazy ()", which is done to help minimize ABI mistakes like passing wrong argument types. To call this function from inside the script programs we have to amend [dynamic_calls.json](/programs/dynamic_calls.json), like so:
 
 ```json
 "lazy":      "void sys_lazy ()"
@@ -141,7 +134,7 @@ A slightly more complex example, where we take an integer as argument, and retur
 ```C++
 Script::set_dynamic_call("object_id",
 	[] (Script& script) {
-		const auto [id] = script.machine().sysargs <int> ();
+		const auto [id] = script.args <int> ();
 		strf::to(stdout)("Object ID: ", id, "\n");
 
 		script.machine().set_result(1234);
@@ -155,7 +148,7 @@ Script::set_dynamic_call("struct_by_ref",
 		struct Something {
 			int a, b, c, d;
 		};
-		const auto [s] = script.machine().sysargs <Something> ();
+		const auto [s] = script.args <Something> ();
 		strf::to(stdout)("Struct A: ", s.a, "\n");
 	});
 ```
@@ -166,10 +159,10 @@ Script::set_dynamic_call("void sys_big_data (const char*, size_t)",
 	[] (Script& script) {
 		// A Buffer is a general-purpose container for fragmented virtual memory.
 		// The <riscv::Buffer> consumes two registers (A0: pointer, A1: length).
-		const auto [buffer] = script.machine().sysargs <riscv::Buffer> ();
+		const auto [buffer] = script.args <riscv::Buffer> ();
 		handle_buffer(buffer.to_string());
 		// Or, alternatively (also consumes two registers):
-		const auto [view] = script.machine().sysargs <std::string_view> ();
+		const auto [view] = script.args <std::string_view> ();
 		handle_buffer(view);
 	});
 ```
@@ -178,17 +171,4 @@ In this case we would add this to [dynamic_calls.json](/programs/dynamic_calls.j
 ```json
 "big_data":      "void sys_big_data (const char*, size_t)"
 ```
-See [memory.hpp](/ext/libriscv/lib/libriscv/memory.hpp) for a list of helper functions, each with a specific purpose.
-
-
-## Nim language support
-
-There is Nim support and a few examples are in the [micronim folder](/programs/micronim). The `nim` program must be in PATH, and `NIM_LIBS` will be auto-detected to point to the nim lib folder. For example `$HOME/nim-2.0.0/lib`. Nim support is experimental and the API is fairly incomplete.
-
-The Nim build system is not easily worked with to build in parallel, but I have made an effort with the build scripts. Nim programs are built in parallel and the CMake build after is also that. There is still a lot of shared generated code, but those issues need to be solved by the Nim developers.
-
-Remember to use `.exportc` to make your Nim entry functions callable from the outside, and also add them to the [symbols file](/programs/micronim/src/default.symbols). If your function is listed in the symbols file as well as exported with `.exportc`, you should be able to straight up call it using `script.call("myfunction")`.
-
-There is example code on how to load Nim programs at the bottom of [main.cpp](/engine/src/main.cpp).
-
-Nim code can be live-debugged just like other programs by running the engine with `DEBUG=1`. The Nim programs should be built with `DEBUG=1` also, to disable optimizations and generate richer debug information.
+See also [memory.hpp](/ext/libriscv/lib/libriscv/memory.hpp) for a list of helper functions, each with a specific purpose. The helper functions exist to simplify string and memory operations.
