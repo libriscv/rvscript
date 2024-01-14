@@ -9,10 +9,16 @@ template <typename T> struct GuestObjects;
 struct Script
 {
 	static constexpr int MARCH = RISCV_ARCH / 8;
+
+	/// @brief A virtual address inside a Script program
 	using gaddr_t		= riscv::address_type<MARCH>;
+	/// @brief A virtual machine running a program
 	using machine_t		= riscv::Machine<MARCH>;
+	/// @brief A dynamic call callback function
 	using ghandler_t	= std::function<void(Script&)>;
+	/// @brief A callback for when Game::exit() is called inside a Script program
 	using exit_func_t 	= std::function<void(Script&)>;
+
 	/// @brief The total physical memory of the program
 	static constexpr gaddr_t MAX_MEMORY	= 1024 * 1024 * 16ull;
 	/// @brief A virtual memory area set aside for the initial stack
@@ -80,6 +86,17 @@ struct Script
 		return (const T*)m_userptr;
 	}
 
+	/// @brief Tries to find the name of a symbol at the given virtual address.
+	/// @param address The virtual address to find in the symbol table.
+	/// @return The closest symbol to the given address.
+	std::string symbol_name(gaddr_t address) const;
+
+	/// @brief Look up the address of a name. Returns 0x0 if not found.
+	/// Uses an unordered_map to remember lookups in order to speed up future lookups.
+	/// @param name The name to find the virtual address for.
+	/// @return The virtual address of name, or 0x0 if not found.
+	gaddr_t address_of(const std::string& name) const;
+
 	// Install a callback function using a string name
 	// Can be invoked from the guest using the same string name
 	static void set_dynamic_call(const std::string& def, ghandler_t);
@@ -94,26 +111,36 @@ struct Script
 		return m_arguments;
 	}
 
+	/// @brief The virtual machine hosting the Scripts program.
+	/// @return The underlying virtual machine.
 	auto& machine()
 	{
 		return *m_machine;
 	}
 
+	/// @brief The virtual machine hosting the Scripts program.
+	/// @return The underlying virtual machine.
 	const auto& machine() const
 	{
 		return *m_machine;
 	}
 
+	/// @brief The name given to this Script instance during creation.
+	/// @return The name of this Script instance.
 	const auto& name() const noexcept
 	{
 		return m_name;
 	}
 
+	/// @brief The CRC32 hash of the name given to this Script instance during creation.
+	/// @return The hashed name of this Script instance.
 	uint32_t hash() const noexcept
 	{
 		return m_hash;
 	}
 
+	/// @brief The filename passed to this Script instance during creation.
+	/// @return The filename of this Script instance.
 	const auto& filename() const noexcept
 	{
 		return m_filename;
@@ -124,12 +151,13 @@ struct Script
 		return m_is_debug;
 	}
 
+	/// @brief Check if this instance has reported a crash.
+	/// @return True if the instance has crashed one or more times.
 	bool crashed() const noexcept
 	{
 		return m_crashed;
 	}
 
-	bool reset(); // true if the reset was successful
 	void print(std::string_view text);
 	void print_backtrace(const gaddr_t addr);
 
@@ -145,9 +173,6 @@ struct Script
 
 	long vmbench(gaddr_t address, size_t ntimes = 30);
 	static long benchmark(std::function<void()>, size_t ntimes = 1000);
-
-	std::string symbol_name(gaddr_t address) const;
-	gaddr_t address_of(const std::string& name) const;
 
 	void add_shared_memory();
 
@@ -176,29 +201,50 @@ struct Script
 	/// @param remote The remote script
 	void setup_strict_remote_calls_to(Script& remote);
 
-	void add_allowed_remote_function(gaddr_t addr)
-	{
-		m_remote_access.insert(addr);
-	}
+	/// @brief Allow a remote Script to call the given local function on this Script instance.
+	/// Only applies if setup_strict_remote_calls_to() is used on the caller Script.
+	/// @param func The local function on this instance to allow remote callers to call.
+	void add_allowed_remote_function(const std::string& func);
+	void add_allowed_remote_function(gaddr_t addr);
 
 	/* The guest heap is managed outside using system calls. */
+
+	/// @brief Allocate bytes inside the program. All allocations are at least 8-byte aligned.
+	/// @param bytes The number of 8-byte aligned bytes to allocate.
+	/// @return The address of the allocated bytes.
 	gaddr_t guest_alloc(gaddr_t bytes);
+
+	/// @brief Allocate bytes inside the program. All allocations are at least 8-byte aligned.
+	/// This allocation is sequentially accessible outside of the script. Using
+	/// this function the host engine can view and use the allocation as a single
+	/// consecutive array of bytes, allowing it to be used with many (if not most)
+	/// APIs that do not handle fragmented memory.
+	/// @param bytes The number of sequentially allocated 8-byte aligned bytes.
+	/// @return The address of the sequentially allocated bytes.
 	gaddr_t guest_alloc_sequential(gaddr_t bytes);
 	bool guest_free(gaddr_t addr);
 
-	/* Allocate n uninitialized objects in the guest and return the
-	   location. A managing object is returned, which will free all
-	   objects on destruction. The object can be moved. */
+	/// @brief Create a wrapper object that manages an allocation of n objects of type T
+	/// inside the program. All objects are default-constructed.
+	/// All objects are accessible in the host and in the script. The script can read and write
+	/// all objects at will, making the state of these objects fundamentally untrustable.
+	/// When the wrapper destructs, the allocation in the program is also freed. Can be moved.
+	/// @tparam T The type of the allocated objects.
+	/// @param n The number of allocated objects in the array.
+	/// @return A wrapper managing the program-hosted objects. Can be moved.
 	template <typename T> GuestObjects<T> guest_alloc(size_t n = 1);
 
-	void
-	gdb_remote_debugging(std::string message, bool one_up, uint16_t port = 0);
+	/// @brief Start debugging with GDB right now. Only works on Linux.
+	/// @param message Message to print inside GDB.
+	/// @param one_up Always go one stack frame up? This can be used to leave a wrapper function.
+	/// @param port The port to use. By default the RSP port 2159.
+	void gdb_remote_debugging(std::string message, bool one_up, uint16_t port = 0);
 
+	/// @brief Decide what happens when Game::exit() is called in the script.
+	/// @param callback The function to call when Game::exit() is called.
 	static void on_exit(exit_func_t callback) { Script::m_exit = std::move(callback); }
 	void exit() { Script::m_exit(*this); } // Called by Game::exit() from the script.
 
-	static void setup_syscall_interface();
-	bool initialize();
 	// Create new Script instance from file
 	Script(
 		const std::string& name, const std::string& filename,
@@ -212,10 +258,12 @@ struct Script
 	~Script();
 
   private:
+	static void setup_syscall_interface();
+	bool reset(); // true if the reset was successful
+	bool initialize();
 	void could_not_find(std::string_view);
 	void handle_exception(gaddr_t);
 	void handle_timeout(gaddr_t);
-	bool install_binary(const std::string& file, bool shared = true);
 	void machine_setup();
 	void machine_remote_setup();
 	void resolve_dynamic_calls();
@@ -434,4 +482,17 @@ template <typename T> inline GuestObjects<T> Script::guest_alloc(size_t n)
 		return {*this, addr, object, n};
 	}
 	throw std::runtime_error("Unable to allocate aligned sequential data");
+}
+
+inline void Script::add_allowed_remote_function(gaddr_t addr)
+{
+	m_remote_access.insert(addr);
+}
+inline void Script::add_allowed_remote_function(const std::string& func)
+{
+	const auto addr = this->address_of(func);
+	if (addr != 0x0)
+		this->m_remote_access.insert(addr);
+	else
+		throw std::runtime_error("No such function: " + func);
 }
