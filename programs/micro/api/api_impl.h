@@ -80,29 +80,6 @@ inline uint32_t Game::current_machine()
 
 #define RUNNING_ON(mach) (api::current_machine() == crc32(mach))
 
-inline void each_frame_helper(int count, int reason)
-{
-	for (int i = 0; i < count; i++)
-		microthread::wakeup_one_blocked(reason);
-}
-
-inline void wait_next_tick()
-{
-	microthread::block(REASON_FRAME);
-}
-
-template <typename T, typename... Args>
-inline void each_tick(const T& func, Args&&... args)
-{
-	static bool init = false;
-	if (!init)
-	{
-		init = true;
-		(void)syscall(ECALL_EACH_FRAME, (long)each_frame_helper, REASON_FRAME);
-	}
-	microthread::oneshot(func, std::forward<Args>(args)...);
-}
-
 /** Game **/
 
 inline void Game::exit()

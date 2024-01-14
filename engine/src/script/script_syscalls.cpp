@@ -66,34 +66,6 @@ APICALL(api_measure)
 	machine.set_result(time_ns);
 }
 
-template <bool Preempt = false>
-inline void do_farcall(machine_t& machine, Script& dest, gaddr_t addr)
-{
-	// copy argument registers (1 less integer register)
-	const auto& current = machine.cpu.registers();
-	auto& regs			= dest.machine().cpu.registers();
-	for (int i = 0; i < 6; i++)
-	{
-		regs.get(10 + i) = current.get(12 + i);
-	}
-	for (int i = 0; i < 8; i++)
-	{
-		regs.getfl(10 + i) = current.getfl(10 + i);
-	}
-
-	// vmcall with no arguments to avoid clobbering registers
-	if constexpr (!Preempt)
-	{
-		machine.set_result(dest.call(addr));
-	}
-	else
-	{
-		machine.set_result(dest.preempt(addr));
-	}
-	// we short-circuit the ret pseudo-instruction:
-	machine.cpu.jump(machine.cpu.reg(riscv::REG_RA) - 4);
-}
-
 APICALL(api_dyncall)
 {
 	auto& regs = machine.cpu.registers();
@@ -114,21 +86,6 @@ APICALL(api_dyncall_args)
 	scr.dynargs().clear();
 }
 
-APICALL(api_farcall)
-{
-	machine.set_result(-1);
-}
-
-APICALL(api_farcall_direct)
-{
-	machine.set_result(-1);
-}
-
-APICALL(api_interrupt)
-{
-	machine.set_result(-1);
-}
-
 APICALL(api_machine_hash)
 {
 	machine.set_result(script(machine).hash());
@@ -136,9 +93,7 @@ APICALL(api_machine_hash)
 
 APICALL(api_each_frame)
 {
-	auto [addr, reason] = machine.sysargs<gaddr_t, int>();
-	script(machine).set_tick_event(addr, reason);
-	machine.set_result(0);
+	machine.set_result(-1);
 }
 
 APICALL(api_game_setting)
@@ -220,9 +175,6 @@ void Script::setup_syscall_interface()
 		{ECALL_MEASURE, api_measure},
 		{ECALL_DYNCALL, api_dyncall},
 		{ECALL_DYNARGS, api_dyncall_args},
-		{ECALL_FARCALL, api_farcall},
-		{ECALL_FARCALL_DIRECT, api_farcall_direct},
-		{ECALL_INTERRUPT, api_interrupt},
 		{ECALL_MACHINE_HASH, api_machine_hash},
 		{ECALL_EACH_FRAME, api_each_frame},
 

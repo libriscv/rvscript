@@ -28,22 +28,3 @@ asm(".global sys_write\n"
 "	li a7, " STRINGIFY(ECALL_WRITE) "\n"
 "	ecall\n"
 "   ret\n");
-
-asm(".global farcall_helper\n"
-"farcall_helper:\n"
-"	li a7, " STRINGIFY(ECALL_FARCALL) "\n"
-"	ecall\n"
-"   ret\n");
-
-asm(".global direct_farcall_helper\n"
-"direct_farcall_helper:\n"
-"	li a7, " STRINGIFY(ECALL_FARCALL_DIRECT) "\n"
-"	ecall\n"
-"   ret\n");
-
-asm(".global sys_interrupt\n"
-"sys_interrupt:\n"
-"	li a7, " STRINGIFY(ECALL_INTERRUPT) "\n"
-"	ecall\n"
-"   ret\n"
-""); // The system call handler must jump back to caller

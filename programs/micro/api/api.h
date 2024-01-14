@@ -65,11 +65,6 @@ namespace api
 		static Label label(Widget& parent, const std::string& text);
 	};
 
-	/** Events **/
-	template <typename T, typename... Args>
-	void each_tick(const T& func, Args&&... args);
-	void wait_next_tick();
-
 	/** Timers **/
 
 	struct Timer

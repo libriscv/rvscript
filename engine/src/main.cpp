@@ -58,11 +58,6 @@ int main()
 	level2.call("start");
 
 	strf::to(stdout)("...\n");
-	/* Simulate some physics ticks */
-	for (int n = 0; n < 3; n++)
-		level1.each_tick_event();
-
-	strf::to(stdout)("...\n");
 	/* Ordinarily a game engine has a physics loop that ticks regularly,
 	   but we don't in this example. Instead we will just sleep until
 	   the next available timer. And resume the event loop in between. */

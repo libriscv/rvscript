@@ -103,8 +103,6 @@ void Script::add_shared_memory()
 
 bool Script::initialize()
 {
-	// clear some state belonging to previous initialization
-	this->m_tick_event = 0;
 	// run through the initialization
 	try
 	{
@@ -304,24 +302,6 @@ std::string Script::symbol_name(gaddr_t address) const
 {
 	auto callsite = machine().memory.lookup(address);
 	return callsite.name;
-}
-
-void Script::each_tick_event()
-{
-	if (this->m_tick_event == 0)
-		return;
-	auto& mt = machine().threads();
-	assert(mt.get_tid() == 0 && "Avoid clobbering regs");
-
-	int count = 0;
-	for (auto* thread : mt.blocked_threads())
-	{
-		if (thread->block_word == this->m_tick_block_word)
-			count++;
-	}
-	this->preempt(
-		this->m_tick_event, (int)count, (int)this->m_tick_block_word);
-	assert(mt.get_thread()->tid == 0 && "Avoid clobbering regs");
 }
 
 void Script::set_dynamic_call(const std::string& def, ghandler_t handler)

@@ -24,36 +24,61 @@ struct Script
 	/// @brief The max number of instructions allowed during calls
 	static constexpr uint64_t MAX_CALL_INSTR = 32'000'000ull;
 
-	// Call any script function, with any parameters
+	/// @brief Make a function call into the script
+	/// @param func The function to call. Must be a visible symbol in the program.
+	/// @param args The arguments to pass to the function.
+	/// @return The optional integral return value.
 	template <typename... Args>
-	long call(const std::string& name, Args&&...);
+	long call(const std::string& func, Args&&... args);
 
+	/// @brief Make a function call into the script
+	/// @param addr The functions direct address.
+	/// @param args The arguments to pass to the function.
+	/// @return The optional integral return value.
 	template <typename... Args>
-	long call(gaddr_t addr, Args&&...);
+	long call(gaddr_t addr, Args&&... args);
 
+	/// @brief Make a preempted function call into the script, saving and
+	/// restoring the current execution state.
+	/// Preemption allows callers to temporarily interrupt the virtual machine,
+	/// such that it can be resumed like normal later on.
+	/// @param func The function to call. Must be a visible symbol in the program.
+	/// @param args The arguments to the function call.
+	/// @return The optional integral return value.
 	template <typename... Args>
-	long preempt(gaddr_t addr, Args&&...);
+	long preempt(const std::string& func, Args&&... args);
 
-	// Run for a bit, then stop
+	/// @brief Make a preempted function call into the script, saving and
+	/// restoring the current execution state.
+	/// Preemption allows callers to temporarily interrupt the virtual machine,
+	/// such that it can be resumed like normal later on.
+	/// @param addr The functions address to call.
+	/// @param args The arguments to the function call.
+	/// @return The optional integral return value.
+	template <typename... Args>
+	long preempt(gaddr_t addr, Args&&... args);
+
+	/// @brief Resume execution of the script, until @param instruction_count has been reached,
+	/// then stop execution and return. This function can be used to drive long-running tasks
+	/// over time, by continually resuming them.
+	/// @param instruction_count The max number of instructions to execute before returning.
 	void resume(uint64_t instruction_count);
 
+	/// @brief Returns the pointer provided at instantiation of the Script instance.
+	/// @tparam T The real type of the user-provided pointer.
+	/// @return Returns the user-provided pointer.
 	template <typename T> T* userptr() noexcept
 	{
 		return (T*)m_userptr;
 	}
 
+	/// @brief Returns the pointer provided at instantiation of the Script instance.
+	/// @tparam T The real type of the user-provided pointer.
+	/// @return Returns the user-provided pointer.
 	template <typename T> const T* userptr() const noexcept
 	{
 		return (const T*)m_userptr;
 	}
-
-	void set_tick_event(gaddr_t addr, int reason)
-	{
-		this->m_tick_event		= addr;
-		this->m_tick_block_word = reason;
-	}
-
-	void each_tick_event();
 
 	// Install a callback function using a string name
 	// Can be invoked from the guest using the same string name
@@ -201,8 +226,6 @@ struct Script
 	std::shared_ptr<const std::vector<uint8_t>> m_binary;
 	void* m_userptr;
 	gaddr_t m_heap_area		   = 0;
-	gaddr_t m_tick_event	   = 0;
-	uint32_t m_tick_block_word = 0;
 	std::string m_name;
 	std::string m_filename;
 	uint32_t m_hash;
@@ -263,13 +286,13 @@ inline long Script::call(gaddr_t address, Args&&... args)
 template <typename... Args>
 inline long Script::call(const std::string& func, Args&&... args)
 {
-	const auto address = machine().address_of(func.c_str());
-	if (UNLIKELY(address == 0))
+	const auto address = this->address_of(func.c_str());
+	if (UNLIKELY(address == 0x0))
 	{
 		this->could_not_find(func);
 		return -1;
 	}
-	return call(address, std::forward<Args>(args)...);
+	return this->call(address, std::forward<Args>(args)...);
 }
 
 template <typename... Args>
@@ -285,6 +308,18 @@ inline long Script::preempt(gaddr_t address, Args&&... args)
 		this->handle_exception(address);
 	}
 	return -1;
+}
+
+template <typename... Args>
+inline long Script::preempt(const std::string& func, Args&&... args)
+{
+	const auto address = this->address_of(func.c_str());
+	if (UNLIKELY(address == 0x0))
+	{
+		this->could_not_find(func);
+		return -1;
+	}
+	return this->preempt(address, std::forward<Args>(args)...);
 }
 
 inline void Script::resume(uint64_t cycles)

@@ -41,32 +41,8 @@ void do_threads_stuff()
 	auto retval = microthread::join(thread);
 	print("Full thread exited, return value: ", retval, "\n");
 
+	/* GDB can be automatically opened at this point. */
 	Game::breakpoint();
-
-	/* Create events that will run each physics tick.
-	   We will be waiting immediately, so that we don't run the
-	   event code now, but instead when each tick happens. */
-	each_tick(
-		[]
-		{
-			while (true)
-			{
-				wait_next_tick();
-				static int i = 0;
-				print("Tick ", i++, "!\n");
-			}
-		});
-	int physics_value = 44;
-	each_tick(
-		[physics_value]
-		{
-			int v = physics_value;
-			while (true)
-			{
-				wait_next_tick();
-				print("I have a ", v++, "!\n");
-			}
-		});
 
 	/* This creates a new thread with no arguments and immediately starts
 	   executing it. The sleep() will block the thread until some time has
