@@ -44,18 +44,19 @@ int main()
 
 	/* This is the main start function, which would be something like the
 	   starting function for the current levels script. You can find the
-	   implementation in scripts/src/gameplay.cpp. */
+	   implementation in scripts/src/level1.cpp. */
 	auto level1 = Script("level1", "scripts/level1.elf", debug);
+	/* level1 make remote calls to the gameplay program. */
 	level1.setup_remote_calls_to(gameplay);
 
 	level1.call("start");
 
 	/* Use strict remote calls for level2 */
 	auto level2 = Script("level2", "scripts/level2.elf", debug);
+	/* level2 can make remote calls to the gameplay program. */
 	level2.setup_strict_remote_calls_to(gameplay);
 	/* Allow calling *only* this function remotely, when in strict mode */
-	gameplay.add_allowed_remote_function(
-		gameplay.address_of("_Z25gameplay_allowed_functioni"));
+	gameplay.add_allowed_remote_function("_Z25gameplay_allowed_functioni");
 
 	level2.call("start");
 
@@ -176,8 +177,6 @@ int main()
 
 	screen.buildInterface();
 
-	// ???
-	// screen.set_position({200, 200});
 	screen.mainLoop();
 
 	return 0;
