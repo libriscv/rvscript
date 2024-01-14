@@ -11,8 +11,7 @@ using gaddr_t = Script::gaddr_t;
 static std::vector<uint8_t> load_file(const std::string& filename);
 // Some dynamic calls are currently enabled late in initialization
 static constexpr bool WARN_ON_UNIMPLEMENTED_DYNCALL = false;
-// the shared area is read-write for the guest
-static constexpr size_t STACK_SIZE	  = 2ULL << 20;
+/// @brief The shared memory area is 8KB and read+write
 static constexpr gaddr_t SHM_BASE	  = 0x2000;
 static constexpr gaddr_t SHM_SIZE	  = 2 * riscv::Page::size();
 static const int HEAP_SYSCALLS_BASE	  = 570;
@@ -109,7 +108,7 @@ bool Script::initialize()
 	// run through the initialization
 	try
 	{
-		machine().simulate<false>(MAX_INSTR);
+		machine().simulate<false>(MAX_BOOT_INSTR);
 
 		if (UNLIKELY(machine().instruction_limit_reached()))
 		{
@@ -147,10 +146,6 @@ void Script::machine_setup()
 		strf::to(stdout)(std::string_view {p, len});
 	});
 	machine().set_debug_printer(machine().get_printer());
-	machine().set_stdin(
-		(machine_t::stdin_func)[](const machine_t&, char*, size_t)->long {
-			return 0;
-		});
 	machine().on_unhandled_csr = [](machine_t& machine, int csr, int, int)
 	{
 		auto& script = *machine.template get_userdata<Script>();
@@ -292,7 +287,17 @@ void Script::print(std::string_view text)
 
 gaddr_t Script::address_of(const std::string& name) const
 {
-	return machine().address_of(name.c_str());
+	// We need to cache lookups because they are fairly expensive
+	// Dynamic executables usually have a hash lookup table for symbols,
+	// but no such thing for static executables. So, we compensate by
+	// storing symbols in a local cache in order to reduce latencies.
+	auto it = m_lookup_cache.find(name);
+	if (it != m_lookup_cache.end())
+		return it->second;
+
+	const auto addr = machine().address_of(name.c_str());
+	m_lookup_cache.try_emplace(name, addr);
+	return addr;
 }
 
 std::string Script::symbol_name(gaddr_t address) const

@@ -13,9 +13,16 @@ struct Script
 	using machine_t		= riscv::Machine<MARCH>;
 	using ghandler_t	= std::function<void(Script&)>;
 	using exit_func_t 	= std::function<void(Script&)>;
+	/// @brief The total physical memory of the program
 	static constexpr gaddr_t MAX_MEMORY	= 1024 * 1024 * 16ull;
+	/// @brief A virtual memory area set aside for the initial stack
+	static constexpr gaddr_t STACK_SIZE	= 1024 * 1024 * 2ull;
+	/// @brief A virtual memory area set aside for the heap
 	static constexpr gaddr_t MAX_HEAP	= 1024 * 1024 * 256ull;
-	static constexpr uint64_t MAX_INSTR = 32'000'000ull;
+	/// @brief The max number of instructions allowed during startup
+	static constexpr uint64_t MAX_BOOT_INSTR = 32'000'000ull;
+	/// @brief The max number of instructions allowed during calls
+	static constexpr uint64_t MAX_CALL_INSTR = 32'000'000ull;
 
 	// Call any script function, with any parameters
 	template <typename... Args>
@@ -207,8 +214,12 @@ struct Script
 	Script* m_remote_script = nullptr;
 	/// @brief Functions accessible when remote access is *strict*
 	std::unordered_set<gaddr_t> m_remote_access;
-	// dynamic call arguments
+	/// @brief List of arguments added by dynamic arguments feature
 	std::vector<std::any> m_arguments;
+	/// @brief Cached addresses for symbol lookups
+	/// This could probably be improved by doing it per-binary instead
+	/// of a separate cache per instance. But at least it's thread-safe.
+	mutable std::unordered_map<std::string, gaddr_t> m_lookup_cache;
 	// dynamic call array, lazily resolved at run-time
 	struct DyncallDesc {
 		uint32_t hash;
@@ -239,7 +250,7 @@ inline long Script::call(gaddr_t address, Args&&... args)
 {
 	try
 	{
-		return machine().vmcall<MAX_INSTR>(
+		return machine().vmcall<MAX_CALL_INSTR>(
 			address, std::forward<Args>(args)...);
 	}
 	catch (const std::exception& e)
@@ -267,7 +278,7 @@ inline long Script::preempt(gaddr_t address, Args&&... args)
 	try
 	{
 		return machine().preempt(
-			MAX_INSTR, address, std::forward<Args>(args)...);
+			MAX_CALL_INSTR, address, std::forward<Args>(args)...);
 	}
 	catch (const std::exception& e)
 	{
