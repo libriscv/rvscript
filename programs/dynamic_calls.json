@@ -17,8 +17,7 @@
 	"GUI::widget_set_pos": "void sys_gui_widget_set_pos (unsigned, int, int)",
 	"GUI::widget_callback": "void sys_gui_widget_callback (unsigned, gui_callback, void *, size_t)",
 
-	"empty":      "void sys_empty ()",
-	"testing":    "void sys_testing ()",
-	"testing_strings": "void sys_testing_strings (const char*, const char*, size_t)",
-	"testing123": "void sys_testing123 (int, int, int, float, float, float)"
+	"empty":       "void sys_empty ()",
+	"test_string": "void sys_test_strings (const char*, const char*, size_t)",
+	"test_3i_3f":  "void sys_test_3i3f (int, int, int, float, float, float)"
 }

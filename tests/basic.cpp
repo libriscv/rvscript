@@ -101,3 +101,56 @@ TEST_CASE("Verify late dynamic calls work", "[Basic]")
 	REQUIRE(ret == 666);
 	REQUIRE(count == 2);
 }
+
+TEST_CASE("Verify dynamic calls with arguments", "[Basic]")
+{
+	const auto program = build_and_load(R"M(
+	#include <api.h>
+
+	extern "C" void test_strings() {
+		sys_test_strings("1234", "45678", 5);
+	}
+	extern "C" void test_args() {
+		sys_test_3i3f(123, 456, 789, 10.0f, 100.0f, 1000.0f);
+	}
+
+	int main() {
+	})M");
+
+	int strings_called = 0;
+	int args_called = 0;
+
+	Script::set_dynamic_call("void sys_test_strings (const char*, const char*, size_t)",
+	[&] (Script& script) {
+		auto [str, view] = script.args<std::string, std::string_view> ();
+		REQUIRE(str == "1234");
+		REQUIRE(view == "45678");
+		strings_called += 1;
+	});
+	Script::set_dynamic_call("void sys_test_3i3f (int, int, int, float, float, float)",
+	[&] (Script& script) {
+		auto [i1, i2, i3, f1, f2, f3] = script.args<int, int, int, float, float, float> ();
+		REQUIRE(i1 == 123);
+		REQUIRE(i2 == 456);
+		REQUIRE(i3 == 789);
+		REQUIRE(f1 == 10.0f);
+		REQUIRE(f2 == 100.0f);
+		REQUIRE(f3 == 1000.0f);
+		args_called += 1;
+	});
+
+	Script script {program, "MyScript", "/tmp/myscript"};
+
+	REQUIRE(strings_called == 0);
+	REQUIRE(args_called == 0);
+
+	script.call("test_strings");
+
+	REQUIRE(strings_called == 1);
+	REQUIRE(args_called == 0);
+
+	script.call("test_args");
+
+	REQUIRE(strings_called == 1);
+	REQUIRE(args_called == 1);
+}

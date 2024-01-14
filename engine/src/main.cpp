@@ -155,47 +155,6 @@ int main()
 
 	strf::to(stdout)("...\n");
 
-	/* Verify dynamic functions are working */
-	int called = 0x0;
-	gameplay.set_dynamic_call(
-		"void sys_testing ()",
-		[&](auto&)
-		{
-			called |= 0x1;
-		});
-	gameplay.set_dynamic_call(
-		"void sys_testing_strings (const char*, const char*, size_t)",
-		[&](auto& s)
-		{
-			// Argument 1: A heap-allocated string
-			// Argument 2: A string-view pointing into guest memory
-			const auto [str, view]
-				= s.machine().template sysargs<std::string, std::string_view>();
-			if (str == "Hello World!" && view == "Hello World!")
-			{
-				called |= 0x2;
-			}
-		});
-	gameplay.set_dynamic_call(
-		"void sys_testing123 (int, int, int, float, float, float)",
-		[&](auto& s)
-		{
-			const auto [arg1, arg2, arg3, arg4, arg5, arg6]
-				= s.machine().template sysargs<int, int, int, float, float, float>();
-			if (arg1 == 4 && arg2 == 5 && arg3 == 6 && arg4 == 7.0 && arg5 == 8.0 && arg6 == 9.0)
-			{
-				called |= 0x4;
-			}
-		});
-	gameplay.call("test_dynamic_functions");
-	// All the functions should have been called
-	if (called != (0x1 | 0x2 | 0x4)) {
-		strf::to(stderr)(
-			"Error: Dynamic calls not invoked or did not set locals!?\n");
-		exit(1);
-	}
-
-	strf::to(stdout)("* Dynamic call tests passed!\n");
 
 	if (Script::get_global_setting("benchmarks").value_or(false))
 	{
@@ -204,20 +163,6 @@ int main()
 
 		// Benchmarks of various features
 		gameplay.call("benchmarks");
-
-		// Fork benchmarks
-		strf::to(stdout)("Benchmarking RISC-V machine fork:\n");
-		Script::benchmark(
-			[&gameplay]
-			{
-				// Forking the underlying virtual machine
-				const riscv::MachineOptions<Script::MARCH> options {
-					.memory_max		  = 16ULL << 20,
-					.stack_size		  = 2ULL << 20,
-					.use_memory_arena = true
-				};
-				riscv::Machine<Script::MARCH> fork { gameplay.machine(), options };
-			});
 	}
 
 	strf::to(stdout)("...\nBringing up the main screen!\n");

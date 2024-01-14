@@ -106,6 +106,12 @@ struct Script
 	void dynamic_call_hash(uint32_t hash, gaddr_t strname);
 	void dynamic_call_array(uint32_t idx);
 
+	/// @brief Retrieve arguments passed to a dynamic call, specifying each type.
+	/// @tparam ...Args The types of arguments to retrieve.
+	/// @return A tuple of arguments.
+	template <typename... Args>
+	auto args() const;
+
 	auto& dynargs()
 	{
 		return m_arguments;
@@ -381,6 +387,12 @@ inline void Script::resume(uint64_t cycles)
 		this->handle_exception(machine().cpu.pc());
 		this->m_crashed = true;
 	}
+}
+
+template <typename... Args>
+inline auto Script::args() const
+{
+	return machine().sysargs<Args ...> ();
 }
 
 /**

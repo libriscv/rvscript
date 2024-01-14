@@ -45,32 +45,6 @@ static void inline_dyncall_handler()
 	return_fast();
 }
 
-static void opaque_dyncall_args_x4()
-{
-	sys_empty();
-	sys_testing123(4, 5, 6, 7.0f, 8.0f, 9.0f);
-	sys_empty();
-	sys_testing123(4, 5, 6, 7.0f, 8.0f, 9.0f);
-	sys_empty();
-	sys_testing123(4, 5, 6, 7.0f, 8.0f, 9.0f);
-	sys_empty();
-	sys_testing123(4, 5, 6, 7.0f, 8.0f, 9.0f);
-	return_fast();
-}
-
-static void inline_dyncall_args_x4()
-{
-	isys_empty();
-	isys_testing123(4, 5, 6, 7.0, 8.0, 9.0);
-	isys_empty();
-	isys_testing123(4, 5, 6, 7.0, 8.0, 9.0);
-	isys_empty();
-	isys_testing123(4, 5, 6, 7.0, 8.0, 9.0);
-	isys_empty();
-	isys_testing123(4, 5, 6, 7.0, 8.0, 9.0);
-	return_fast();
-}
-
 PUBLIC(void public_donothing())
 {
 	/* nothing */
@@ -101,8 +75,6 @@ PUBLIC(void benchmarks())
 	measure("Direct thread creation overhead", direct_thread_function);
 	measure("Dynamic call handler x4 (inline)", inline_dyncall_handler);
 	measure("Dynamic call handler x4 (call)", opaque_dyncall_handler);
-	measure("Dynamic call args x8 (inline)", inline_dyncall_args_x4);
-	measure("Dynamic call args x8 (call)", opaque_dyncall_args_x4);
 
 	//benchmark_multiprocessing();
 }
@@ -139,15 +111,4 @@ PUBLIC(void myobject_death(GameObject& object))
 	print("Object '", object.name.to_string(), "' is dying!\n");
 	/* SFX: Ugh... */
 	object.alive = false;
-}
-
-PUBLIC(void test_dynamic_functions())
-{
-	// See: dynamic_calls.json
-	// 1: A simple no-argument dynamic call
-	sys_testing();
-	// 2: A dynamic call that takes a zero-terminated string, and then a string with length
-	sys_testing_strings("Hello World!", "Hello World!", 12);
-	// 3: A dynamic call that takes a few integers and floats
-	sys_testing123(4, 5, 6, 7.0, 8.0, 9.0);
 }
