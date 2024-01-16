@@ -15,7 +15,7 @@ This repository is built as a demonstration of how you could use advanced techni
 
 All the host-side code is in the engine folder, and is written as if it was running inside a tiny fictional game framework.
 
-The script programs are using modern C++20 using a GNU RISC-V compiler with RTTI and exceptions being optional. Several CRT functions have been implemented as system calls, and will have native performance. There is also Nim support and some example code.
+The script programs are using modern C++20 using a GNU RISC-V compiler with RTTI and exceptions being optional. Several CRT functions have been implemented as system calls, and will have native performance.
 
 The example programs have some basic timers and threads, as well as some examples making calls between machines.
 

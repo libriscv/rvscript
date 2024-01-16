@@ -86,12 +86,7 @@ int main()
 
 	strf::to(stdout)("...\n");
 
-	/* ** Call events of a shared game object **
-	   1. Share memory with the guest
-	   2. Set up the objects
-	   3. Call with address as offset from shared area
-	*/
-	static constexpr Script::gaddr_t OBJECT_AREA = 0xC000000;
+	/*** Call events of shared game objects ***/
 
 	struct GameObject
 	{
@@ -103,11 +98,6 @@ int main()
 		// host pointers, which we don't want to share.
 		Script::gaddr_t onDeath = 0x0;
 		Script::gaddr_t onAction = 0x0;
-
-		static Script::gaddr_t address(size_t i)
-		{
-			return OBJECT_AREA + i * sizeof(GameObject);
-		}
 	};
 
 	/** Allocate 16 objects on the guest.
@@ -159,9 +149,6 @@ int main()
 
 	if (Script::get_global_setting("benchmarks").value_or(false))
 	{
-		// Create an dynamic function for benchmarking
-		gameplay.set_dynamic_call("void sys_empty ()", [](auto&) {});
-
 		// Benchmarks of various features
 		gameplay.call("benchmarks");
 	}
