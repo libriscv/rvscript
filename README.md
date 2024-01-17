@@ -22,9 +22,13 @@ The example programs have some basic timers and threads, as well as some example
 
 ## Getting started
 
-Install cmake, git, GCC or Clang for your system.
+Install cmake, git, and a new g++ or Clang for your distro.
 
-Run [setup.sh](/setup.sh) to make sure that libriscv is initialized properly. Then go into the engine folder and run:
+Run [setup.sh](/setup.sh) to make sure that libriscv and some OpenGL dependencies is initialized properly.
+
+If you don't have the Debian distro or equivalent packages, you can just use `distrobox create --image ubuntu:22.04` and build this project from that. Even if you have an old Ubuntu version you can still use distrobox. All the dependencies are listed in [setup.sh](/setup.sh).
+
+Then go into the engine folder and run:
 
 ```sh
 bash build.sh
