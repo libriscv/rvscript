@@ -26,11 +26,6 @@ PUBLIC(void start())
 	if (Game::setting("benchmarks").value_or(false))
 		do_benchmarks();
 
-	print("** Remote **\n");
-
-	/* Do some remote function calls. */
-	do_remote_stuff();
-
 	print("** Threads **\n");
 
 	/* Test-run some micro-threads. */
