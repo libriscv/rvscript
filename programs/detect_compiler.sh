@@ -39,6 +39,6 @@ elif command -v "riscv64-linux-gnu-g++-10" &> /dev/null; then
 
 else
 	echo "* Error: Could not detect RISC-V compiler. Install one from your package manager."
-	echo "* Example: sudo apt install gcc-12-riscv64-linux-gnu"
+	echo "* Example: sudo apt install g++-12-riscv64-linux-gnu"
 	exit 1
 fi
