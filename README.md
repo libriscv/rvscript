@@ -4,6 +4,8 @@ RVScript is a game engine oriented scripting system backed by a [low latency RIS
 
 [![Build Engine w/scripts](https://github.com/fwsGonzo/rvscript/actions/workflows/engine.yml/badge.svg)](https://github.com/fwsGonzo/rvscript/actions/workflows/engine.yml) [![Unit Tests](https://github.com/fwsGonzo/rvscript/actions/workflows/unittests.yml/badge.svg)](https://github.com/fwsGonzo/rvscript/actions/workflows/unittests.yml)
 
+For questions and help, [visit Discord](https://discord.gg/aGhUSBpH).
+
 ## Introduction
 
 This project aims to change how scripting is done in game engines. Lua, Luau and even LuaJIT have fairly substantial overheads when making function calls into the script, especially when many arguments are involved. The same is true for WebAssembly emulators that I have measured, eg. wasmtime. I have yet to find another low latency emulator, actually. As a result, script functions are considered expensive to call, regardless of how little or how much they do, especially when used from a game engine where there is a tight deadline every frame. That changes thinking and design in projects accordingly. This repository is an attempt at making game scripting low latency, so that even automation games where interactions between complex machinery requires billions of script function calls, can still be achieved in a timely manner.
