@@ -49,6 +49,9 @@ int main()
 	/* level1 make remote calls to the gameplay program. */
 	level1.setup_remote_calls_to(gameplay);
 
+	auto other = events.clone("gameplay");
+	level1.init_uds(other);
+
 	level1.call("start");
 
 	/* Use strict remote calls for level2 */

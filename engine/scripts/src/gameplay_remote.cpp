@@ -80,3 +80,29 @@ extern KEEP() void gameplay_exec_ptr(void (*func)())
 	func();
 	return_fast();
 }
+
+asm(".global sys_rpc_recv\n"
+"sys_rpc_recv:\n"
+"	li a7, 507\n"
+"	ecall\n"
+"   ret\n");
+extern "C" ssize_t sys_rpc_recv(void *, size_t);
+
+extern "C" KEEP() void rpc_waitloop()
+{
+	std::array<char, 16384> buffer;
+	while (true) {
+		sys_rpc_recv(buffer.data(), buffer.size());
+	}
+}
+
+extern KEEP() void gameplay_rpc(ssize_t len)
+{
+	std::array<char, 16384> buffer;
+	sys_rpc_recv(buffer.data(), buffer.size());
+}
+
+extern KEEP() void gameplay_data(const void *, size_t)
+{
+
+}

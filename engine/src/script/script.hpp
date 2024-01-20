@@ -213,6 +213,8 @@ struct Script
 	void add_allowed_remote_function(const std::string& func);
 	void add_allowed_remote_function(gaddr_t addr);
 
+	Script* remote_script() noexcept { return this->m_remote_script; }
+
 	/* The guest heap is managed outside using system calls. */
 
 	/// @brief Allocate bytes inside the program. All allocations are at least 8-byte aligned.
@@ -316,6 +318,11 @@ struct Script
 	// map of globally accessible run-time settings
 	static inline std::map<std::string, gaddr_t, std::less<>> m_runtime_settings;
 	static inline exit_func_t m_exit = nullptr;
+
+public:
+	int m_fds[2] = {-1, -1};
+	int m_recvfd = -1;
+	void init_uds(Script& other);
 };
 
 static_assert(

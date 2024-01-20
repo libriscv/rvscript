@@ -158,7 +158,7 @@ void Script::machine_setup()
 	this->m_heap_area = machine().memory.mmap_allocate(MAX_HEAP);
 
 	// Add POSIX system call interfaces (no filesystem or network access)
-	machine().setup_linux_syscalls(false, false);
+	machine().setup_linux_syscalls(true, false);
 	machine().setup_posix_threads();
 	// Add native system call interfaces
 	machine().setup_native_heap(HEAP_SYSCALLS_BASE, heap_area(), MAX_HEAP);

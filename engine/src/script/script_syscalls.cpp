@@ -1,6 +1,7 @@
 #include "script_syscalls.hpp"
 
 #include <cmath>
+#include <future>
 #include <libriscv/rv32i_instr.hpp>
 #include <libriscv/threads.hpp>
 #include <strf/to_cfile.hpp>
@@ -163,6 +164,78 @@ APICALL(api_vector_normalize)
 	machine.set_result(dx, dy);
 }
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <sys/uio.h>
+#include <unistd.h>
+#include <mutex>
+static constexpr bool DIRECT_RPC = false;
+static bool ready = false;
+std::mutex m;
+std::condition_variable cv;
+
+APICALL(api_uds_call)
+{
+	auto [func, view] = machine.sysargs<gaddr_t, std::string_view> ();
+
+	auto& scr = script(machine);
+	ssize_t len = write(scr.m_fds[0], view.begin(), view.size());
+	if (len < 0)
+		throw std::runtime_error("RPC write failed");
+
+	if constexpr (DIRECT_RPC) {
+		auto* remote = scr.remote_script();
+		remote->m_recvfd = scr.m_fds[1];
+		remote->call(func, len);
+	} else {
+		ready = false;
+		std::unique_lock lk(m);
+		cv.wait(lk, []{ return ready; });
+	}
+}
+APICALL(api_uds_recv)
+{
+	auto [buf, len] = machine.sysargs<gaddr_t, gaddr_t> ();
+
+	auto& scr = script(machine);
+
+	std::array<riscv::vBuffer, 128> buffers;
+	const size_t cnt =
+		scr.machine().memory.gather_writable_buffers_from_range(
+			buffers.size(), buffers.data(), buf, len);
+	ssize_t res = readv(scr.m_recvfd, (const iovec *)&buffers[0], cnt);
+	if (res < 0)
+		throw std::runtime_error("RPC readv failed");
+
+	ready = true;
+	cv.notify_one();
+
+	scr.machine().set_result(res);
+}
+
+APICALL(api_uds_write)
+{
+	auto& scr = script(machine);
+
+	scr.machine().set_result(-1);
+}
+
+void Script::init_uds(Script& other)
+{
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, this->m_fds) < 0)
+		throw std::runtime_error("Unable to create socket pair for RPC");
+
+	if constexpr (DIRECT_RPC)
+		return;
+
+	other.m_recvfd = this->m_fds[1];
+	static std::thread thread;
+	new (&thread) std::thread([remote = &other] {
+		remote->call("rpc_waitloop");
+	});
+}
+
 void Script::setup_syscall_interface()
 {
 	// Implement the most basic functionality here,
@@ -175,6 +248,9 @@ void Script::setup_syscall_interface()
 		{ECALL_MEASURE, api_measure},
 		{ECALL_DYNCALL, api_dyncall},
 		{ECALL_DYNARGS, api_dyncall_args},
+		{ECALL_RPC_CALL,  api_uds_call},
+		{ECALL_RPC_RECV,  api_uds_recv},
+		{ECALL_RPC_WRITE, api_uds_write},
 		{ECALL_MACHINE_HASH, api_machine_hash},
 		{ECALL_EACH_FRAME, api_each_frame},
 

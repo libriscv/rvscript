@@ -95,7 +95,7 @@ long Script::finish_benchmark(std::vector<long>& results)
 		"highest: ",
 		highest, "ns\n");
 
-	static constexpr bool VERBOSE_BENCHMARKS = false;
+	static constexpr bool VERBOSE_BENCHMARKS = true;
 	if constexpr (VERBOSE_BENCHMARKS)
 	{
 		strf::to(stdout)(

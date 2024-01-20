@@ -37,9 +37,30 @@ int main()
 	print("Hello from Level 1 main()\n");
 }
 
+asm(".global sys_rpc_call\n"
+"sys_rpc_call:\n"
+"	li a7, 506\n"
+"	ecall\n"
+"   ret\n");
+extern "C" ssize_t sys_rpc_call(void(*)(ssize_t), const void *, size_t);
+extern void gameplay_rpc(ssize_t);
+extern void gameplay_data(const void *, size_t);
+
+static const struct Data {
+	int integers[32] {};
+} data;
+
 void do_benchmarks()
 {
 	measure("Benchmark overhead", [] { return_fast(); });
+
+	measure("RPC", [] {
+		sys_rpc_call(gameplay_rpc, &data, sizeof(data));
+	});
+
+	measure("Remote data", [] {
+		gameplay_data(&data, sizeof(data));
+	});
 
 	measure(
 		"Run-time setting",
