@@ -113,6 +113,9 @@ TEST_CASE("Verify dynamic calls with arguments", "[Basic]")
 	extern "C" void test_args() {
 		sys_test_3i3f(123, 456, 789, 10.0f, 100.0f, 1000.0f);
 	}
+	extern "C" void test_inlined_args() {
+		isys_test_3i3f(123, 456, 789, 10.0f, 100.0f, 1000.0f);
+	}
 
 	int main() {
 	})M");
@@ -149,8 +152,25 @@ TEST_CASE("Verify dynamic calls with arguments", "[Basic]")
 	REQUIRE(strings_called == 1);
 	REQUIRE(args_called == 0);
 
+	// Clear argument registers
+	for (int i = 0; i < 8; i++) {
+		script.machine().cpu.reg(10+i) = 0;
+		script.machine().cpu.registers().getfl(10+i).load_u64(0);
+	}
+
 	script.call("test_args");
 
 	REQUIRE(strings_called == 1);
 	REQUIRE(args_called == 1);
+
+	// Clear argument registers
+	for (int i = 0; i < 8; i++) {
+		script.machine().cpu.reg(10+i) = 0;
+		script.machine().cpu.registers().getfl(10+i).load_u64(0);
+	}
+
+	script.call("test_inlined_args");
+
+	REQUIRE(strings_called == 1);
+	REQUIRE(args_called == 2);
 }

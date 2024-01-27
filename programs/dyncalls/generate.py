@@ -80,37 +80,49 @@ def emit_inline_assembly(header, asmdef, index, fargs):
 	has_output = (retval != "void")
 	inputs = []
 	output = []
+	argno = 0
 	areg = 0
+	freg = 0
 	asm_regs = ""
 	asm_in   = []
 	asm_out  = []
 	asm_clob = []
 
 	if has_output:
-		asm_regs += "register " + retval + " ra0 asm(\"a0\");\n"
+		asm_regs += "register " + retval + " ra0 __asm__(\"a0\");\n"
 		asm_out = ["\"=r\"(ra0)"]
 
 	asm_clob += []
 
 	for arg in fargs:
-		reg = "a" + str(areg)
-		asm_regs += "register " + arg + " " + reg + " asm(\"" + reg + "\") = arg" + str(areg) + ";\n"
+		if "float" in arg or "double" in arg:
+			# floating-point registers
+			reg = "fa" + str(freg)
+			freg += 1
+		else:
+			# integral registers
+			reg = "a" + str(areg)
+			areg += 1
+		asm_regs += "register " + arg + " " + reg + " __asm__(\"" + reg + "\") = arg" + str(argno) + ";\n"
 		# strings
 		if "*" in arg:
 			asm_in += ["\"r\"(" + reg + ")"]
 			if "void" in arg:
-				asm_in += ["\"m\"(*(char *)arg" + str(areg) + ")"]
+				asm_in += ["\"m\"(*(char *)arg" + str(argno) + ")"]
 			else:
-				asm_in += ["\"m\"(*arg" + str(areg) + ")"]
+				asm_in += ["\"m\"(*arg" + str(argno) + ")"]
+		# floats
+		elif "float" in arg or "double" in arg:
+			asm_in += ["\"f\"(" + reg + ")"]
 		# integrals
 		else:
 			asm_in += ["\"r\"(" + reg + ")"]
-		fargs[areg ] = arg + " arg" + str(areg)
-		areg += 1
+		fargs[argno] = arg + " arg" + str(argno)
+		argno += 1
 
 	asm_in += []
 
-	header += "static inline " + retval + " i" + asmdef + " (" + ','.join(fargs) + ') {\n'
+	header += "static inline __attribute__((always_inline, optimize(\"O2\"))) " + retval + " i" + asmdef + " (" + ','.join(fargs) + ') {\n'
 	header += asm_regs
 	header += '__asm__ volatile(\".insn i 0b1011011, 0, x0, x0, ' + str(index) + "\"" \
 		+ " : " + ",".join(asm_out) + " : " + ",".join(asm_in) + " : " + ",".join(asm_clob) + ");\n"
