@@ -4,7 +4,7 @@ RVScript is a game engine oriented scripting system backed by a [low latency RIS
 
 [![Build Engine w/scripts](https://github.com/fwsGonzo/rvscript/actions/workflows/engine.yml/badge.svg)](https://github.com/fwsGonzo/rvscript/actions/workflows/engine.yml) [![Unit Tests](https://github.com/fwsGonzo/rvscript/actions/workflows/unittests.yml/badge.svg)](https://github.com/fwsGonzo/rvscript/actions/workflows/unittests.yml)
 
-For questions and help, [visit Discord](https://discord.gg/aGhUSBpH).
+For discussions & help, [visit Discord](https://discord.gg/n4GcXr66X5).
 
 ## Introduction
 
