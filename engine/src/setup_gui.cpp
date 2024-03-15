@@ -86,11 +86,7 @@ void setup_gui_system(MainScreen& screen)
 			 auto capture = CaptureStorage::get(machine, data, size);
 			 auto func = [callback = callback, widx = widx, capture, &script]
 			 {
-				 gaddr_t dst = script.guest_alloc(capture.size());
-				 script.machine().copy_to_guest(
-					 dst, capture.data(), capture.size());
-				 script.call(callback, widx, dst);
-				 script.guest_free(dst);
+				 script.call(callback, widx, capture);
 			 };
 
 			 nanogui::Widget& widget = *screen.getw(widx);

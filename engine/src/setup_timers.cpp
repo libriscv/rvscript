@@ -33,13 +33,9 @@ void setup_timer_system()
 
 			 int id = timers.periodic(
 				 time, peri,
-				 [addr = (gaddr_t)addr, capture, &script](int id)
+				 [addr = (gaddr_t)addr, capture, script = &script](int id)
 				 {
-					 gaddr_t dst = script.guest_alloc(capture.size());
-					 script.machine().copy_to_guest(
-						 dst, capture.data(), capture.size());
-					 script.call(addr, id, dst);
-					 script.guest_free(dst);
+					 script->call(addr, id, capture);
 				 });
 			 machine.set_result(id);
 		 }},
