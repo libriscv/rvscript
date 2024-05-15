@@ -147,7 +147,8 @@ TEST_CASE("Verify dynamic calls with arguments", "[Basic]")
 	REQUIRE(strings_called == 0);
 	REQUIRE(args_called == 0);
 
-	script.call("test_strings");
+	auto res = script.call("test_strings");
+	REQUIRE(res);
 
 	REQUIRE(strings_called == 1);
 	REQUIRE(args_called == 0);
@@ -158,7 +159,8 @@ TEST_CASE("Verify dynamic calls with arguments", "[Basic]")
 		script.machine().cpu.registers().getfl(10+i).load_u64(0);
 	}
 
-	script.call("test_args");
+	res = script.call("test_args");
+	REQUIRE(res);
 
 	REQUIRE(strings_called == 1);
 	REQUIRE(args_called == 1);
@@ -169,7 +171,8 @@ TEST_CASE("Verify dynamic calls with arguments", "[Basic]")
 		script.machine().cpu.registers().getfl(10+i).load_u64(0);
 	}
 
-	script.call("test_inlined_args");
+	res = script.call("test_inlined_args");
+	REQUIRE(res);
 
 	REQUIRE(strings_called == 1);
 	REQUIRE(args_called == 2);

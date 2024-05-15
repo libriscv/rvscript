@@ -308,6 +308,16 @@ std::string Script::symbol_name(gaddr_t address) const
 	return callsite.name;
 }
 
+static std::string single_spaced_string(std::string line)
+{
+	std::size_t loc = 0;
+	while ((loc = line.find("  ", loc)) != std::string::npos)
+	{
+		line.replace(loc, 2, " ");
+	}
+	return line;
+}
+
 void Script::set_dynamic_call(const std::string& def, ghandler_t handler)
 {
 	// Uses the definition as both name and hash
@@ -323,9 +333,27 @@ void Script::set_dynamic_call(std::string name, std::string def, ghandler_t hand
 		};
 	}
 
-	// Uses the definition as hash
+	// Turn definition into a single-spaced string
+	def = single_spaced_string(def);
+	// Calculate hash from definition
 	const uint32_t hash = crc32(def.c_str(), def.size());
-	m_dynamic_functions.insert_or_assign(hash, HostDyncall{std::move(name), std::move(def), std::move(handler)});
+	auto it				= m_dynamic_functions.find(hash);
+	if (it != m_dynamic_functions.end())
+	{
+		if (it->second.name != name) {
+			strf::to(stdout)(
+				"Dynamic function '", name, "' with hash ", strf::hex(hash),
+				" already exists with another name '", it->second.name, "'\n");
+			throw std::runtime_error(
+				"Script::set_dynamic_call failed: Hash collision for " + name);
+		}
+		it->second.func = std::move(handler);
+	} else {
+		m_dynamic_functions.emplace(
+			std::piecewise_construct,
+			std::forward_as_tuple(hash),
+			std::forward_as_tuple(std::move(name), std::move(def), std::move(handler)));
+	}
 }
 
 void Script::set_dynamic_calls(

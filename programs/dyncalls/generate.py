@@ -182,7 +182,7 @@ for key in j:
 	if key == "typedef" or key == "clientside" or key == "serverside" or key == "initialization":
 		continue
 	else:
-		asmdef  = j[key]
+		asmdef  = " ".join(j[key].split())
 		asmname = asmdef.split(' ')[1]
 
 		fargs = find_arguments(asmdef)
