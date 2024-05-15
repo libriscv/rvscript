@@ -4,6 +4,7 @@ set(SOURCES
 	script.cpp
 	script_bench.cpp
 	script_debug.cpp
+	script_fork.cpp
 	script_remote.cpp
 	script_syscalls.cpp
 )

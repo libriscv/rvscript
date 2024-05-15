@@ -12,7 +12,7 @@ inline void print(Args&&... args)
 	psyscall(ECALL_WRITE, buffer, res.ptr - buffer);
 }
 
-inline void print_backtrace()
+static inline void print_backtrace()
 {
 	syscall1(SYSCALL_BACKTRACE);
 }
@@ -23,8 +23,11 @@ void panic(const char* reason)
 {
 	print("\n\n!!! PANIC !!!\n", reason, '\n');
 
+	syscall(ECALL_ASSERT_FAIL, (long)reason, (long)__FILE__, __LINE__, (long)__func__);
+
 	// the end
-	exit(-1);
+	asm volatile("unimp");
+	__builtin_unreachable();
 }
 
 extern "C" __attribute__((weak))

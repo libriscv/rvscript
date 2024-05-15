@@ -4,6 +4,7 @@
 #include <libriscv/machine.hpp>
 #include <optional>
 #include <unordered_set>
+#include "script_depth.hpp"
 template <typename T> struct GuestObjects;
 
 struct Script
@@ -12,6 +13,7 @@ struct Script
 
 	/// @brief A virtual address inside a Script program
 	using gaddr_t		= riscv::address_type<MARCH>;
+	using sgaddr_t      = riscv::signed_address_type<MARCH>;
 	/// @brief A virtual machine running a program
 	using machine_t		= riscv::Machine<MARCH>;
 	/// @brief A dynamic call callback function
@@ -29,20 +31,22 @@ struct Script
 	static constexpr uint64_t MAX_BOOT_INSTR = 32'000'000ull;
 	/// @brief The max number of instructions allowed during calls
 	static constexpr uint64_t MAX_CALL_INSTR = 32'000'000ull;
+	/// @brief The max number of recursive calls into the Machine allowed
+	static constexpr uint8_t  MAX_CALL_DEPTH = 8;
 
 	/// @brief Make a function call into the script
 	/// @param func The function to call. Must be a visible symbol in the program.
 	/// @param args The arguments to pass to the function.
 	/// @return The optional integral return value.
 	template <typename... Args>
-	long call(const std::string& func, Args&&... args);
+	std::optional<Script::sgaddr_t> call(const std::string& func, Args&&... args);
 
 	/// @brief Make a function call into the script
 	/// @param addr The functions direct address.
 	/// @param args The arguments to pass to the function.
 	/// @return The optional integral return value.
 	template <typename... Args>
-	long call(gaddr_t addr, Args&&... args);
+	std::optional<Script::sgaddr_t> call(gaddr_t addr, Args&&... args);
 
 	/// @brief Make a preempted function call into the script, saving and
 	/// restoring the current execution state.
@@ -52,7 +56,7 @@ struct Script
 	/// @param args The arguments to the function call.
 	/// @return The optional integral return value.
 	template <typename... Args>
-	long preempt(const std::string& func, Args&&... args);
+	std::optional<Script::sgaddr_t> preempt(const std::string& func, Args&&... args);
 
 	/// @brief Make a preempted function call into the script, saving and
 	/// restoring the current execution state.
@@ -62,13 +66,13 @@ struct Script
 	/// @param args The arguments to the function call.
 	/// @return The optional integral return value.
 	template <typename... Args>
-	long preempt(gaddr_t addr, Args&&... args);
+	std::optional<Script::sgaddr_t> preempt(gaddr_t addr, Args&&... args);
 
 	/// @brief Resume execution of the script, until @param instruction_count has been reached,
 	/// then stop execution and return. This function can be used to drive long-running tasks
 	/// over time, by continually resuming them.
 	/// @param instruction_count The max number of instructions to execute before returning.
-	void resume(uint64_t instruction_count);
+	bool resume(uint64_t instruction_count);
 
 	/// @brief Returns the pointer provided at instantiation of the Script instance.
 	/// @tparam T The real type of the user-provided pointer.
@@ -155,13 +159,6 @@ struct Script
 	bool is_debug() const noexcept
 	{
 		return m_is_debug;
-	}
-
-	/// @brief Check if this instance has reported a crash.
-	/// @return True if the instance has crashed one or more times.
-	bool crashed() const noexcept
-	{
-		return m_crashed;
 	}
 
 	void print(std::string_view text);
@@ -251,6 +248,17 @@ struct Script
 	static void on_exit(exit_func_t callback) { Script::m_exit = std::move(callback); }
 	void exit() { Script::m_exit(*this); } // Called by Game::exit() from the script.
 
+	/// @brief Create a thread-local fork of this script instance.
+	/// @return A new Script instance that is a fork of this instance.
+	Script& create_fork();
+	/// @brief Retrieve the fork of this script instance.
+	/// @return The fork of this instance.
+	Script& get_fork();
+	/// @brief Retrieve an instance of a script by its program name.
+	/// @param  name The name of the script to find.
+	/// @return The script instance with the given name.
+	static Script& Find(const std::string& name);
+
 	// Create new Script instance from file
 	Script(
 		const std::string& name, const std::string& filename,
@@ -265,11 +273,12 @@ struct Script
 
   private:
 	static void setup_syscall_interface();
-	bool reset(); // true if the reset was successful
-	bool initialize();
+	void reset(); // true if the reset was successful
+	void initialize();
 	void could_not_find(std::string_view);
 	void handle_exception(gaddr_t);
 	void handle_timeout(gaddr_t);
+	void max_depth_exceeded(gaddr_t);
 	void machine_setup();
 	void machine_remote_setup();
 	void resolve_dynamic_calls();
@@ -283,8 +292,8 @@ struct Script
 	std::string m_name;
 	std::string m_filename;
 	uint32_t m_hash;
+	uint8_t  m_call_depth   = 0;
 	bool m_is_debug			= false;
-	bool m_crashed			= false;
 	bool m_stdout			= true;
 	bool m_last_newline		= true;
 	int m_budget_overruns	= 0;
@@ -323,69 +332,77 @@ static_assert(
 	"Architecture must be 32- or 64-bit");
 
 template <typename... Args>
-inline long Script::call(gaddr_t address, Args&&... args)
+inline std::optional<Script::sgaddr_t> Script::call(gaddr_t address, Args&&... args)
 {
+	ScriptDepthMeter meter(this->m_call_depth);
 	try
 	{
-		return machine().vmcall<MAX_CALL_INSTR>(
-			address, std::forward<Args>(args)...);
+		if (LIKELY(meter.is_one()))
+			return {machine().vmcall<MAX_CALL_INSTR>(
+				address, std::forward<Args>(args)...)};
+		else if (LIKELY(meter.get() < MAX_CALL_DEPTH))
+			return {machine().preempt(MAX_CALL_INSTR,
+				address, std::forward<Args>(args)...)};
+		else
+			this->max_depth_exceeded(address);
 	}
 	catch (const std::exception& e)
 	{
 		this->handle_exception(address);
 	}
-	return -1;
+	return std::nullopt;
 }
 
 template <typename... Args>
-inline long Script::call(const std::string& func, Args&&... args)
+inline std::optional<Script::sgaddr_t> Script::call(const std::string& func, Args&&... args)
 {
 	const auto address = this->address_of(func.c_str());
 	if (UNLIKELY(address == 0x0))
 	{
 		this->could_not_find(func);
-		return -1;
+		return std::nullopt;
 	}
-	return this->call(address, std::forward<Args>(args)...);
+	return {this->call(address, std::forward<Args>(args)...)};
 }
 
 template <typename... Args>
-inline long Script::preempt(gaddr_t address, Args&&... args)
+inline std::optional<Script::sgaddr_t> Script::preempt(gaddr_t address, Args&&... args)
 {
 	try
 	{
-		return machine().preempt(
-			MAX_CALL_INSTR, address, std::forward<Args>(args)...);
+		return {machine().preempt(
+			MAX_CALL_INSTR, address, std::forward<Args>(args)...)};
 	}
 	catch (const std::exception& e)
 	{
 		this->handle_exception(address);
 	}
-	return -1;
+	return std::nullopt;
 }
 
 template <typename... Args>
-inline long Script::preempt(const std::string& func, Args&&... args)
+inline std::optional<Script::sgaddr_t> Script::preempt(const std::string& func, Args&&... args)
 {
 	const auto address = this->address_of(func.c_str());
 	if (UNLIKELY(address == 0x0))
 	{
 		this->could_not_find(func);
-		return -1;
+		return std::nullopt;
 	}
-	return this->preempt(address, std::forward<Args>(args)...);
+	return {this->preempt(address, std::forward<Args>(args)...)};
 }
 
-inline void Script::resume(uint64_t cycles)
+inline bool Script::resume(uint64_t cycles)
 {
 	try
 	{
 		machine().resume<false>(cycles);
+		return true;
 	}
 	catch (const std::exception& e)
 	{
 		this->handle_exception(machine().cpu.pc());
-		this->m_crashed = true;
+		return false;
 	}
 }
 
@@ -398,12 +415,7 @@ inline auto Script::args() const
 /**
  * This uses RAII to sequentially allocate a range
  * for the objects, which is freed on destruction.
- * If the object range is larger than a page (4k),
- * the guarantee will no longer hold, and things will
- * stop working if the pages are not sequential on the
- * host as well. If the objects are somewhat large or
- * you need many, simply manage 1 or more objects at a
- * time. This is a relatively inexpensive abstraction.
+ * This is a relatively inexpensive abstraction.
  *
  * Example:
  * myscript.guest_alloc<GameObject>(16) allocates one

@@ -27,7 +27,7 @@ APICALL(assert_fail)
 	strf::to(stderr)(
 		"[", script(machine).name(), "] assertion failed: ", expr, " in ",
 		file, ":", line, ", function: ", func, "\n");
-	machine.stop();
+	throw std::runtime_error("Assertion failed in " + script(machine).name());
 }
 
 APICALL(api_write)

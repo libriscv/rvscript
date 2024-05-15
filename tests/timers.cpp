@@ -31,12 +31,12 @@ TEST_CASE("Verify oneshot timer", "[Timers]")
 	Script script {program, "MyScript", "/tmp/myscript"};
 
 	REQUIRE(timers.active() == 1);
-	REQUIRE(script.call("did_yep") == false);
+	REQUIRE(script.call("did_yep").value() == false);
 
 	timers_loop([] {});
 
 	REQUIRE(timers.active() == 0);
-	REQUIRE(script.call("did_yep") == true);
+	REQUIRE(script.call("did_yep").value() == true);
 
 	script.call("shortlived_timer");
 	REQUIRE(timers.active() == 0);
@@ -64,17 +64,17 @@ TEST_CASE("Verify periodic timer", "[Timers]")
 	Script script {program, "MyScript", "/tmp/myscript"};
 
 	REQUIRE(timers.active() == 1);
-	REQUIRE(script.call("yep_count") == 0);
+	REQUIRE(script.call("yep_count").value() == 0);
 
 	timers_loop([&script] {
 		REQUIRE(timers.active() == 1);
-		const int yep_count = script.call("yep_count");
+		const int yep_count = script.call("yep_count").value();
 		if (yep_count >= 3)
 			timers.stop(0);
 	});
 
 	REQUIRE(timers.active() == 0);
-	REQUIRE(script.call("yep_count") == 3);
+	REQUIRE(script.call("yep_count").value() == 3);
 }
 
 TEST_CASE("Verify timer storage", "[Timers]")
@@ -127,17 +127,17 @@ TEST_CASE("Verify timer storage", "[Timers]")
 	Script script {program, "MyScript", "/tmp/myscript"};
 
 	REQUIRE(timers.active() == 1);
-	REQUIRE(script.call("yep_count") == 0);
+	REQUIRE(script.call("yep_count").value() == 0);
 
 	timers_loop([&script] {
 		REQUIRE(timers.active() == 1);
-		const int yep_count = script.call("yep_count");
+		const int yep_count = script.call("yep_count").value();
 		if (yep_count >= 3)
 			timers.stop(0);
 	});
 
 	REQUIRE(timers.active() == 0);
-	REQUIRE(script.call("yep_count") == 3);
+	REQUIRE(script.call("yep_count").value() == 3);
 
 	script.call("capturing_timers", 123456789);
 	script.call("capturing_timers", 987654321);
@@ -147,7 +147,7 @@ TEST_CASE("Verify timer storage", "[Timers]")
 	timers_loop([] {});
 
 	REQUIRE(timers.active() == 0);
-	REQUIRE(script.call("get_value", 0) == 123456789);
-	REQUIRE(script.call("get_value", 1) == 987654321);
-	REQUIRE(script.call("get_value", 2) == 135790);
+	REQUIRE(*script.call("get_value", 0) == 123456789);
+	REQUIRE(*script.call("get_value", 1) == 987654321);
+	REQUIRE(*script.call("get_value", 2) == 135790);
 }

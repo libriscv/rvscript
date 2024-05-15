@@ -49,7 +49,10 @@ int main()
 	/* level1 make remote calls to the gameplay program. */
 	level1.setup_remote_calls_to(gameplay);
 
-	level1.call("start");
+	if (!level1.call("start")) {
+		strf::to(stdout)("Level1 failed to start!\n");
+		return 1;
+	}
 
 	/* Use strict remote calls for level2 */
 	auto level2 = Script("level2", "scripts/level2.elf", debug);
@@ -58,7 +61,10 @@ int main()
 	/* Allow calling *only* this function remotely, when in strict mode */
 	gameplay.add_allowed_remote_function("_Z25gameplay_allowed_functioni");
 
-	level2.call("start");
+	if (!level2.call("start")) {
+		strf::to(stdout)("Level2 failed to start!\n");
+		return 1;
+	}
 
 	strf::to(stdout)("...\n");
 	/* Ordinarily a game engine has a physics loop that ticks regularly,
@@ -81,8 +87,10 @@ int main()
 	Event<void(const std::string&, const C&, const std::string&)> my_event(gameplay, "cpp_function");
 
 	/* Pass some non-trivial parameters to the function call. */
-	my_event.call("Hello", C {}, "World");
-
+	if (!my_event.call("Hello", C {}, "World")) {
+		strf::to(stdout)("Event call to 'cpp_function' failed!\n");
+		return 1;
+	}
 
 	strf::to(stdout)("...\n");
 

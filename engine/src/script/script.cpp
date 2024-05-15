@@ -37,9 +37,8 @@ Script::Script(
 		init = true;
 		Script::setup_syscall_interface();
 	}
-	if (this->reset()) {
-		this->initialize();
-	}
+	this->reset();
+	this->initialize();
 }
 
 Script::Script(
@@ -54,7 +53,7 @@ Script Script::clone(const std::string& name, void* userptr)
 
 Script::~Script() {}
 
-bool Script::reset()
+void Script::reset()
 {
 	// If the reset fails, this object is still valid:
 	// m_machine.reset() will not happen if new machine_t fails
@@ -67,7 +66,7 @@ bool Script::reset()
 			.use_memory_arena = true,
 			.default_exit_function = "fast_exit",
 		};
-		m_machine.reset(new machine_t(*m_binary, options));
+		m_machine = std::make_unique<machine_t> (*m_binary, options);
 
 		// setup system calls and traps
 		this->machine_setup();
@@ -80,8 +79,6 @@ bool Script::reset()
 			">>> Exception during initialization: ", e.what(), "\n");
 		throw;
 	}
-
-	return true;
 }
 
 void Script::add_shared_memory()
@@ -101,20 +98,19 @@ void Script::add_shared_memory()
 	mem.insert_non_owned_memory(SHM_BASE, &shared_memory[0], SHM_SIZE);
 }
 
-bool Script::initialize()
+void Script::initialize()
 {
 	// run through the initialization
 	try
 	{
-		machine().simulate<false>(MAX_BOOT_INSTR);
-
-		if (UNLIKELY(machine().instruction_limit_reached()))
-		{
-			strf::to(stdout)(
-				">>> Exception: Instruction limit reached on ", name(), "\n",
-				"Instruction count: ", machine().max_instructions(), "\n");
-			return false;
-		}
+		machine().simulate(MAX_BOOT_INSTR);
+	}
+	catch (riscv::MachineTimeoutException& me)
+	{
+		strf::to(stdout)(
+			">>> Exception: Instruction limit reached on ", name(), "\n",
+			"Instruction count: ", machine().max_instructions(), "\n");
+		throw;
 	}
 	catch (riscv::MachineException& me)
 	{
@@ -124,16 +120,15 @@ bool Script::initialize()
 		// Remote debugging with DEBUG=1 ./engine
 		if (getenv("DEBUG"))
 			gdb_remote_debugging("", false);
-		return false;
+		throw;
 	}
 	catch (std::exception& e)
 	{
 		strf::to(stdout)(">>> Exception: ", e.what(), "\n");
-		return false;
+		throw;
 	}
 
 	strf::to(stdout)(">>> ", name(), " initialized.\n");
-	return true;
 }
 
 void Script::machine_setup()
@@ -255,6 +250,14 @@ void Script::handle_timeout(gaddr_t address)
 		// resume some other thread
 		mt.wakeup_next();
 	}
+}
+
+void Script::max_depth_exceeded(gaddr_t address)
+{
+	auto callsite = machine().memory.lookup(address);
+	strf::to(stderr)(
+		"Script::call(): Max call depth exceeded when calling: ", callsite.name,
+		" (0x", strf::hex(callsite.address), ")\n");
 }
 
 void Script::print_backtrace(const gaddr_t addr)
