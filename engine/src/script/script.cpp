@@ -167,7 +167,8 @@ void Script::machine_setup()
 	this->add_shared_memory();
 
 	// Figure out the local indices based on dynamic call table
-	this->resolve_dynamic_calls();
+	// We are pretending to be initializing the client-side
+	this->resolve_dynamic_calls(true, true, false);
 }
 
 void Script::could_not_find(std::string_view func)
@@ -405,7 +406,7 @@ void Script::dynamic_call_error(uint32_t idx, const std::exception& e)
 	throw;
 }
 
-void Script::resolve_dynamic_calls()
+void Script::resolve_dynamic_calls(bool initialization, bool client_side, bool verbose)
 {
 	this->m_g_dyncall_table = machine().address_of("dyncall_table");
 	if (m_g_dyncall_table == 0x0)
@@ -420,10 +421,7 @@ void Script::resolve_dynamic_calls()
 	// Reserve space for host-side dynamic call handlers
 	this->m_dyncall_array.reserve(entries);
 	this->m_dyncall_array.clear();
-	if constexpr (WARN_ON_UNIMPLEMENTED_DYNCALL) {
-	strf::to(stdout)(
-		"Resolving dynamic calls for '", name(), "' with ", entries, " entries\n");
-	}
+	unsigned unimplemented = 0;
 
 	// Copy whole table into vector
 	std::vector<DyncallDesc> table (entries);
@@ -431,6 +429,36 @@ void Script::resolve_dynamic_calls()
 
 	for (unsigned i = 0; i < entries; i++) {
 		auto& entry = table.at(i);
+		if (entry.initialization_only && !initialization) {
+			if (verbose) strf::to(stdout)(
+				"Skipping initialization-only dynamic call '",
+				this->machine().memory.memstring(entry.strname), "'\n");
+			this->m_dyncall_array.push_back(
+			[] (auto&) {
+				throw std::runtime_error("Initialization-only dynamic call triggered");
+			});
+			continue;
+		}
+		if (entry.client_side_only && !client_side) {
+			if (verbose) strf::to(stdout)(
+				"Skipping client-side-only dynamic call '",
+				machine().memory.memstring(entry.strname), "'\n");
+			this->m_dyncall_array.push_back(
+			[] (auto&) {
+				throw std::runtime_error("Clientside-only dynamic call triggered");
+			});
+			continue;
+		}
+		if (entry.server_side_only && client_side) {
+			if (verbose) strf::to(stdout)(
+				"Skipping server-side-only dynamic call '",
+				machine().memory.memstring(entry.strname), "'\n");
+			this->m_dyncall_array.push_back(
+			[] (auto&) {
+				throw std::runtime_error("Serverside-only dynamic call triggered");
+			});
+			continue;
+		}
 
 		auto it = m_dynamic_functions.find(entry.hash);
 		if (LIKELY(it != m_dynamic_functions.end()))
@@ -439,18 +467,23 @@ void Script::resolve_dynamic_calls()
 		} else {
 			this->m_dyncall_array.push_back(
 			[] (auto&) {
-				throw std::runtime_error("Unimplemented-trap");
+				throw std::runtime_error("Unimplemented dynamic call triggered");
 			});
-			if constexpr (WARN_ON_UNIMPLEMENTED_DYNCALL) {
+			if (verbose) {
 			const std::string name = machine().memory.memstring(entry.strname);
-			strf::to(stdout)(
-				"WARNING: Unimplemented dynamic function '", name, "' with hash ", strf::hex(entry.hash), " and program table index ",
-				m_dyncall_array.size(), "\n");
+			strf::to(stderr)(
+				"WARNING: Unimplemented dynamic function '", name, "' with hash ",
+				strf::hex(entry.hash), " and program table index ", i, " (total: ",
+				m_dyncall_array.size(), ")\n");
 			}
+			unimplemented++;
 		}
 	}
 	if (m_dyncall_array.size() != entries)
 		throw std::runtime_error("Mismatching number of dynamic call array entries");
+	strf::to(stdout)(
+		"* Resolved dynamic calls for '", name(), "' with ", entries, " entries, ",
+		unimplemented, " unimplemented\n");
 }
 
 void Script::set_global_setting(std::string_view setting, gaddr_t value)

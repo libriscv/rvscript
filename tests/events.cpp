@@ -37,7 +37,8 @@ TEST_CASE("Simple events", "[Events]")
 	extern "C" void VoidFunc() {
 	}
 	extern "C" int FailingFunc() {
-		assert(0);
+		asm volatile("unimp");
+		__builtin_unreachable();
 	}
 
 	)M");
@@ -89,15 +90,13 @@ TEST_CASE("Simple events", "[Events]")
 
 	/* Function that doesn't exist */
 	Event<void()> ev6(script, "VoidlessFunc");
-	auto res6 = ev6.call();
-	REQUIRE(!res6.has_value());
+	REQUIRE(!ev6.call());
 
 	/* Function that returns void */
 	Event<void()> ev7(script, "VoidFunc");
-	REQUIRE(ev7.call().has_value());
+	REQUIRE(ev7.call());
 
 	/* Function that fails */
 	Event<void()> ev8(script, "FailingFunc");
-	auto res8 = ev8.call();
-	REQUIRE(!res8.has_value());
+	REQUIRE(!ev8.call());
 }

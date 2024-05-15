@@ -85,14 +85,16 @@ template <typename... Args> inline auto Event<F, Usage>::call(Args&&... args)
 	{
 		auto& script = this->script();
 		if (auto res = script.call(address(), std::forward<Args>(args)...)) {
-			if constexpr (std::is_same_v<void, Ret> || std::is_same_v<Script::gaddr_t, Ret>)
+			if constexpr (std::is_same_v<void, Ret>)
+				return true;
+			else if constexpr (std::is_same_v<Script::gaddr_t, Ret>)
 				return res;
 			else
 				return std::optional<Ret> (res.value());
 		}
 	}
 	if constexpr (std::is_same_v<void, Ret>)
-		return std::optional<Script::sgaddr_t>{std::nullopt};
+		return false;
 	else
 		return std::optional<Ret>{std::nullopt};
 }

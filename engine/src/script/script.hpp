@@ -281,7 +281,7 @@ struct Script
 	void max_depth_exceeded(gaddr_t);
 	void machine_setup();
 	void machine_remote_setup();
-	void resolve_dynamic_calls();
+	void resolve_dynamic_calls(bool initialization, bool client_side, bool verbose);
 	void dynamic_call_error(uint32_t idx, const std::exception& e);
 	static long finish_benchmark(std::vector<long>&);
 
@@ -311,6 +311,9 @@ struct Script
 		uint32_t hash;
 		uint32_t resv;
 		uint32_t strname;
+		bool initialization_only;
+		bool client_side_only;
+		bool server_side_only;
 	};
 	std::vector<ghandler_t> m_dyncall_array;
 	gaddr_t m_g_dyncall_table = 0x0;

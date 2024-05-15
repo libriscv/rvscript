@@ -136,6 +136,24 @@ j = {}
 with open(args.jsonfile) as f:
 	j = json.load(f)
 
+# List of client-side only dyncalls
+client_side = []
+if "clientside" in j:
+	for key in j["clientside"]:
+		client_side.append(key)
+
+# List of server-side only dyncalls
+server_side = []
+if "serverside" in j:
+	for key in j["serverside"]:
+		server_side.append(key)
+
+# List of initialization-only dyncalls
+initialization = []
+if "initialization" in j:
+	for key in j["initialization"]:
+		initialization.append(key)
+
 header = """
 #pragma once
 #include <stddef.h>
@@ -161,7 +179,9 @@ dyncall = ""
 
 # create dyncall prototypes and assembly
 for key in j:
-	if key != "typedef":
+	if key == "typedef" or key == "clientside" or key == "serverside" or key == "initialization":
+		continue
+	else:
 		asmdef  = j[key]
 		asmname = asmdef.split(' ')[1]
 
@@ -182,9 +202,19 @@ for key in j:
 		if args.verbose:
 			print("Dynamic call: " + key + ", hash 0x" + crc + (" (inlined)" if inlined else ""))
 
+		# Each dynamic call has a table index where the name and hash is stored
 		dyncall += '  .long 0x' + crc + '\\n\\\n'
 		dyncall += '  .long ' + str(0) + '\\n\\\n'
 		dyncall += '  .long ' + asmname + '_str\\n\\\n'
+
+		# Flags (one byte each for client-side, server-side, initialization, and padding)
+		is_client_side = key in client_side
+		is_server_side = key in server_side
+		is_initialization = key in initialization
+		dyncall += '  .byte ' + str(int(is_initialization)) + '\\n\\\n'
+		dyncall += '  .byte ' + str(int(is_client_side)) + '\\n\\\n'
+		dyncall += '  .byte ' + str(int(is_server_side)) + '\\n\\\n'
+		dyncall += '  .byte 0\\n\\\n'
 
 		# These dynamic calls use the table indexed variant
 		# Each dynamic call has a table index where the name and hash is stored
