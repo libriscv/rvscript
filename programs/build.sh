@@ -21,6 +21,7 @@ for i in "$@"; do
 			GCC_VERSION=${i#*=}
 			GCC_TRIPLE="riscv64-linux-gnu"
 			export CXX="ccache $GCC_TRIPLE-g++-$GCC_VERSION"
+			export CEXT="ON"
 			shift # past argument and value
 			;;
 		-*|--*)
