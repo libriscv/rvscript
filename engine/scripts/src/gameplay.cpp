@@ -50,6 +50,12 @@ PUBLIC(void public_donothing())
 	/* nothing */
 }
 
+static void bench_alloc_free()
+{
+	auto x = std::make_unique_for_overwrite<char[]>(1024);
+	__asm__("" :: "m"(x[0]) : "memory");
+}
+
 PUBLIC(void benchmarks())
 {
 	try
@@ -75,6 +81,8 @@ PUBLIC(void benchmarks())
 	measure("Direct thread creation overhead", direct_thread_function);
 	measure("Dynamic call handler x4 (inline)", inline_dyncall_handler);
 	measure("Dynamic call handler x4 (call)", opaque_dyncall_handler);
+
+	measure("Allocate 1024-bytes, and free it", bench_alloc_free);
 
 	//benchmark_multiprocessing();
 }

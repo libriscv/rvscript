@@ -1,13 +1,12 @@
 #pragma once
 #include_next<new>
 #include <cstddef>
-
 #include <heap.hpp>
 
-inline void* operator new(size_t size) {
+inline void* operator new(std::size_t size) {
 	return sys_malloc(size);
 }
-inline void* operator new[](size_t size) {
+inline void* operator new[](std::size_t size) {
 	return sys_malloc(size);
 }
 inline void operator delete(void* ptr) {

@@ -97,7 +97,8 @@ inline std::optional<intptr_t> Game::setting(std::string_view setting)
 
 	asm("ecall"
 		: "=r"(has_value), "=r"(result)
-		: "m"(*name_ptr), "r"(name_ptr), "r"(name_len), "r"(sysno));
+		: "m"(*(const char(*)[name_len])name_ptr),
+		  "r"(name_ptr), "r"(name_len), "r"(sysno));
 
 	if (has_value) return int64_t(result);
 	return std::nullopt;
