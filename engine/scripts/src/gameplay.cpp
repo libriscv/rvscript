@@ -88,7 +88,6 @@ PUBLIC(void benchmarks())
 	   while preserving registers, and then prints some statistics. */
 	measure("VM function call overhead",
 		[] {
-			return_fast();
 		});
 	measure("Full thread creation overhead", full_thread_function);
 	measure("Oneshot thread creation overhead", oneshot_thread_function);

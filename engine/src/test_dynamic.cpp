@@ -52,4 +52,22 @@ void setup_dynamic_calls()
 				}
 			}
 		});
+
+	Script::set_dynamic_call("test_array", "void sys_test_array (const TestData*)",
+		[](Script& script) {
+			typedef struct { int a, b, c; float x, y, z; } TestData;
+
+			auto [array] = script.args<std::array<TestData, 64>>();
+
+			if ((array[0].a != 1) ||
+				(array[0].b != 2) ||
+				(array[0].c != 3) ||
+				(array[0].x != 4.0f) ||
+				(array[0].y != 5.0f) ||
+				(array[0].z != 6.0f))
+			{
+				throw std::runtime_error("Array test failed");
+			}
+		});
+
 }

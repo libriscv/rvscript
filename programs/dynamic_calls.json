@@ -1,7 +1,8 @@
 {
 	"typedef": [
 		"typedef void (*timer_callback) (int, void*)",
-		"typedef void (*gui_callback) (unsigned, void*)"
+		"typedef void (*gui_callback) (unsigned, void*)",
+		"typedef struct { int a, b, c; float x, y, z; } TestData"
 	],
 	"initialization": [
 	],
@@ -32,5 +33,7 @@
 
 	"empty":       "void sys_empty ()",
 	"test_string": "void sys_test_strings (const char*, const char*, size_t)",
-	"test_3i_3f":  "void sys_test_3i3f (int, int, int, float, float, float)"
+	"test_3i_3f":  "void sys_test_3i3f (int, int, int, float, float, float)",
+	"test_array":  "void sys_test_array (const TestData*)",
+	"test_data":   "void sys_test_data (TestData*, int, TestData*)"
 }

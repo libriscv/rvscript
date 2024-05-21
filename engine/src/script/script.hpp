@@ -22,11 +22,11 @@ struct Script
 	using exit_func_t 	= std::function<void(Script&)>;
 
 	/// @brief The total physical memory of the program
-	static constexpr gaddr_t MAX_MEMORY	= 1024 * 1024 * 16ull;
+	static constexpr gaddr_t MAX_MEMORY	= 1024 * 1024 * 24ull;
 	/// @brief A virtual memory area set aside for the initial stack
 	static constexpr gaddr_t STACK_SIZE	= 1024 * 1024 * 2ull;
 	/// @brief A virtual memory area set aside for the heap
-	static constexpr gaddr_t MAX_HEAP	= 1024 * 1024 * 256ull;
+	static constexpr gaddr_t MAX_HEAP	= MAX_MEMORY * 2ull;
 	/// @brief The max number of instructions allowed during startup
 	static constexpr uint64_t MAX_BOOT_INSTR = 32'000'000ull;
 	/// @brief The max number of instructions allowed during calls

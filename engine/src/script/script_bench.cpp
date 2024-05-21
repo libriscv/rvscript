@@ -36,6 +36,12 @@ inline int64_t perform_test(Script::machine_t& machine, gaddr_t func)
 	}
 	catch (...)
 	{
+		machine.cpu.registers() = regs;
+		machine.set_instruction_counter(counter);
+		machine.set_max_instructions(max_counter);
+		machine.memory.set_stack_initial(old_stack);
+		machine.cpu.set_execute_segment(exec);
+		throw;
 	}
 	machine.cpu.registers() = regs;
 	machine.set_instruction_counter(counter);

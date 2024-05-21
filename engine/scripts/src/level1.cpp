@@ -32,21 +32,23 @@ PUBLIC(void start())
 	do_threads_stuff();
 }
 
+static std::unique_ptr<TestData[]> test_vector;
 int main()
 {
 	print("Hello from Level 1 main()\n");
+	test_vector = std::make_unique_for_overwrite<TestData[]>(64);
+	test_vector[0] = { 1, 2, 3, 4.0f, 5.0f, 6.0f };
 }
 
 void do_benchmarks()
 {
-	measure("Benchmark overhead", [] { return_fast(); });
+	measure("Benchmark overhead", [] { });
 
 	measure(
 		"Run-time setting",
 		[]
 		{
 			volatile auto val = Game::setting("benchmarks");
-			return_fast();
 			(void)val;
 		});
 
@@ -55,7 +57,6 @@ void do_benchmarks()
 		[]
 		{
 			isys_empty();
-			return_fast();
 		});
 
 	measure(
@@ -63,7 +64,6 @@ void do_benchmarks()
 		[]
 		{
 			DYNCALL("Test::void");
-			return_fast();
 		});
 
 	measure(
@@ -71,6 +71,13 @@ void do_benchmarks()
 		[]
 		{
 			DYNCALL("Test::void", -4096, 5678.0, 524287, 8765.0);
-			return_fast();
 		});
+
+	measure(
+		"Dynamic call with std::array",
+		[]
+		{
+			sys_test_array(test_vector.get());
+		});
+
 }
