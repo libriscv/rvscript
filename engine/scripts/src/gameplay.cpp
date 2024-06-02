@@ -72,18 +72,6 @@ static void bench_alloc_free()
 
 PUBLIC(void benchmarks())
 {
-	try
-	{
-		throw GameplayException("This is a test!");
-	}
-	catch (const GameplayException& ge)
-	{
-		print("Exception caught: ", ge.what(), "!\n");
-		print(
-			"Exception thrown from: ", ge.location().function_name(),
-			", line ", ge.location().line(), "\n");
-	}
-
 	/* This function makes thousands of calls into this machine,
 	   while preserving registers, and then prints some statistics. */
 	measure("VM function call overhead",
