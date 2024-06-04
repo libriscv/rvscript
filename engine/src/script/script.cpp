@@ -63,8 +63,15 @@ void Script::reset()
 		riscv::MachineOptions<MARCH> options {
 			.memory_max		  = MAX_MEMORY,
 			.stack_size		  = STACK_SIZE,
+			.verbose_loader   = getenv("VERBOSE") != nullptr,
 			.use_memory_arena = true,
 			.default_exit_function = "fast_exit",
+#ifdef RISCV_BINARY_TRANSLATION
+			.translate_enabled = getenv("NO_TRANSLATE") == nullptr,
+			// The gameplay machine is loaded into a high-memory area
+			// In order for remote calls to work, disable the arena
+			.translation_use_arena = name() != "gameplay",
+#endif
 		};
 		m_machine = std::make_unique<machine_t> (*m_binary, options);
 

@@ -80,4 +80,7 @@ void do_benchmarks()
 			sys_test_array(test_vector.get());
 		});
 
+
+	if (Game::setting("remote").value_or(false))
+		do_remote_stuff();
 }

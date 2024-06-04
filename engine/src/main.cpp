@@ -8,6 +8,7 @@ int main()
 {
 	const bool debug = getenv("DEBUG") != nullptr;
 	const bool do_benchmarks = getenv("BENCHMARK") != nullptr;
+	const bool do_remote = getenv("REMOTE") != nullptr;
 
 	// Dynamically extend the functionality available
 	// See: setup_timers.cpp
@@ -29,6 +30,7 @@ int main()
 	Script::set_global_setting("benchmarks", do_benchmarks);
 	if (Script::get_global_setting("benchmarks") != do_benchmarks)
 		throw std::runtime_error("Insane global settings");
+	Script::set_global_setting("remote", do_remote);
 
 	/* The event_loop function can be resumed later, and can execute work
 	   that has been preemptively handed to it from other machines. */
