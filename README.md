@@ -10,6 +10,8 @@ For discussions & help, [visit Discord](https://discord.gg/n4GcXr66X5).
 
 This project aims to change how scripting is done in game engines. Lua, Luau and even LuaJIT have fairly substantial overheads when making function calls into the script, especially when many arguments are involved. The same is true for WebAssembly emulators that I have measured, eg. wasmtime. I have yet to find another low latency emulator, actually. As a result, script functions are considered expensive to call, regardless of how little or how much they do, especially when used from a game engine where there is a tight deadline every frame. That changes thinking and design in projects accordingly. This repository is an attempt at making game scripting low latency, so that even automation games where interactions between complex machinery requires billions of script function calls, can still be achieved in a timely manner.
 
+Further, the emulator has a binary translation mode where the latency is lowered even further. And this translation can be cross-compiled to end-user platforms (eg. Windows), where it can be used to the same effect, transparently to users.
+
 
 ## Demonstration
 
@@ -17,7 +19,7 @@ This repository is built as a demonstration of how you could use advanced techni
 
 All the host-side code is in the engine folder, and is written as if it was running inside a tiny fictional game framework.
 
-The script programs are using modern C++20 using a GNU RISC-V compiler with RTTI and exceptions being optional. Several CRT functions have been implemented as system calls, and will have native performance.
+The script programs are using modern C++20 using a GNU RISC-V compiler with RTTI and exceptions enabled, but optional. Several CRT functions have been implemented as system calls, and will have native performance.
 
 The example programs have some basic timers and threads, as well as some examples making calls between machines.
 
