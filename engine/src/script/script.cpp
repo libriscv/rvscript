@@ -39,6 +39,11 @@ Script::Script(
 	}
 	this->reset();
 	this->initialize();
+
+	if (machine().is_binary_translation_enabled())
+	{
+		strf::to(stdout)(">>> ", name, ": Binary translation enabled\n");
+	}
 }
 
 Script::Script(

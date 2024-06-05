@@ -94,3 +94,5 @@ if (SANITIZE)
 		target_link_libraries(engine --rtlib=compiler-rt -lgcc_s)
 	endif()
 endif()
+
+message(STATUS "Binary translation is ${RISCV_BINARY_TRANSLATION}")
