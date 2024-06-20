@@ -81,10 +81,10 @@ void Script::machine_remote_setup()
 				if (remote_script != nullptr && cpu.pc() < REMOTE_IMG_BASE)
 				{
 					auto& remote_machine = remote_script->machine();
-					return remote_machine.memory.exec_segment_for(cpu.pc());
+					return *remote_machine.memory.exec_segment_for(cpu.pc());
 				}
 
-				return cpu.empty_execute_segment();
+				return *cpu.empty_execute_segment();
 			});
 	}
 

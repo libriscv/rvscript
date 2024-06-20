@@ -77,9 +77,9 @@ PUBLIC(void benchmarks())
 	measure("VM function call overhead",
 		[] {
 		});
-	measure("Full thread creation overhead", full_thread_function);
-	measure("Oneshot thread creation overhead", oneshot_thread_function);
-	measure("Direct thread creation overhead", direct_thread_function);
+	//measure("Full thread creation overhead", full_thread_function);
+	//measure("Oneshot thread creation overhead", oneshot_thread_function);
+	//measure("Direct thread creation overhead", direct_thread_function);
 	measure("Dynamic call handler x4 (inline)", inline_dyncall_handler);
 	measure("Dynamic call handler x4 (call)", opaque_dyncall_handler);
 

@@ -1,5 +1,9 @@
 #include "script.hpp"
 #include <strf/to_cfile.hpp>
+#define USE_PREPARED_CALLS 1
+#ifdef USE_PREPARED_CALLS
+#include <libriscv/prepared_call.hpp>
+#endif
 
 using gaddr_t = Script::gaddr_t;
 
@@ -22,13 +26,22 @@ inline int64_t perform_test(Script::machine_t& machine, gaddr_t func)
 		machine.memory.set_stack_initial(
 			machine.cpu.reg(riscv::REG_SP) - 2048);
 		// Warmup once
+#ifdef USE_PREPARED_CALLS
+		riscv::PreparedCall<Script::MARCH, void()> caller(machine, func);
+		caller();
+#else
 		machine.vmcall(func);
+#endif
 		asm("" : : : "memory");
 		t0 = time_now();
 		asm("" : : : "memory");
 		for (int i = 0; i < ROUNDS; i++)
 		{
+#ifdef USE_PREPARED_CALLS
+			caller();
+#else
 			machine.vmcall(func);
+#endif
 		}
 		asm("" : : : "memory");
 		t1 = time_now();
