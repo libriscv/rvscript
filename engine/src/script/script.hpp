@@ -265,7 +265,7 @@ struct Script
 	/// @param args The arguments to pass to the function.
 	/// @return The optional integral return value.
 	template <typename F, typename... Args>
-	std::optional<Script::sgaddr_t> prepared_call(riscv::PreparedCall<MARCH, F>& pcall, Args&&... args);
+	std::optional<Script::sgaddr_t> prepared_call(riscv::PreparedCall<MARCH, F, MAX_CALL_INSTR>& pcall, Args&&... args);
 
 	// Create new Script instance from file
 	Script(
@@ -377,7 +377,7 @@ inline std::optional<Script::sgaddr_t> Script::call(const std::string& func, Arg
 }
 
 template <typename F, typename... Args>
-inline std::optional<Script::sgaddr_t> Script::prepared_call(riscv::PreparedCall<MARCH, F>& pcall, Args&&... args)
+inline std::optional<Script::sgaddr_t> Script::prepared_call(riscv::PreparedCall<MARCH, F, MAX_CALL_INSTR>& pcall, Args&&... args)
 {
 	ScriptDepthMeter meter(this->m_call_depth);
 	try

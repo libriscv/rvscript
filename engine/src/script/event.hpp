@@ -53,12 +53,12 @@ struct Event
 	}
 
   private:
-    riscv::PreparedCall<Script::MARCH, F> m_pcall;
+    riscv::PreparedCall<Script::MARCH, F, Script::MAX_CALL_INSTR> m_pcall;
 };
 
 template <typename F, EventUsagePattern Usage>
 inline Event<F, Usage>::Event(Script& script, Script::gaddr_t address)
-  : m_pcall(script.machine(), address)
+  : m_pcall((Usage == SharedScript) ? script.machine() : script.get_fork().machine(), address)
 {
 }
 
@@ -77,7 +77,7 @@ template <typename... Args> inline auto Event<F, Usage>::call(Args&&... args)
 	using Ret = decltype((F*){}(args...));
 
 	auto& script = this->script();
-	if (auto res = script.template prepared_call<F, Args...>(m_pcall, std::forward<Args>(args)...)) {
+	if (auto res = script.template prepared_call<F, Args&&...>(m_pcall, std::forward<Args>(args)...)) {
 		if constexpr (std::is_same_v<void, Ret>)
 			return true;
 		else if constexpr (std::is_same_v<Script::gaddr_t, Ret>)
