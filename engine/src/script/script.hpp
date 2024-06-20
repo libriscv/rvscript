@@ -383,7 +383,7 @@ inline std::optional<Script::sgaddr_t> Script::prepared_call(riscv::PreparedCall
 	try
 	{
 		if (LIKELY(meter.is_one()))
-			return {pcall.vmcall(std::forward<Args>(args)...)};
+			return {pcall.call_with(*m_machine, std::forward<Args>(args)...)};
 		else if (LIKELY(meter.get() < MAX_CALL_DEPTH))
 			return {machine().preempt(MAX_CALL_INSTR, pcall.address(),
 				std::forward<Args>(args)...)};

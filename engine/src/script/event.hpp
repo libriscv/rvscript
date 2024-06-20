@@ -58,7 +58,7 @@ struct Event
 
 template <typename F, EventUsagePattern Usage>
 inline Event<F, Usage>::Event(Script& script, Script::gaddr_t address)
-  : m_pcall((Usage == SharedScript) ? script.machine() : script.get_fork().machine(), address)
+  : m_pcall(script.machine(), address)
 {
 }
 
