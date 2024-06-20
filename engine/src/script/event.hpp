@@ -13,7 +13,6 @@ enum EventUsagePattern : int {
 template <typename F, EventUsagePattern Usage = PerThread>
 struct Event
 {
-	Event() = default;
 	Event(Script&, const std::string& func);
 	Event(Script&, Script::gaddr_t address);
 
@@ -24,32 +23,27 @@ struct Event
 	template <typename... Args>
 	auto call(Args&&... args);
 
-	bool is_callable() const noexcept
-	{
-		return m_script != nullptr && m_addr != 0x0;
-	}
-
 	auto& script() noexcept
 	{
-		assert(m_script != nullptr);
+		auto* script_ptr = m_pcall.machine().template get_userdata<Script>();
 		if constexpr (Usage == EventUsagePattern::PerThread)
-			return m_script->get_fork();
+			return script_ptr->get_fork();
 		else
-			return *m_script;
+			return *script_ptr;
 	}
 
 	const auto& script() const noexcept
 	{
-		assert(m_script != nullptr);
+		auto* script_ptr = m_pcall.machine().template get_userdata<Script>();
 		if constexpr (Usage == EventUsagePattern::PerThread)
-			return m_script->get_fork();
+			return script_ptr->get_fork();
 		else
-			return *m_script;
+			return *script_ptr;
 	}
 
 	auto address() const noexcept
 	{
-		return m_addr;
+		return m_pcall.address();
 	}
 
 	// Turn address into function name (as long as it's visible)
@@ -59,20 +53,21 @@ struct Event
 	}
 
   private:
-	Script* m_script	   = nullptr;
-	Script::gaddr_t m_addr = 0;
+    riscv::PreparedCall<Script::MARCH, F> m_pcall;
 };
 
 template <typename F, EventUsagePattern Usage>
-inline Event<F, Usage>::Event(Script& script, const std::string& func)
-  : m_script(&script), m_addr(script.address_of(func))
+inline Event<F, Usage>::Event(Script& script, Script::gaddr_t address)
+  : m_pcall(script.machine(), address)
 {
 }
 
 template <typename F, EventUsagePattern Usage>
-inline Event<F, Usage>::Event(Script& script, Script::gaddr_t address)
-  : m_script(&script), m_addr(address)
+inline Event<F, Usage>::Event(Script& script, const std::string& func)
+  : Event(script, script.address_of(func))
 {
+	if (address() == 0x0)
+		throw std::runtime_error("Function not found: " + func);
 }
 
 template <typename F, EventUsagePattern Usage>
@@ -81,17 +76,14 @@ template <typename... Args> inline auto Event<F, Usage>::call(Args&&... args)
 	static_assert(std::is_invocable_v<F, Args...>);
 	using Ret = decltype((F*){}(args...));
 
-	if (is_callable())
-	{
-		auto& script = this->script();
-		if (auto res = script.call(address(), std::forward<Args>(args)...)) {
-			if constexpr (std::is_same_v<void, Ret>)
-				return true;
-			else if constexpr (std::is_same_v<Script::gaddr_t, Ret>)
-				return res;
-			else
-				return std::optional<Ret> (res.value());
-		}
+	auto& script = this->script();
+	if (auto res = script.template prepared_call<F, Args...>(m_pcall, std::forward<Args>(args)...)) {
+		if constexpr (std::is_same_v<void, Ret>)
+			return true;
+		else if constexpr (std::is_same_v<Script::gaddr_t, Ret>)
+			return res;
+		else
+			return std::optional<Ret> (res.value());
 	}
 	if constexpr (std::is_same_v<void, Ret>)
 		return false;

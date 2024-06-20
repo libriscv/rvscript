@@ -89,8 +89,10 @@ TEST_CASE("Simple events", "[Events]")
 	REQUIRE(obj.at(0).arg2 == 123);
 
 	/* Function that doesn't exist */
-	Event<void()> ev6(script, "VoidlessFunc");
-	REQUIRE(!ev6.call());
+	REQUIRE_THROWS(
+		[&] {
+			Event<void()> ev(script, "VoidlessFunc");
+		}());
 
 	/* Function that returns void */
 	Event<void()> ev7(script, "VoidFunc");

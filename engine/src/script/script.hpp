@@ -2,6 +2,7 @@
 #include <any>
 #include <functional>
 #include <libriscv/machine.hpp>
+#include <libriscv/prepared_call.hpp>
 #include <optional>
 #include <unordered_set>
 #include "script_depth.hpp"
@@ -259,6 +260,13 @@ struct Script
 	/// @return The script instance with the given name.
 	static Script& Find(const std::string& name);
 
+	/// @brief Make a prepared function call into the script
+	/// @param pcall The prepared call object.
+	/// @param args The arguments to pass to the function.
+	/// @return The optional integral return value.
+	template <typename F, typename... Args>
+	std::optional<Script::sgaddr_t> prepared_call(riscv::PreparedCall<MARCH, F>& pcall, Args&&... args);
+
 	// Create new Script instance from file
 	Script(
 		const std::string& name, const std::string& filename,
@@ -366,6 +374,27 @@ inline std::optional<Script::sgaddr_t> Script::call(const std::string& func, Arg
 		return std::nullopt;
 	}
 	return {this->call(address, std::forward<Args>(args)...)};
+}
+
+template <typename F, typename... Args>
+inline std::optional<Script::sgaddr_t> Script::prepared_call(riscv::PreparedCall<MARCH, F>& pcall, Args&&... args)
+{
+	ScriptDepthMeter meter(this->m_call_depth);
+	try
+	{
+		if (LIKELY(meter.is_one()))
+			return {pcall.vmcall(std::forward<Args>(args)...)};
+		else if (LIKELY(meter.get() < MAX_CALL_DEPTH))
+			return {machine().preempt(MAX_CALL_INSTR, pcall.address(),
+				std::forward<Args>(args)...)};
+		else
+			this->max_depth_exceeded(pcall.address());
+	}
+	catch (const std::exception& e)
+	{
+		this->handle_exception(pcall.address());
+	}
+	return std::nullopt;
 }
 
 template <typename... Args>
