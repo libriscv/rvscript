@@ -33,6 +33,8 @@ struct Script
 	/// @brief The max number of instructions allowed during calls
 	static constexpr uint64_t MAX_CALL_INSTR = 32'000'000ull;
 	/// @brief The max number of recursive calls into the Machine allowed
+	/// A recursive call is when a guest program makes a host call that
+	/// in turn makes another guest vmcall. Both a security and QoL feature.
 	static constexpr uint8_t  MAX_CALL_DEPTH = 8;
 
 	/// @brief Make a function call into the script
@@ -102,8 +104,17 @@ struct Script
 	/// @return The virtual address of name, or 0x0 if not found.
 	gaddr_t address_of(const std::string& name) const;
 
-	// Install a callback function using a string name
-	// Can be invoked from the guest using the same string name
+	/// Install a callback function using a string definition
+	/// Dynamic calls be invoked from the guest using the same string name,
+	/// but it is implemented as if it was a native function.
+	/// @param def The string definition of the function.
+	/// @param func The callback function to invoke, handling the call.
+	/// @example Script::set_dynamic_call("int my_function(int, int)",
+	/// [](Script& s) {
+	/// 	auto [a, b] = s.args<int, int>();
+	/// 	s.print("The sum is: " + std::to_string(a + b));
+	///     s.machine().set_result(a + b);
+	/// });
 	static void set_dynamic_call(const std::string& def, ghandler_t);
 	static void set_dynamic_call(std::string name, std::string def, ghandler_t);
 	static void
@@ -114,8 +125,16 @@ struct Script
 	/// @brief Retrieve arguments passed to a dynamic call, specifying each type.
 	/// @tparam ...Args The types of arguments to retrieve.
 	/// @return A tuple of arguments.
+	/// @example auto [a, b] = script.args<int, int>(); // Retrieve two integral arguments from registers a0, a1
 	template <typename... Args>
 	auto args() const;
+
+	/// @brief Set the result of a dynamic call, to be read by the caller.
+	/// @tparam Args The types of arguments to set as the result.
+	/// @param result The result to set.
+	/// @example script.set_result(1, 2); // Sets the integral result 1, 2 using registers a0, a1
+	template <typename... Args>
+	void set_result(Args&&... results);
 
 	auto& dynargs()
 	{
@@ -128,9 +147,6 @@ struct Script
 	{
 		return *m_machine;
 	}
-
-	/// @brief The virtual machine hosting the Scripts program.
-	/// @return The underlying virtual machine.
 	const auto& machine() const
 	{
 		return *m_machine;
@@ -295,8 +311,8 @@ struct Script
 
 	std::unique_ptr<machine_t> m_machine = nullptr;
 	std::shared_ptr<const std::vector<uint8_t>> m_binary;
-	void* m_userptr;
-	gaddr_t m_heap_area		   = 0;
+	void* m_userptr = nullptr;
+	gaddr_t m_heap_area		= 0;
 	std::string m_name;
 	std::string m_filename;
 	uint32_t m_hash;
@@ -304,7 +320,7 @@ struct Script
 	bool m_is_debug			= false;
 	bool m_stdout			= true;
 	bool m_last_newline		= true;
-	int m_budget_overruns	= 0;
+	int  m_budget_overruns	= 0;
 	Script* m_remote_script = nullptr;
 	/// @brief Functions accessible when remote access is *strict*
 	std::unordered_set<gaddr_t> m_remote_access;
@@ -443,11 +459,17 @@ inline auto Script::args() const
 {
 	return machine().sysargs<Args ...> ();
 }
+template <typename... Args>
+inline void Script::set_result(Args&&... results)
+{
+	machine().set_result(std::forward<Args>(results)...);
+}
 
 /**
- * This uses RAII to sequentially allocate a range
- * for the objects, which is freed on destruction.
- * This is a relatively inexpensive abstraction.
+ * This uses RAII to allocate a range of objects,
+ * visible both in the host and in the script/guest.
+ * The objects are freed on destruction.
+ * This is a light-weight and inexpensive abstraction.
  *
  * Example:
  * myscript.guest_alloc<GameObject>(16) allocates one
@@ -460,9 +482,8 @@ inline auto Script::args() const
  * objects, and on destruction will free all objects.
  * It can be moved. The moved-from object manages nothing.
  *
- * All objects are potentially uninitialized, like all
- * heap allocations, and will need to be individually
- * initialized.
+ * All objects are default-initialized. You may turn this
+ * off if you want to manage the initialization yourself.
  **/
 template <typename T> struct GuestObjects
 {
@@ -520,35 +541,14 @@ template <typename T> struct GuestObjects
 
 template <typename T> inline GuestObjects<T> Script::guest_alloc(size_t n)
 {
-	// XXX: If n is too large, it will always overflow a page,
-	// and we will need another strategy in order to guarantee
-	// sequential memory.
 	auto addr = this->guest_alloc_sequential(sizeof(T) * n);
 	if (addr != 0x0)
 	{
-		const auto pageno	= machine().memory.page_number(addr);
-		const size_t offset = addr & (riscv::Page::size() - 1);
-		// Lazily create zero-initialized page
-		auto& page	 = machine().memory.create_writable_pageno(pageno, true);
-		auto* object = (T*)&page.data()[offset];
+		auto view = machine().memory.rvspan<T>(addr, n);
 		// Default-initialize all objects
-		for (auto *o = object; o < object + n; o++)
-			new (o) T{};
+		for (auto& o : view) o = T{};
 		// Note: this can fail and throw, but we don't care
-		return {*this, addr, object, n};
+		return {*this, addr, view.data(), view.size()};
 	}
-	throw std::runtime_error("Unable to allocate aligned sequential data");
-}
-
-inline void Script::add_allowed_remote_function(gaddr_t addr)
-{
-	m_remote_access.insert(addr);
-}
-inline void Script::add_allowed_remote_function(const std::string& func)
-{
-	const auto addr = this->address_of(func);
-	if (addr != 0x0)
-		this->m_remote_access.insert(addr);
-	else
-		throw std::runtime_error("No such function: " + func);
+	throw std::runtime_error("Unable to allocate guest objects");
 }

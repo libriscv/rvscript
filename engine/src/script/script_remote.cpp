@@ -6,6 +6,21 @@
 using gaddr_t							 = Script::gaddr_t;
 static constexpr gaddr_t REMOTE_IMG_BASE = 0x50000000;
 
+
+void Script::add_allowed_remote_function(gaddr_t addr)
+{
+	m_remote_access.insert(addr);
+}
+
+void Script::add_allowed_remote_function(const std::string& func)
+{
+	const auto addr = this->address_of(func);
+	if (addr != 0x0)
+		this->m_remote_access.insert(addr);
+	else
+		throw std::runtime_error("No such function: " + func);
+}
+
 void Script::machine_remote_setup()
 {
 	if (heap_area() < REMOTE_IMG_BASE)
