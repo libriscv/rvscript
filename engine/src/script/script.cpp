@@ -70,6 +70,7 @@ void Script::reset()
 			.stack_size		  = STACK_SIZE,
 			.verbose_loader   = getenv("VERBOSE") != nullptr,
 			.use_memory_arena = true,
+			.use_shared_execute_segments = getenv("REMOTE") == nullptr, // Remote calls don't work with shared segments
 			.default_exit_function = "fast_exit",
 #ifdef RISCV_BINARY_TRANSLATION
 			.translate_enabled = getenv("NO_TRANSLATE") == nullptr,

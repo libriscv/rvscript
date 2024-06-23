@@ -16,7 +16,9 @@ CC=$ENGINE_CC
 # Build the game
 mkdir -p build
 pushd build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DSANITIZE=OFF -DRISCV_EXT_C=$CEXT
+if [ ! -f CMakeCache.txt ]; then
+	cmake .. -DCMAKE_BUILD_TYPE=Release -DSANITIZE=OFF -DRISCV_EXT_C=$CEXT
+fi
 make -j4
 popd
 
