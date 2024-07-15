@@ -77,6 +77,7 @@ void Script::reset()
 			// The gameplay machine is loaded into a high-memory area
 			// In order for remote calls to work, disable the arena
 			.translation_use_arena = name() != "gameplay",
+			.translate_use_register_caching = false,
 #endif
 		};
 		m_machine = std::make_unique<machine_t> (*m_binary, options);
