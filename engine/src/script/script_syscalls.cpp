@@ -36,12 +36,6 @@ APICALL(api_write)
 	const uint32_t len_g = std::min(4096u, (uint32_t)len);
 
 	auto& scr = script(machine);
-	if (scr.machine().is_multiprocessing())
-	{
-		machine.set_result(-1);
-		return;
-	}
-
 	if (scr.stdout_enabled())
 	{
 		std::array<riscv::vBuffer, 16> buffers;

@@ -5,12 +5,6 @@ extern void do_threads_stuff();
 extern void do_remote_stuff();
 static void do_benchmarks();
 
-static inline void
-my_dynamic_call(long val, float fval, const std::string& str)
-{
-	DYNCALL("Test::my_dynamic_call", val, fval, str);
-}
-
 /* This is the function that gets called at the start.
    See: engine/src/main.cpp */
 PUBLIC(void start())
@@ -21,7 +15,7 @@ PUBLIC(void start())
 
 	print("** Fully dynamic system calls **\n");
 
-	my_dynamic_call(1234, 5678.0, "nine-ten-eleven-twelve!");
+	DynamicCall("Test::my_dynamic_call")(1234, 5678.0, "nine-ten-eleven-twelve!");
 
 	if (Game::setting("benchmarks").value_or(false))
 		do_benchmarks();
@@ -63,14 +57,14 @@ void do_benchmarks()
 		"Dynamic arguments (no arguments)",
 		[]
 		{
-			DYNCALL("Test::void");
+			DynamicCall("Test::void")();
 		});
 
 	measure(
 		"Dynamic arguments (4x arguments)",
 		[]
 		{
-			DYNCALL("Test::void", -4096, 5678.0, 524287, 8765.0);
+			DynamicCall("Test::void")(-4096, 5678.0, 524287, 8765.0);
 		});
 
 	measure(

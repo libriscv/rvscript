@@ -1,7 +1,6 @@
 #include "events.hpp"
 #include <api.h>
 using namespace api;
-extern void benchmark_multiprocessing();
 
 int main()
 {
@@ -84,8 +83,6 @@ PUBLIC(void benchmarks())
 	measure("Dynamic call handler x4 (call)", opaque_dyncall_handler);
 
 	measure("Allocate 1024-bytes, and free it", bench_alloc_free);
-
-	//benchmark_multiprocessing();
 }
 
 struct C

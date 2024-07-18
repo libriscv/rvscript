@@ -264,36 +264,33 @@ dynamic_call(const uint32_t hash, const char* name, Args&&... args)
 	std::array<uintptr_t, 8> gpr {};
 	std::array<float, 8> fpr {};
 
-	(
-		[&]
+	([&] {
+		if constexpr (std::is_integral_v<std::remove_reference_t<Args>>)
 		{
-			if constexpr (std::is_integral_v<std::remove_reference_t<Args>>)
-			{
-				gpr[argc]  = args;
-				type[argc] = 0b001;
-				argc++;
-			}
-			else if constexpr (std::is_floating_point_v<
-								   std::remove_reference_t<Args>>)
-			{
-				fpr[argc]  = args;
-				type[argc] = 0b010;
-				argc++;
-			}
-			else if constexpr (is_stdstring<std::remove_cvref_t<Args>>::value)
-			{
-				gpr[argc]  = (uintptr_t)args.data();
-				type[argc] = 0b111;
-				argc++;
-			}
-			else if constexpr (is_string<Args>::value)
-			{
-				gpr[argc]  = (uintptr_t) const_cast<const char*>(args);
-				type[argc] = 0b111;
-				argc++;
-			}
-		}(),
-		...);
+			gpr[argc]  = args;
+			type[argc] = 0b001;
+			argc++;
+		}
+		else if constexpr (std::is_floating_point_v<
+								std::remove_reference_t<Args>>)
+		{
+			fpr[argc]  = args;
+			type[argc] = 0b010;
+			argc++;
+		}
+		else if constexpr (is_stdstring<std::remove_cvref_t<Args>>::value)
+		{
+			gpr[argc]  = (uintptr_t)args.data();
+			type[argc] = 0b111;
+			argc++;
+		}
+		else if constexpr (is_string<Args>::value)
+		{
+			gpr[argc]  = (uintptr_t) const_cast<const char*>(args);
+			type[argc] = 0b111;
+			argc++;
+		}
+	}(), ...);
 
 	register long a0 asm("a0");
 	register float fa0 asm("fa0");
@@ -334,4 +331,29 @@ dynamic_call(const uint32_t hash, const char* name, Args&&... args)
 		: "r"(name_hash), "m"(*name_ptr), "r"(name_ptr));
 }
 
-#define DYNCALL(name, ...) dynamic_call(crc32(name), name, ##__VA_ARGS__)
+struct DynamicCall
+{
+	const uint32_t    hash;
+	const char* const name;
+
+	template <typename... Args>
+	constexpr void operator()(Args&&... args)
+	{
+		dynamic_call(hash, name, std::forward<Args>(args)...);
+	}
+
+	constexpr operator uint32_t() const
+	{
+		return hash;
+	}
+	constexpr operator const char*() const
+	{
+		return name;
+	}
+
+	template <size_t N>
+	constexpr DynamicCall(const char (&name)[N])
+	  : hash(crc32ct(name)), name(name)
+	{
+	}
+};
