@@ -352,7 +352,7 @@ struct DynamicCall
 	}
 
 	template <size_t N>
-	constexpr DynamicCall(const char (&name)[N])
+	consteval DynamicCall(const char (&name)[N])
 	  : hash(crc32ct(name)), name(name)
 	{
 	}
