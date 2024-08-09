@@ -548,7 +548,7 @@ gaddr_t Script::guest_alloc(gaddr_t bytes)
 
 gaddr_t Script::guest_alloc_sequential(gaddr_t bytes)
 {
-	return machine().arena().seq_alloc_aligned(bytes, 8);
+	return machine().arena().seq_alloc_aligned(bytes, 8, machine().memory.initial_rodata_end() != 0x0);
 }
 
 bool Script::guest_free(gaddr_t addr)

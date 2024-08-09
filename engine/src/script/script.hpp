@@ -523,6 +523,7 @@ template <typename T> struct GuestObjects
 		other.m_address = 0x0;
 		other.m_count	= 0u;
 	}
+	GuestObjects& operator=(GuestObjects&& other) = delete;
 
 	~GuestObjects()
 	{
