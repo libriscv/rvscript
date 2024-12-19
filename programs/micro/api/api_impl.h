@@ -43,7 +43,7 @@ inline void expect_check(
 
 #define EXPECT(expr)                                                          \
 	api::expect_check(                                                        \
-		[&]                                                                   \
+		[&] () -> bool                                                        \
 		{                                                                     \
 			return (expr);                                                    \
 		},                                                                    \

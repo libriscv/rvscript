@@ -545,7 +545,10 @@ template <typename T> inline GuestObjects<T> Script::guest_alloc(size_t n)
 	auto addr = this->guest_alloc_sequential(sizeof(T) * n);
 	if (addr != 0x0)
 	{
-		auto view = machine().memory.rvspan<T>(addr, n);
+		// Gather single writable buffer, making sure memory is not copy-on-write
+		std::array<riscv::vBuffer, 1> buf;
+		machine().memory.gather_writable_buffers_from_range(1, buf.data(), addr, sizeof(T) * n);
+		std::span<T> view(reinterpret_cast<T*>(buf[0].ptr), n);
 		// Default-initialize all objects
 		for (auto& o : view) o = T{};
 		// Note: this can fail and throw, but we don't care

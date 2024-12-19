@@ -32,7 +32,7 @@ int main()
 
 	/* The event_loop function can be resumed later, and can execute work
 	   that has been preemptively handed to it from other machines. */
-	auto events = Script("events", "scripts/gameplay.elf", debug);
+	Script events("events", "scripts/gameplay.elf", debug);
 	/* A VM function call. The function is looked up in the symbol table
 	   of the program binary. Without an entry in the table, we cannot
 	   know the address of the function, even if it exists in the code. */
@@ -40,12 +40,12 @@ int main()
 	events.call("event_loop");
 
 	/* Create the gameplay machine by cloning 'events' (same binary, but new instance) */
-	auto gameplay = events.clone("gameplay");
+	Script gameplay = events.clone("gameplay");
 
 	/* This is the main start function, which would be something like the
 	   starting function for the current levels script. You can find the
 	   implementation in scripts/src/level1.cpp. */
-	auto level1 = Script("level1", "scripts/level1.elf", debug);
+	Script level1("level1", "scripts/level1.elf", debug);
 	/* level1 make remote calls to the gameplay program. */
 	level1.setup_remote_calls_to(gameplay);
 
@@ -55,7 +55,7 @@ int main()
 	}
 
 	/* Use strict remote calls for level2 */
-	auto level2 = Script("level2", "scripts/level2.elf", debug);
+	Script level2("level2", "scripts/level2.elf", debug);
 	/* level2 can make remote calls to the gameplay program. */
 	level2.setup_strict_remote_calls_to(gameplay);
 	/* Allow calling *only* this function remotely, when in strict mode */
@@ -142,15 +142,18 @@ int main()
 		"Calling '", gameplay.symbol_name(obj.onDeath), "' in '",
 		gameplay.name(), "' for object at 0x",
 		strf::hex(guest_objs.address(0)), "\n");
-	assert(obj.alive == true);
 	gameplay.call(obj.onDeath, guest_objs.address(0));
 	assert(obj.alive == false);
 
 	/* Guest-allocated objects can be moved */
-	auto other_guest_objs		 = std::move(guest_objs);
-	other_guest_objs.at(0).alive = true;
-	gameplay.call(other_guest_objs.at(0).onDeath, other_guest_objs.address(0));
-	assert(other_guest_objs.at(0).alive == false);
+	auto other_guest_objs	 = std::move(guest_objs);
+
+	GameObject& other_object = other_guest_objs.at(0);
+	other_object.alive   = true;
+	other_object.name	 = "otherobject";
+	other_object.onDeath = gameplay.address_of("myobject_death");
+	gameplay.call(other_object.onDeath, other_guest_objs.address(0));
+	assert(other_object.alive == false);
 
 	strf::to(stdout)("...\n");
 

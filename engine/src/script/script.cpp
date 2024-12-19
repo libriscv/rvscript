@@ -152,7 +152,6 @@ void Script::machine_setup()
 		const machine_t&, const char* p, size_t len) {
 		strf::to(stdout)(std::string_view {p, len});
 	});
-	machine().set_debug_printer(machine().get_printer());
 	machine().on_unhandled_csr = [](machine_t& machine, int csr, int, int)
 	{
 		auto& script = *machine.template get_userdata<Script>();
