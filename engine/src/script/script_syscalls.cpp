@@ -191,7 +191,7 @@ void Script::setup_syscall_interface()
 		[](CPU<MARCH>& cpu, rv32i_instruction instr)
 		{
 			auto& scr = script(cpu.machine());
-			scr.dynamic_call_array(instr.Itype.imm);
+			scr.dynamic_call_array_unchecked(instr.Itype.imm);
 		},
 		[](char* buffer, size_t len, auto&, rv32i_instruction instr)
 		{
@@ -250,7 +250,9 @@ void Script::setup_syscall_interface()
 	{
 		if (instr.opcode() == 0b1011011)
 		{
-			return dyncall_instruction_handler;
+			if (instr.Itype.imm < ECALL_LAST - GAME_API_BASE)
+				return dyncall_instruction_handler;
+			throw std::runtime_error("Invalid dynamic call found in program");
 		}
 		if (instr.opcode() == 0b0001011)
 		{

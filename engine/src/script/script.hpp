@@ -120,7 +120,7 @@ struct Script
 	static void
 		set_dynamic_calls(std::vector<std::tuple<std::string, std::string, ghandler_t>>);
 	void dynamic_call_hash(uint32_t hash, gaddr_t strname);
-	void dynamic_call_array(uint32_t idx);
+	void dynamic_call_array_unchecked(uint32_t idx);
 
 	/// @brief Retrieve arguments passed to a dynamic call, specifying each type.
 	/// @tparam ...Args The types of arguments to retrieve.
@@ -555,4 +555,17 @@ template <typename T> inline GuestObjects<T> Script::guest_alloc(size_t n)
 		return {*this, addr, view.data(), view.size()};
 	}
 	throw std::runtime_error("Unable to allocate guest objects");
+}
+
+inline void Script::dynamic_call_array_unchecked(uint32_t idx)
+{
+	while (true) {
+		try {
+			this->m_dyncall_array[idx](*this);
+			return;
+		} catch (const std::exception& e) {
+			// This will re-throw unless a new dynamic call is discovered
+			this->dynamic_call_error(idx, e);
+		}
+	}
 }

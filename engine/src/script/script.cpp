@@ -395,19 +395,6 @@ void Script::dynamic_call_hash(uint32_t hash, gaddr_t straddr)
 	}
 }
 
-void Script::dynamic_call_array(uint32_t idx)
-{
-	while (true) {
-		try {
-			this->m_dyncall_array.at(idx)(*this);
-			return;
-		} catch (const std::exception& e) {
-			// This will re-throw unless a new dynamic call is discovered
-			this->dynamic_call_error(idx, e);
-		}
-	}
-}
-
 void Script::dynamic_call_error(uint32_t idx, const std::exception& e)
 {
 	const uint32_t entries = machine().memory.read<uint32_t> (m_g_dyncall_table);
