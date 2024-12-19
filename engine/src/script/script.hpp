@@ -240,8 +240,9 @@ struct Script
 	/// consecutive array of bytes, allowing it to be used with many (if not most)
 	/// APIs that do not handle fragmented memory.
 	/// @param bytes The number of sequentially allocated 8-byte aligned bytes.
+	/// @param flat_arena If enabled, treat arena memory as sequential.
 	/// @return The address of the sequentially allocated bytes.
-	gaddr_t guest_alloc_sequential(gaddr_t bytes);
+	gaddr_t guest_alloc_sequential(gaddr_t bytes, bool flat_arena = false);
 	bool guest_free(gaddr_t addr);
 
 	/// @brief Create a wrapper object that manages an allocation of n objects of type T
@@ -542,7 +543,7 @@ template <typename T> struct GuestObjects
 
 template <typename T> inline GuestObjects<T> Script::guest_alloc(size_t n)
 {
-	auto addr = this->guest_alloc_sequential(sizeof(T) * n);
+	auto addr = this->guest_alloc_sequential(sizeof(T) * n, false);
 	if (addr != 0x0)
 	{
 		// Gather single writable buffer, making sure memory is not copy-on-write
