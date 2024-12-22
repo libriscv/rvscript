@@ -33,10 +33,7 @@ inline void expect_check(
 {
 	if (UNLIKELY(!expr()))
 	{
-		asm("" ::: "memory"); // prevent dead-store optimization
-		syscall(
-			ECALL_ASSERT_FAIL, (long)strexpr, (long)file, (long)line,
-			(long)func);
+		sys_assert_fail(strexpr, file, line, func);
 		__builtin_unreachable();
 	}
 }
@@ -62,20 +59,15 @@ template <typename... Args> inline void print(Args&&... args)
 
 	asm volatile("ecall"
 				 : "=r"(a0_out)
-				 : "r"(a0), "m"(*(const char(*)[size])a0), "r"(a1),
+				 : "r"(a0), "m"(*(const char(*)[sizeof(buffer)])a0), "r"(a1),
 				   "r"(syscall_id));
 }
 
-template <typename T> inline long measure(const char* testname, T testfunc)
-{
-	return syscall(
-		ECALL_MEASURE, (long)testname,
-		(long)static_cast<void (*)()>(testfunc));
-}
+#define measure(testname, testfunc) sys_measure(testname, (void (*)())testfunc);
 
 inline uint32_t Game::current_machine()
 {
-	return syscall1(ECALL_MACHINE_HASH);
+	return sys_machine_hash();
 }
 
 #define RUNNING_ON(mach) (api::current_machine() == crc32(mach))
@@ -84,7 +76,7 @@ inline uint32_t Game::current_machine()
 
 inline void Game::exit()
 {
-	(void)syscall1(ECALL_GAME_EXIT);
+	(void)sys_game_exit();
 }
 
 inline std::optional<intptr_t> Game::setting(std::string_view setting)
@@ -97,7 +89,7 @@ inline std::optional<intptr_t> Game::setting(std::string_view setting)
 
 	asm("ecall"
 		: "=r"(has_value), "=r"(result)
-		: "m"(*(const char(*)[name_len])name_ptr),
+		: "m"(*(const char(*)[16384])name_ptr),
 		  "r"(name_ptr), "r"(name_len), "r"(sysno));
 
 	if (has_value) return int64_t(result);
@@ -188,39 +180,74 @@ inline long Timer::sleep(float seconds)
 
 inline float sin(float x)
 {
-	return fsyscallf(ECALL_SINF, x);
+	register float a0 asm("fa0") = x;
+	register long  a7 asm("a7")  = ECALL_SINF;
+
+	asm volatile("ecall"
+				 : "+f"(a0) : "r"(a7));
+	return a0;
 }
 
 inline float cos(float x)
 {
-	return fsyscallf(ECALL_SINF, x + PI / 2);
+	return sin(x + PI / 2);
 }
 
 inline float rand(float a, float b)
 {
-	return fsyscallf(ECALL_RANDF, a, b);
+	register float a0 asm("fa0") = a;
+	register float a1 asm("fa1") = b;
+	register long  a7 asm("a7")  = ECALL_RANDF;
+
+	asm volatile("ecall"
+				 : "+f"(a0) : "f"(a1), "r"(a7));
+	return a0;
 }
 
 inline float smoothstep(float a, float b, float x)
 {
-	return fsyscallf(ECALL_SMOOTHSTEP, a, b, x);
+	register float a0 asm("fa0") = a;
+	register float a1 asm("fa1") = b;
+	register float a2 asm("fa2") = x;
+	register long  a7 asm("a7")  = ECALL_SMOOTHSTEP;
+
+	asm volatile("ecall"
+				 : "+f"(a0) : "f"(a1), "f"(a2), "r"(a7));
+	return a0;
 }
 
 inline float length(float dx, float dy)
 {
-	return fsyscallf(ECALL_VEC_LENGTH, dx, dy);
+	register float a0 asm("fa0") = dx;
+	register float a1 asm("fa1") = dy;
+	register long  a7 asm("a7")  = ECALL_VEC_LENGTH;
+
+	asm volatile("ecall"
+				 : "+f"(a0), "+f"(a1) : "r"(a7));
+	return a0;
 }
 
 inline vec2 rotate_around(float dx, float dy, float angle)
 {
-	const auto [x, y] = fsyscallff(ECALL_VEC_LENGTH, dx, dy, angle);
-	return {x, y};
+	register float a0 asm("fa0") = dx;
+	register float a1 asm("fa1") = dy;
+	register float a2 asm("fa2") = angle;
+	register long  a7 asm("a7")  = ECALL_VEC_ROTATE;
+
+	asm volatile("ecall"
+				 : "+f"(a0), "+f"(a1) : "f"(a2), "r"(a7));
+	return {a0, a1};
 }
 
 inline vec2 normalize(float dx, float dy)
 {
-	const auto [x, y] = fsyscallff(ECALL_VEC_NORMALIZE, dx, dy);
-	return {x, y};
+	register float a0 asm("fa0") = dx;
+	register float a1 asm("fa1") = dy;
+	register long  a7 asm("a7")  = ECALL_VEC_NORMALIZE;
+
+	asm volatile("ecall"
+				 : "+f"(a0), "+f"(a1) : "r"(a7));
+	return {a0, a1};
 }
 
 inline float vec2::length() const

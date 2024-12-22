@@ -122,7 +122,7 @@ def emit_inline_assembly(header, asmdef, index, fargs):
 
 	asm_in += []
 
-	header += "static inline __attribute__((always_inline, optimize(\"O2\"))) " + retval + " i" + asmdef + " (" + ','.join(fargs) + ') {\n'
+	header += "static inline __attribute__((always_inline)) " + retval + " i" + asmdef + " (" + ','.join(fargs) + ') {\n'
 	header += asm_regs
 	header += '__asm__ volatile(\".insn i 0b1011011, 0, x0, x0, ' + str(index) + "\"" \
 		+ " : " + ",".join(asm_out) + " : " + ",".join(asm_in) + " : " + ",".join(asm_clob) + ");\n"
@@ -221,11 +221,11 @@ for key in j:
 		# and at run-time this value is lazily resolved
 		source += '__asm__("\\n\\\n'
 		source += '.global ' + asmname + '\\n\\\n'
-		source += '.func ' + asmname + '\\n\\\n'
+		#source += '.func ' + asmname + '\\n\\\n'
 		source += asmname + ':\\n\\\n'
 		source += '  .insn i 0b1011011, 0, x0, x0, ' + str(dyncallindex) + '\\n\\\n'
 		source += '  ret\\n\\\n'
-		source += '.endfunc\\n\\\n'
+		#source += '.endfunc\\n\\\n'
 		source += '.pushsection .rodata\\n\\\n'
 		source += asmname + '_str:\\n\\\n'
 		source += '.asciz \\\"' + key + '\\\"\\n\\\n'

@@ -59,7 +59,7 @@ int main()
 	/* level2 can make remote calls to the gameplay program. */
 	level2.setup_strict_remote_calls_to(gameplay);
 	/* Allow calling *only* this function remotely, when in strict mode */
-	gameplay.add_allowed_remote_function("_Z25gameplay_allowed_functioni");
+	//gameplay.add_allowed_remote_function("_Z25gameplay_allowed_functioni");
 
 	if (!level2.call("start")) {
 		strf::to(stdout)("Level2 failed to start!\n");

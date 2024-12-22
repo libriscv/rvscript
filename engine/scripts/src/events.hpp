@@ -1,5 +1,5 @@
 #include <api.h>
-#include <include/event_loop.hpp>
+#include <event_loop.hpp>
 
 PUBLIC(bool add_work(const Events<>::Work*));
 

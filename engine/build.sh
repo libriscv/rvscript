@@ -5,7 +5,8 @@ export ENGINE_CC="ccache $CC"
 
 # Build the script
 pushd ../programs
-source build.sh $@
+#source build.sh $@
+source zig.sh $@
 popd
 
 echo "RISC-V C-extension is: $CEXT"

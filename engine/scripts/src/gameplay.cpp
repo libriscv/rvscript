@@ -13,17 +13,17 @@ static void empty_function() {}
 
 static void full_thread_function()
 {
-	microthread::create([](int, int, int) { /* ... */ }, 1, 2, 3);
+	//microthread::create([](int, int, int) { /* ... */ }, 1, 2, 3);
 }
 
 static void oneshot_thread_function()
 {
-	microthread::oneshot([](int, int, int) { /* ... */ }, 1, 2, 3);
+	//microthread::oneshot([](int, int, int) { /* ... */ }, 1, 2, 3);
 }
 
 static void direct_thread_function()
 {
-	microthread::direct([] { /* ... */ });
+	//microthread::direct([] { /* ... */ });
 }
 
 static void opaque_dyncall_handler()
@@ -49,24 +49,10 @@ PUBLIC(void public_donothing())
 	/* nothing */
 }
 
-inline void* sys_memset(void* vdest, const int ch, std::size_t size)
-{
-	register char*   a0 asm("a0") = (char*)vdest;
-	register int     a1 asm("a1") = ch;
-	register size_t  a2 asm("a2") = size;
-	register long syscall_id asm("a7") = SYSCALL_MEMSET;
-
-	asm volatile ("ecall"
-	:	"=m"(*(char(*)[size]) a0)
-	:	"r"(a0), "r"(a1), "r"(a2), "r"(syscall_id));
-	return vdest;
-}
-
 static void bench_alloc_free()
 {
 	auto x = std::make_unique_for_overwrite<char[]>(1024);
 	__asm__("" :: "m"(x[0]) : "memory");
-	//sys_memset(x.get(), 0, 1024);
 }
 
 PUBLIC(void benchmarks())
