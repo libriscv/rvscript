@@ -16,26 +16,26 @@
 add_shared_program(gameplay.elf 0x50000000
 	*[Gg]ameplay*
 	"src/gameplay.cpp"
-	"src/gameplay_remote.cpp"
+	#"src/gameplay_remote.cpp"
 	"src/events.cpp"
 )
 
-add_level(gui.elf 0x400000
+add_level(gui.elf
 	"src/gui.cpp"
 )
-attach_program(gui.elf gameplay.elf)
+#attach_program(gui.elf gameplay.elf)
 
 
-add_level(level1.elf 0x400000
+add_level(level1.elf
 	"src/level1.cpp"
 	"src/level1_local.cpp"
-	"src/level1_remote.cpp"
+	#"src/level1_remote.cpp"
 	"src/level1_threads.cpp"
 	"src/events.cpp"
 )
-attach_program(level1.elf gameplay.elf)
+#attach_program(level1.elf gameplay.elf)
 
-add_level(level2.elf 0x400000
+add_level(level2.elf
 	"src/level2.cpp"
 )
-attach_program(level2.elf gameplay.elf)
+#attach_program(level2.elf gameplay.elf)

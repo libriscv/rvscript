@@ -1,5 +1,5 @@
 #include <api.h>
-#include <include/event_loop.hpp>
+#include <event_loop.hpp>
 
 static std::array<Events<>, 2> events;
 

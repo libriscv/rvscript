@@ -14,6 +14,7 @@ measure_exception_throw()
 	{
 		print("Caught exception: ", e.what(), "\n");
 	}
+	//print("Exception handling done\n");
 	const auto cycle1 = rdcycle();
 	const auto time1  = rdtime();
 	return {cycle1-cycle0, time1-time0};

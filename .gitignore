@@ -1,4 +1,5 @@
 **/build/
+**/.zig/
 **/build_*/
 **/riscv32-unknown-elf/
 **/riscv64-unknown-elf/

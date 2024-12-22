@@ -21,8 +21,9 @@ void do_threads_stuff()
 	b = 4;
 	c = 6;
 	microthread::yield();
+	print("Done, back in the main thread!\n");
 
-	auto thread = microthread::create(
+	/*auto thread = microthread::create(
 		[](int a, int b, int c)
 		{
 			print(
@@ -40,6 +41,7 @@ void do_threads_stuff()
 	print("Joining the thread any time now...\n");
 	auto retval = microthread::join(thread);
 	print("Full thread exited, return value: ", retval, "\n");
+	*/
 
 	/* GDB can be automatically opened at this point. */
 	Game::breakpoint();

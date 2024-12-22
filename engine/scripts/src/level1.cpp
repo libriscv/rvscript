@@ -23,7 +23,7 @@ PUBLIC(void start())
 	print("** Threads **\n");
 
 	/* Test-run some micro-threads. */
-	do_threads_stuff();
+	//do_threads_stuff();
 }
 
 static std::unique_ptr<TestData[]> test_vector;
@@ -75,6 +75,6 @@ void do_benchmarks()
 		});
 
 
-	if (Game::setting("remote").value_or(false))
-		do_remote_stuff();
+	//if (Game::setting("remote").value_or(false))
+	//	do_remote_stuff();
 }
