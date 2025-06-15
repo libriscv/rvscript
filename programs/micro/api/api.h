@@ -25,6 +25,12 @@ namespace api
 		static uint32_t current_machine();
 
 		static std::optional<intptr_t> setting(std::string_view);
+
+		/// @brief Enter a waiting state, and unpausing when the next frame is ready.
+		/// @tparam T 
+		/// @param data The frame data received from the host every frame.
+		template <typename T>
+		static void wait(T& data);
 	};
 
 	/** GUI **/

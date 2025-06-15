@@ -67,17 +67,33 @@ int main()
 	}
 
 	strf::to(stdout)("...\n");
-	/* Ordinarily a game engine has a physics loop that ticks regularly,
-	   but we don't in this example. Instead we will just sleep until
-	   the next available timer. And resume the event loop in between. */
-	extern void timers_loop(std::function<void()>);
-	timers_loop(
-		[&]
-		{
-			/* This should run each engine tick instead. We are passing
-			   the maximum number of instructions that we allow it to use. */
-			events.resume(5'000);
-		});
+
+	/* Let's create a simple frame loop that depends on the guest
+	   waiting at a certain point in the code, with a pointer argument
+	   to frame data that is updated each frame. */
+	struct FrameData
+	{
+		int frame = 0;
+	};
+	/* When the guest pauses, the pointer to the frame data is the first argument (A0). */
+	FrameData* frame_data = level2.machine().memory.memarray<FrameData> (level2.machine().sysarg(0), 1);
+	/* Simulate 10 frames of gameplay. */
+	for (int i = 0; i < 10; ++i)
+	{
+		if (level2.getWaitingState() == 0) {
+			strf::to(stderr)("Level2 did not call Game::wait()!?\n");
+			return 1;
+		}
+		/* Set the data for the current frame.
+		   This is accessible to the guest program when it resumes. */
+		frame_data->frame = i;
+		/* Resume the level2 program, which unpauses the guest and continues
+		   execution until it loops around to the Game::wait() call again. */
+		if (!level2.resume(5'000)) {
+			strf::to(stderr)("Failed to resume level2!\n");
+			return 1;
+		}
+	}
 
 	/* Create an event that is callable. */
 	struct C

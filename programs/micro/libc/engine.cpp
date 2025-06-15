@@ -28,3 +28,10 @@ asm(".global sys_write\n"
 "	li a7, " STRINGIFY(ECALL_WRITE) "\n"
 "	ecall\n"
 "   ret\n");
+
+asm(".global sys_frame_wait\n"
+	"sys_frame_wait:\n"
+	"	li a7, " STRINGIFY(ECALL_FRAME_WAIT) "\n"
+	"	ecall\n"
+	"   ret\n");
+	

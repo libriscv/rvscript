@@ -85,9 +85,10 @@ APICALL(api_machine_hash)
 	machine.set_result(script(machine).hash());
 }
 
-APICALL(api_each_frame)
+APICALL(api_frame_wait)
 {
-	machine.set_result(-1);
+	script(machine).setWaitingState(1);
+	machine.stop(); // Pause here
 }
 
 APICALL(api_game_setting)
@@ -170,7 +171,7 @@ void Script::setup_syscall_interface()
 		{ECALL_DYNCALL, api_dyncall},
 		{ECALL_DYNARGS, api_dyncall_args},
 		{ECALL_MACHINE_HASH, api_machine_hash},
-		{ECALL_EACH_FRAME, api_each_frame},
+		{ECALL_FRAME_WAIT, api_frame_wait},
 
 		{ECALL_GAME_SETTING, api_game_setting},
 		{ECALL_GAME_EXIT, api_game_exit},

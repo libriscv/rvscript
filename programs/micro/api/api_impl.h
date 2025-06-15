@@ -117,6 +117,13 @@ inline bool Game::is_debugging()
 	return sys_is_debug();
 }
 
+template <typename T>
+inline void Game::wait(T& data)
+{
+	sys_frame_wait(&data);
+}
+
+
 /** Timers **/
 
 using timer_callback = void (*)(int, void*);

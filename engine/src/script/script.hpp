@@ -255,6 +255,25 @@ struct Script
 	/// @return A wrapper managing the program-hosted objects. Can be moved.
 	template <typename T> GuestObjects<T> guest_alloc(size_t n = 1);
 
+	/// @brief Set the waiting state of the script.
+	/// This can be used to signal that the script is waiting in an event loop,
+	/// such as waiting for a frame to complete, or waiting for an event to occur.
+	/// @param state A user-defined state value, such as 0 for no wait, 1 for waiting for a frame, etc.
+	void setWaitingState(uint8_t state) noexcept
+	{
+		m_waiting_state = state;
+	}
+
+	/// @brief Get the current waiting state of the script.
+	/// This can be used to check if the script is waiting in an event loop,
+	/// such as waiting for a frame to complete, or waiting for an event to occur.
+	/// @return The current waiting state value, such as 0 for no wait, 1 for waiting for a frame, etc.
+	/// @note The waiting state is user-defined and can be any value.
+	uint8_t getWaitingState() const noexcept
+	{
+		return m_waiting_state;
+	}
+
 	/// @brief Start debugging with GDB right now. Only works on Linux.
 	/// @param message Message to print inside GDB.
 	/// @param one_up Always go one stack frame up? This can be used to leave a wrapper function.
@@ -322,6 +341,7 @@ struct Script
 	bool m_stdout			= true;
 	bool m_last_newline		= true;
 	int  m_budget_overruns	= 0;
+	uint8_t m_waiting_state = 0;
 	Script* m_remote_script = nullptr;
 	/// @brief Functions accessible when remote access is *strict*
 	std::unordered_set<gaddr_t> m_remote_access;
