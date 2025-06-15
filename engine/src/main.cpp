@@ -73,6 +73,8 @@ int main()
 	   to frame data that is updated each frame. */
 	struct FrameData
 	{
+		riscv::GuestStdVector<Script::MARCH, riscv::GuestStdString<Script::MARCH>> strings;
+		riscv::GuestStdVector<Script::MARCH, int> integers;
 		int frame = 0;
 	};
 	/* When the guest pauses, the pointer to the frame data is the first argument (A0). */
@@ -87,6 +89,16 @@ int main()
 		/* Set the data for the current frame.
 		   This is accessible to the guest program when it resumes. */
 		frame_data->frame = i;
+		/* Wrappers around guest-stored vectors (and other types) always
+		   take the machine as the first argument. */
+		frame_data->strings.clear(level2.machine());
+		frame_data->strings.push_back(level2.machine(), "Hello");
+		frame_data->strings.push_back(level2.machine(), "World");
+
+		frame_data->integers.clear(level2.machine());
+		frame_data->integers.push_back(level2.machine(), i);
+		frame_data->integers.push_back(level2.machine(), i * 2);
+
 		/* Resume the level2 program, which unpauses the guest and continues
 		   execution until it loops around to the Game::wait() call again. */
 		if (!level2.resume(5'000)) {
